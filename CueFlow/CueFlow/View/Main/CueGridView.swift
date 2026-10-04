@@ -48,7 +48,8 @@ struct CueGridView: View {
                             .gridLines(leading: true)
                             .pinned(x: true)
                         ForEach(store.scenes) { scene in
-                            CueCell(pairs: store.cuePairs(partID: part.id, sceneID: scene.id))
+                            CueCell(pairs: store.cuePairs(partID: part.id, sceneID: scene.id),
+                                    partID: part.id, sceneID: scene.id)
                                 .frame(width: Metrics.sceneColumnWidth)
                                 .frame(minHeight: Metrics.rowMinHeight, maxHeight: .infinity, alignment: .top)
                                 .gridLines()
@@ -105,15 +106,20 @@ private struct PartHeaderCell: View {
 }
 
 // 큐가 있으면 회색 칸 + 카드들 + Add new, 비어 있으면 마우스를 올렸을 때만 Add new
+// Add new를 누르면 이 칸(파트 × 씬)에 큐를 넣는 입력 팝업이 뜬다
 private struct CueCell: View {
     let pairs: [(trigger: Trigger, cue: Cue)]
+    let partID: Part.ID
+    let sceneID: ShowScene.ID
     @State private var isHovering = false
+    @State private var isAdding = false
 
     var body: some View {
         Group {
             if pairs.isEmpty {
-                if isHovering {
-                    AddNewButton()
+                // 팝업이 떠 있는 동안은 마우스가 나가도 버튼(팝업 기준점)을 유지
+                if isHovering || isAdding {
+                    addNewButton
                         .padding(.horizontal, 15)
                         .padding(.top, 12)
                 }
@@ -122,7 +128,7 @@ private struct CueCell: View {
                     ForEach(pairs, id: \.cue.id) { pair in
                         TempCueCard(cue: pair.cue, trigger: pair.trigger)
                     }
-                    AddNewButton()
+                    addNewButton
                         .padding(.horizontal, 3)
                 }
                 .padding(.horizontal, 12)
@@ -135,10 +141,17 @@ private struct CueCell: View {
         .contentShape(.rect)
         .onHover { isHovering = $0 }
     }
+
+    private var addNewButton: some View {
+        AddNewButton { isAdding = true }
+            .popover(isPresented: $isAdding, arrowEdge: .bottom) {
+                AddCuePopup(partID: partID, sceneID: sceneID) { isAdding = false }
+            }
+    }
 }
 
 private struct AddNewButton: View {
-    var action: () -> Void = {}   // 다음 단계: Add new 팝업 열기
+    let action: () -> Void
 
     var body: some View {
         Button(action: action) {
