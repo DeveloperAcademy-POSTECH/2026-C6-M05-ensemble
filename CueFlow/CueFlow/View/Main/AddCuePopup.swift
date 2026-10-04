@@ -24,9 +24,11 @@ struct AddCuePopup: View {
     private enum Field { case cue, trigger }
 
     // triggerText: 트리거 단위 화면에서 열면 그 트리거가 미리 채워짐
-    init(partID: Part.ID, sceneID: ShowScene.ID, triggerText: String = "", onDone: @escaping () -> Void) {
+    init(partID: Part.ID, sceneID: ShowScene.ID, triggerText: String = "",
+         editingCueID: Cue.ID? = nil, onDone: @escaping () -> Void) {
         self.partID = partID
         self.sceneID = sceneID
+        self.editingCueID = editingCueID
         self.onDone = onDone
         _triggerText = State(initialValue: triggerText)
     }
