@@ -2,7 +2,8 @@
 //  CueGridView.swift
 //  CueFlow
 //
-//  메인 큐 화면의 표: 행 = 파트, 열 = 씬, 칸 = 그 파트의 그 씬 큐들 (트리거 순서대로)
+//  메인 큐 화면의 표: 행 = 파트, 열 = 씬(씬 단위) 또는 한 씬의 트리거(트리거 단위)
+//  칸 = 그 파트의 그 씬/트리거 큐들 (트리거 순서대로)
 //
 
 import SwiftUI
@@ -16,22 +17,32 @@ private enum Metrics {
 }
 
 struct CueGridView: View {
+    // 씬 단위: 열 = 씬 / 트리거 단위: 열 = 한 씬의 트리거
+    enum Mode: Hashable {
+        case scenes
+        case triggers(ShowScene.ID)
+    }
+
+    var mode: Mode = .scenes
+    var onSelectScene: (ShowScene.ID) -> Void = { _ in }   // 씬 헤더를 누르면 그 씬의 트리거 단위로
+
     @Environment(CueStore.self) private var store
 
     var body: some View {
         FrozenHeaderScrollView {
             Grid(alignment: .topLeading, horizontalSpacing: 0, verticalSpacing: 0) {
-                // 맨 윗줄: 씬
+                // 맨 윗줄: 씬 또는 트리거
                 GridRow {
-                    Text("파트 / 씬")
+                    Text(mode == .scenes ? "파트 / 씬" : "파트 / 트리거")
                         .font(.system(size: 10.5))
                         .foregroundStyle(Color(hex: 0x7A7A7A))
                         .padding(.leading, 15)
                         .frame(width: Metrics.partColumnWidth, height: Metrics.headerHeight, alignment: .leading)
                         .gridLines(leading: true, top: true)
                         .pinned(x: true, y: true)
-                    ForEach(store.scenes) { scene in
-                        SceneHeaderCell(scene: scene)
+                    ForEach(columns) { column in
+                        ColumnHeaderCell(title: column.title, subtitle: column.subtitle,
+                                         action: column.trigger == nil ? { onSelectScene(column.sceneID) } : nil)
                             .frame(width: Metrics.sceneColumnWidth, height: Metrics.headerHeight)
                             .gridLines(top: true)
                             .pinned(y: true)
@@ -47,9 +58,10 @@ struct CueGridView: View {
                             .gridCellUnsizedAxes(.vertical)
                             .gridLines(leading: true)
                             .pinned(x: true)
-                        ForEach(store.scenes) { scene in
-                            CueCell(pairs: store.cuePairs(partID: part.id, sceneID: scene.id),
-                                    partID: part.id, sceneID: scene.id)
+                        ForEach(columns) { column in
+                            CueCell(pairs: pairs(partID: part.id, column: column),
+                                    partID: part.id, sceneID: column.sceneID,
+                                    triggerText: column.trigger?.text ?? "")
                                 .frame(width: Metrics.sceneColumnWidth)
                                 .frame(minHeight: Metrics.rowMinHeight, maxHeight: .infinity, alignment: .top)
                                 .gridLines()
@@ -59,17 +71,63 @@ struct CueGridView: View {
             }
         }
     }
+
+    // MARK: - 열
+
+    private struct Column: Identifiable {
+        let id: UUID
+        let title: String
+        let subtitle: String
+        let sceneID: ShowScene.ID
+        let trigger: Trigger?   // 트리거 단위일 때만
+    }
+
+    private var columns: [Column] {
+        switch mode {
+        case .scenes:
+            return store.scenes.map {
+                Column(id: $0.id, title: $0.name, subtitle: $0.subtitle, sceneID: $0.id, trigger: nil)
+            }
+        case .triggers(let sceneID):
+            // 헤더 이름: S#씬번호 - 트리거순서 (예: S#1 - 2)
+            let sceneNumber = (store.scenes.firstIndex { $0.id == sceneID } ?? 0) + 1
+            return store.triggers(in: sceneID).map {
+                Column(id: $0.id, title: "S#\(sceneNumber) - \($0.order)", subtitle: $0.text,
+                       sceneID: sceneID, trigger: $0)
+            }
+        }
+    }
+
+    // 칸에 들어갈 (트리거, 큐). 씬 단위는 트리거 순서대로, 트리거 단위는 그 트리거의 큐만
+    private func pairs(partID: Part.ID, column: Column) -> [(trigger: Trigger, cue: Cue)] {
+        guard let trigger = column.trigger else {
+            return store.cuePairs(partID: partID, sceneID: column.sceneID)
+        }
+        return store.cues(partID: partID, triggerID: trigger.id).map { (trigger: trigger, cue: $0) }
+    }
 }
 
 // MARK: - 칸
 
-private struct SceneHeaderCell: View {
-    let scene: ShowScene
+// 열 헤더: 씬(이름, 부제) 또는 트리거(S#1 - 1, 트리거 내용). action이 있으면 누를 수 있음
+private struct ColumnHeaderCell: View {
+    let title: String
+    let subtitle: String
+    var action: (() -> Void)?
 
     var body: some View {
+        if let action {
+            Button(action: action) { label }
+                .buttonStyle(.plain)
+        } else {
+            label
+        }
+    }
+
+    private var label: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text(scene.name).font(.system(size: 12.5))
-            Text(scene.subtitle).font(.system(size: 10.5))
+            Text(title).font(.system(size: 12.5))
+            Text(subtitle).font(.system(size: 10.5))
         }
         .foregroundStyle(Color(hex: 0x111827))
         .lineLimit(1)
@@ -78,6 +136,7 @@ private struct SceneHeaderCell: View {
         .background(.white, in: .rect(cornerRadius: 4))
         .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color(hex: 0xC9CED6)))
         .padding(5)
+        .contentShape(.rect)
     }
 }
 
@@ -107,10 +166,12 @@ private struct PartHeaderCell: View {
 
 // 큐가 있으면 회색 칸 + 카드들 + Add new, 비어 있으면 마우스를 올렸을 때만 Add new
 // Add new를 누르면 이 칸(파트 × 씬)에 큐를 넣는 입력 팝업이 뜬다
+// 트리거 단위 칸이면 그 트리거가 미리 채워진 채로 뜬다
 private struct CueCell: View {
     let pairs: [(trigger: Trigger, cue: Cue)]
     let partID: Part.ID
     let sceneID: ShowScene.ID
+    var triggerText = ""
     @State private var isHovering = false
     @State private var isAdding = false
 
@@ -145,7 +206,7 @@ private struct CueCell: View {
     private var addNewButton: some View {
         AddNewButton { isAdding = true }
             .popover(isPresented: $isAdding, arrowEdge: .bottom) {
-                AddCuePopup(partID: partID, sceneID: sceneID) { isAdding = false }
+                AddCuePopup(partID: partID, sceneID: sceneID, triggerText: triggerText) { isAdding = false }
             }
     }
 }

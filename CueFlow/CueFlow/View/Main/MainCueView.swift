@@ -4,14 +4,16 @@
 //
 //  메인 큐 화면 (피그마 로우파이_4차 · 메인큐화면)
 //  윗줄: 공연 제목 + 변경건 / 미확인 / 초대하기
-//  둘째 줄: 파트 필터(B) + 씬 추가 / 리허설 모드 / 트리거 단위
-//  그 아래: 파트 × 씬 표
+//  둘째 줄: 파트 필터(B) + (트리거 단위일 때 씬 선택) + 씬 추가 / 리허설 모드 / 트리거 단위
+//  그 아래: 파트 × 씬 표 (트리거 단위면 파트 × 그 씬의 트리거)
 //
 
 import SwiftUI
 
 struct MainCueView: View {
     @Environment(CueStore.self) private var store
+    @State private var mode: CueGridView.Mode = .scenes
+    @State private var lastSceneID: ShowScene.ID?   // 트리거 단위로 다시 갈 때 보던 씬
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -20,7 +22,10 @@ struct MainCueView: View {
             toolBar
                 .padding(.top, 11)
                 .padding(.bottom, 13)
-            CueGridView()
+            CueGridView(mode: mode) { sceneID in
+                showTriggers(of: sceneID)
+            }
+            .id(mode)   // 화면이 바뀌면 스크롤 위치 처음으로
         }
         .padding(.horizontal, 32)
         .frame(minWidth: 1000, minHeight: 600, alignment: .topLeading)
@@ -48,13 +53,66 @@ struct MainCueView: View {
             Color.clear.frame(height: 24)
             Spacer()
             HStack(spacing: 4) {
+                if case .triggers(let sceneID) = mode {
+                    sceneMenu(selected: sceneID)
+                        .padding(.trailing, 3)
+                }
+                // 트리거 단위에서 누르면 새 열이 보이도록 씬 단위로 돌아감
                 ToolbarButton(title: "+ 씬 추가", style: .filled(Color(hex: 0xE2E2E2))) {
                     store.addScene(name: "#\(store.scenes.count + 1) Scene")
+                    mode = .scenes
                 }
                 ToolbarButton(title: "리허설 모드", style: .filled(Color(hex: 0xB6B6B6))) {}
-                ToolbarButton(title: "트리거 단위", style: .outline) {}   // 다음 단계: 트리거 뷰로 이동
+                // 씬 단위 ↔ 트리거 단위 전환
+                ToolbarButton(title: mode == .scenes ? "트리거 단위" : "씬 단위", style: .outline) {
+                    if mode == .scenes {
+                        if let sceneID = lastSceneID ?? store.scenes.first?.id {
+                            showTriggers(of: sceneID)
+                        }
+                    } else {
+                        mode = .scenes
+                    }
+                }
             }
         }
+    }
+
+    private func showTriggers(of sceneID: ShowScene.ID) {
+        lastSceneID = sceneID
+        mode = .triggers(sceneID)
+    }
+
+    // 트리거 단위에서 볼 씬 고르기: "#1 Scene | 부제"
+    private func sceneMenu(selected sceneID: ShowScene.ID) -> some View {
+        Menu {
+            ForEach(store.scenes) { scene in
+                Button(sceneLabel(scene)) { showTriggers(of: scene.id) }
+            }
+        } label: {
+            HStack {
+                Text(store.scenes.first { $0.id == sceneID }.map(sceneLabel) ?? "")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color(hex: 0x111827))
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color(hex: 0x111827))
+            }
+            .padding(.horizontal, 17)
+            .frame(width: 301, height: 34)
+            .background(Color(hex: 0xFDFDFD), in: .capsule)
+            .overlay(Capsule().stroke(Color(hex: 0xE2E2E2)))
+            .contentShape(.capsule)
+        }
+        .menuStyle(.button)
+        .menuIndicator(.hidden)
+        .buttonStyle(.plain)
+        .fixedSize()
+    }
+
+    private func sceneLabel(_ scene: ShowScene) -> String {
+        scene.subtitle.isEmpty ? scene.name : "\(scene.name)  |  \(scene.subtitle)"
     }
 }
 
