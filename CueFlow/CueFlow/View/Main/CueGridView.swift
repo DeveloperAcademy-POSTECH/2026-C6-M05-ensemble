@@ -194,6 +194,12 @@ private struct TempCueCard: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, minHeight: 78, alignment: .topLeading)
+        // ✓ 확인 현황 버튼 (B: View/Card/CheckStatusPopover.swift). 카드 오른쪽 아래
+        .overlay(alignment: .bottomTrailing) {
+            CheckCountButton(cueID: cue.id)
+                .padding(.trailing, 10)
+                .padding(.bottom, 8)
+        }
         .background(.white, in: .rect(cornerRadius: 8))
     }
 }
