@@ -12,6 +12,7 @@ import SwiftUI
 struct AddCuePopup: View {
     let partID: Part.ID
     let sceneID: ShowScene.ID
+    var editingCueID: Cue.ID? = nil      // B: 넣으면 그 큐를 수정하는 팝업 (내용이 미리 채워짐 + 삭제 버튼)
     var onDone: () -> Void
 
     @Environment(CueStore.self) private var store
@@ -29,6 +30,11 @@ struct AddCuePopup: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
+                if editingCueID != nil {
+                    Text("큐 수정")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color(hex: 0x111827))
+                }
                 Spacer()
                 positionMenu
             }
@@ -48,17 +54,49 @@ struct AddCuePopup: View {
                     .focused($focus, equals: .trigger)
                     .onSubmit(save)                  // 엔터 = 저장
             }
+
+            if editingCueID != nil {
+                deleteButton
+                    .padding(.top, 14)
+            }
         }
         .padding(17)
         .frame(width: 243)
         .defaultFocus($focus, .cue)
+        .onAppear(perform: fillForEditing)
     }
 
     private func save() {
         guard canSave else { return }
         onDone()
-        store.addCue(sceneID: sceneID, triggerText: trimmedTrigger, partID: partID,
-                     action: trimmedAction, position: position)
+        if let editingCueID {
+            store.updateCue(editingCueID, action: trimmedAction, position: position,
+                            triggerText: trimmedTrigger)
+        } else {
+            store.addCue(sceneID: sceneID, triggerText: trimmedTrigger, partID: partID,
+                         action: trimmedAction, position: position)
+        }
+    }
+
+    // 수정 모드: 지금 큐 내용으로 칸을 채워 둔다
+    private func fillForEditing() {
+        guard let editingCueID, let cue = store.cue(editingCueID) else { return }
+        action = cue.action
+        position = cue.position
+        triggerText = store.trigger(cue.triggerID)?.text ?? ""
+    }
+
+    private var deleteButton: some View {
+        Button {
+            guard let editingCueID else { return }
+            onDone()
+            store.deleteCue(editingCueID)
+        } label: {
+            Text("큐 삭제")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(Color(hex: 0xD64545))
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - 부품

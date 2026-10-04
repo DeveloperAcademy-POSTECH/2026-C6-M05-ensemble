@@ -175,6 +175,8 @@ private struct AddNewButton: View {
 private struct TempCueCard: View {
     let cue: Cue
     let trigger: Trigger
+    @State private var isEditing = false   // B: 카드를 누르면 수정 팝업
+    @State private var isHovering = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
@@ -197,6 +199,10 @@ private struct TempCueCard: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, minHeight: 78, alignment: .topLeading)
+        // 카드 빈 곳을 누르면 수정 팝업 (💬 · ✓ 버튼은 아래 overlay라 따로 눌림)
+        .contentShape(.rect)
+        .onTapGesture { isEditing = true }
+        .onHover { isHovering = $0 }
         // 💬 주석 · ✓ 확인 현황 버튼 (B: View/Card). 카드 오른쪽 아래
         .overlay(alignment: .bottomTrailing) {
             HStack(spacing: 4) {
@@ -207,6 +213,17 @@ private struct TempCueCard: View {
                 .padding(.bottom, 8)
         }
         .background(.white, in: .rect(cornerRadius: 8))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color(hex: 0x2E2E2E), lineWidth: 1)
+                .opacity(isHovering || isEditing ? 0.5 : 0)
+                .allowsHitTesting(false)
+        }
+        .popover(isPresented: $isEditing, arrowEdge: .trailing) {
+            AddCuePopup(partID: cue.partID, sceneID: trigger.sceneID, editingCueID: cue.id) {
+                isEditing = false
+            }
+        }
     }
 }
 
