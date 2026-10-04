@@ -16,11 +16,19 @@ struct AddCuePopup: View {
 
     @Environment(CueStore.self) private var store
     @State private var action = ""
-    @State private var triggerText = ""
+    @State private var triggerText: String
     @State private var position: StageSide?
     @FocusState private var focus: Field?
 
     private enum Field { case cue, trigger }
+
+    // triggerText: 트리거 단위 화면에서 열면 그 트리거가 미리 채워짐
+    init(partID: Part.ID, sceneID: ShowScene.ID, triggerText: String = "", onDone: @escaping () -> Void) {
+        self.partID = partID
+        self.sceneID = sceneID
+        self.onDone = onDone
+        _triggerText = State(initialValue: triggerText)
+    }
 
     private var trimmedAction: String { action.trimmingCharacters(in: .whitespaces) }
     private var trimmedTrigger: String { triggerText.trimmingCharacters(in: .whitespaces) }
@@ -35,10 +43,10 @@ struct AddCuePopup: View {
 
             label("큐")
                 .padding(.top, 22)
-            inputBox(canSubmit: !trimmedAction.isEmpty, submit: { focus = .trigger }) {
+            inputBox(canSubmit: !trimmedAction.isEmpty, submit: submitCue) {
                 TextField("내용을 입력하세요.", text: $action)
                     .focused($focus, equals: .cue)
-                    .onSubmit { focus = .trigger }   // 엔터 = 트리거 칸으로
+                    .onSubmit(submitCue)
             }
 
             label("트리거")
@@ -52,6 +60,15 @@ struct AddCuePopup: View {
         .padding(17)
         .frame(width: 243)
         .defaultFocus($focus, .cue)
+    }
+
+    // 큐 칸에서 엔터: 트리거까지 차 있으면 바로 저장, 아니면 트리거 칸으로
+    private func submitCue() {
+        if canSave {
+            save()
+        } else {
+            focus = .trigger
+        }
     }
 
     private func save() {
