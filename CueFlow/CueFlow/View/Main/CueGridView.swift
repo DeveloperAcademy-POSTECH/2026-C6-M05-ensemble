@@ -115,7 +115,10 @@ private struct CueCell: View {
     @State private var isAdding = false
 
     var body: some View {
-        Group {
+        // Group이면 빈 칸일 때 안에 아무 뷰도 없어서 onHover가 붙을 곳이 없다 → Add new가 안 뜸
+        // 투명한 바닥(Color.clear)을 깔아 빈 칸 전체가 마우스를 받도록 ZStack으로
+        ZStack(alignment: .topLeading) {
+            Color.clear
             if pairs.isEmpty {
                 // 팝업이 떠 있는 동안은 마우스가 나가도 버튼(팝업 기준점)을 유지
                 if isHovering || isAdding {

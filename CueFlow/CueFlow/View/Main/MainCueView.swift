@@ -44,8 +44,7 @@ struct MainCueView: View {
 
     private var toolBar: some View {
         HStack(alignment: .bottom) {
-            // TODO(B): 파트 필터 칩 + 파트 추가(+) 버튼
-            Color.clear.frame(height: 24)
+            PartFilterBar()   // B: 파트 필터 칩 + 파트 추가(+) — PartFilterBar.swift
             Spacer()
             HStack(spacing: 4) {
                 ToolbarButton(title: "+ 씬 추가", style: .filled(Color(hex: 0xE2E2E2))) {
