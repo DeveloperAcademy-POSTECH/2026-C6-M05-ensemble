@@ -19,6 +19,7 @@ class CueStore {
     var cues: [Cue] = []
 
     var selectedPartID: Part.ID?            // 파트 필터. nil = 전체
+    var currentMemberID: Member.ID?         // 지금 앱을 쓰는 사람 (확인·댓글 작성자). 유저테스트용으로 고정
 
     // MARK: - 조회
 
@@ -134,8 +135,10 @@ class CueStore {
         }
     }
 
-    func addComment(cueID: Cue.ID, authorID: Member.ID, text: String, at date: Date = .now) {
+    // parentID를 넣으면 그 댓글의 답글로 달린다
+    func addComment(cueID: Cue.ID, authorID: Member.ID, text: String, at date: Date = .now,
+                    parentID: Comment.ID? = nil) {
         guard let idx = cues.firstIndex(where: { $0.id == cueID }) else { return }
-        cues[idx].comments.append(Comment(authorID: authorID, text: text, createdAt: date))
+        cues[idx].comments.append(Comment(authorID: authorID, text: text, createdAt: date, parentID: parentID))
     }
 }
