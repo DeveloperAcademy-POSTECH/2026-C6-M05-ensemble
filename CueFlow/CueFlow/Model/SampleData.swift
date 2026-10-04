@@ -28,6 +28,7 @@ extension CueStore {
         let minji  = Member(name: "민지", partID: etc.id)
         store.members = [rami, selina, sonu, katt, kou, minji]
         let everyone = store.members
+        store.currentMemberID = selina.id   // 유저테스트에서 앱을 쓰는 사람
 
         // 큐 하나 추가 + 확인한 사람 + 댓글
         // 같은 씬에서 트리거 글자가 같으면 같은 트리거 = 동시에 실행
@@ -84,6 +85,29 @@ extension CueStore {
         cue(s5, light, "혜원·정원 ON", .sangsu, trigger: "은비 입장 시 ON", checked: [katt])
         cue(s5, sound, "등장하면 BGM", nil, trigger: "유림·윤서 · Fadeout", checked: [kou])
         cue(s5, etc, "혜원·정원 퇴장", .hasu, trigger: "마루 퇴장 전", checked: [minji, rami])
+
+        // 미확인 예시: 셀리나는 아래 4개 큐만 아직 확인 안 함 (새로 생기거나 수정된 큐라는 설정)
+        let uncheckedForSelina: Set<String> = ["정원 전화 받으며 퇴장", "하수 IN / 상수 OUT",
+                                               "전주 시작", "상의 니트로 환복"]
+        for i in store.cues.indices {
+            if uncheckedForSelina.contains(store.cues[i].action) {
+                store.cues[i].checkedBy.remove(selina.id)
+            } else {
+                store.cues[i].checkedBy.insert(selina.id)
+            }
+        }
+
+        // 주석 팝업 예시: 댓글 + 답글 (피그마 주석 팝업)
+        if let phoneCue = store.cues.first(where: { $0.action == "정원 전화 받으며 퇴장" }) {
+            store.addComment(cueID: phoneCue.id, authorID: selina.id,
+                             text: "전화 받으려면 휴대폰 필요할 것 같은데 소품 큐에 추가해야하지 않을까요?",
+                             at: .now.addingTimeInterval(-3600))
+            if let question = store.cue(phoneCue.id)?.comments.last {
+                store.addComment(cueID: phoneCue.id, authorID: rami.id,
+                                 text: "좋아요! 소품 파트에 휴대폰 IN 큐 추가할게요",
+                                 at: .now.addingTimeInterval(-1800), parentID: question.id)
+            }
+        }
 
         return store
     }

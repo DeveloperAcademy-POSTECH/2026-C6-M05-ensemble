@@ -199,7 +199,10 @@ private struct CueCell: View {
     @State private var isAdding = false
 
     var body: some View {
-        Group {
+        // Group이면 빈 칸일 때 안에 아무 뷰도 없어서 onHover가 붙을 곳이 없다 → Add new가 안 뜸
+        // 투명한 바닥(Color.clear)을 깔아 빈 칸 전체가 마우스를 받도록 ZStack으로
+        ZStack(alignment: .topLeading) {
+            Color.clear
             if pairs.isEmpty {
                 // 팝업이 떠 있는 동안은 마우스가 나가도 버튼(팝업 기준점)을 유지
                 if isHovering || isAdding {
@@ -256,6 +259,14 @@ private struct AddNewButton: View {
 private struct TempCueCard: View {
     let cue: Cue
     let trigger: Trigger
+    @State private var isEditing = false   // B: 카드를 누르면 수정 팝업
+    @State private var isHovering = false
+    @Environment(CueStore.self) private var store
+
+    // 미확인 버튼이 켜져 있고, 내가 아직 확인 안 한 큐면 점선 테두리
+    private var showsUncheckedBorder: Bool {
+        store.isShowingUnchecked && store.isUnchecked(cue)
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
@@ -278,7 +289,38 @@ private struct TempCueCard: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, minHeight: 78, alignment: .topLeading)
+        // 카드 빈 곳을 누르면 수정 팝업 (💬 · ✓ 버튼은 아래 overlay라 따로 눌림)
+        .contentShape(.rect)
+        .onTapGesture { isEditing = true }
+        .onHover { isHovering = $0 }
+        // 💬 주석 · ✓ 확인 현황 버튼 (B: View/Card). 카드 오른쪽 아래
+        .overlay(alignment: .bottomTrailing) {
+            HStack(spacing: 4) {
+                CommentCountButton(cueID: cue.id)
+                CheckCountButton(cueID: cue.id)
+            }
+                .padding(.trailing, 10)
+                .padding(.bottom, 8)
+        }
         .background(.white, in: .rect(cornerRadius: 8))
+        .overlay {
+            if showsUncheckedBorder {
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(Color(hex: 0x2E2E2E),
+                                  style: StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
+                    .allowsHitTesting(false)
+            } else {
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(hex: 0x2E2E2E), lineWidth: 1)
+                    .opacity(isHovering || isEditing ? 0.5 : 0)
+                    .allowsHitTesting(false)
+            }
+        }
+        .popover(isPresented: $isEditing, arrowEdge: .trailing) {
+            AddCuePopup(partID: cue.partID, sceneID: trigger.sceneID, editingCueID: cue.id) {
+                isEditing = false
+            }
+        }
     }
 }
 

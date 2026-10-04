@@ -19,6 +19,8 @@ class CueStore {
     var cues: [Cue] = []
 
     var selectedPartID: Part.ID?            // 파트 필터. nil = 전체
+    var currentMemberID: Member.ID?         // 지금 앱을 쓰는 사람 (확인·댓글 작성자). 유저테스트용으로 고정
+    var isShowingUnchecked = false          // 미확인 버튼을 켰는지: 켜면 내가 아직 확인 안 한 큐에 점선 테두리
 
     // MARK: - 조회
 
@@ -42,6 +44,17 @@ class CueStore {
 
     func trigger(_ id: Trigger.ID) -> Trigger? {
         triggers.first { $0.id == id }
+    }
+
+    // 내가 아직 확인 안 한 큐인지 (새로 생겼거나, 수정돼서 확인이 초기화된 큐)
+    func isUnchecked(_ cue: Cue) -> Bool {
+        guard let currentMemberID else { return false }
+        return !cue.checkedBy.contains(currentMemberID)
+    }
+
+    // 미확인 버튼 옆 숫자: 내가 파악해야 하는 변경점 개수
+    var uncheckedCount: Int {
+        cues.filter(isUnchecked).count
     }
 
     // 파트 행 헤더의 "총 N개"
@@ -125,6 +138,45 @@ class CueStore {
         return cue
     }
 
+    // 기존 큐 수정. 트리거 글자가 바뀌면 같은 씬의 그 트리거로 옮겨 붙인다 (없으면 새로 만듦)
+    // 내용이 바뀌면 확인 현황을 초기화한다: 수정한 사람만 확인 상태, 나머지는 다시 확인해야 함
+    func updateCue(_ cueID: Cue.ID, action: String, position: StageSide?, triggerText: String) {
+        guard let idx = cues.firstIndex(where: { $0.id == cueID }),
+              let oldTrigger = trigger(cues[idx].triggerID) else { return }
+        let trimmed = triggerText.trimmingCharacters(in: .whitespaces)
+        let changed = cues[idx].action != action || cues[idx].position != position || oldTrigger.text != trimmed
+        guard changed else { return }
+
+        cues[idx].action = action
+        cues[idx].position = position
+
+        if oldTrigger.text != trimmed {
+            let newTrigger = findOrCreateTrigger(text: trimmed, sceneID: oldTrigger.sceneID, after: oldTrigger.id)
+            let partID = cues[idx].partID
+            cues[idx].order = cues(partID: partID, triggerID: newTrigger.id).count + 1
+            cues[idx].triggerID = newTrigger.id
+            removeTriggerIfEmpty(oldTrigger.id)
+        }
+
+        cues[idx].checkedBy = currentMemberID.map { [$0] } ?? []
+    }
+
+    func deleteCue(_ cueID: Cue.ID) {
+        guard let removed = cue(cueID) else { return }
+        cues.removeAll { $0.id == cueID }
+        removeTriggerIfEmpty(removed.triggerID)
+    }
+
+    // 큐가 하나도 안 남은 트리거는 지우고, 뒤 트리거들의 순서를 한 칸씩 당긴다
+    private func removeTriggerIfEmpty(_ triggerID: Trigger.ID) {
+        guard !cues.contains(where: { $0.triggerID == triggerID }),
+              let removed = trigger(triggerID) else { return }
+        triggers.removeAll { $0.id == triggerID }
+        for i in triggers.indices where triggers[i].sceneID == removed.sceneID && triggers[i].order > removed.order {
+            triggers[i].order -= 1
+        }
+    }
+
     func toggleCheck(cueID: Cue.ID, memberID: Member.ID) {
         guard let idx = cues.firstIndex(where: { $0.id == cueID }) else { return }
         if cues[idx].checkedBy.contains(memberID) {
@@ -134,8 +186,10 @@ class CueStore {
         }
     }
 
-    func addComment(cueID: Cue.ID, authorID: Member.ID, text: String, at date: Date = .now) {
+    // parentID를 넣으면 그 댓글의 답글로 달린다
+    func addComment(cueID: Cue.ID, authorID: Member.ID, text: String, at date: Date = .now,
+                    parentID: Comment.ID? = nil) {
         guard let idx = cues.firstIndex(where: { $0.id == cueID }) else { return }
-        cues[idx].comments.append(Comment(authorID: authorID, text: text, createdAt: date))
+        cues[idx].comments.append(Comment(authorID: authorID, text: text, createdAt: date, parentID: parentID))
     }
 }

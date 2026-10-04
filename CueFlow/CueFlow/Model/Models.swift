@@ -47,6 +47,7 @@ struct Comment: Identifiable {
     var authorID: Member.ID
     var text: String
     var createdAt: Date
+    var parentID: Comment.ID? = nil         // 답글이면 원래 댓글의 id (B: 주석 팝업)
 }
 
 struct Cue: Identifiable {
