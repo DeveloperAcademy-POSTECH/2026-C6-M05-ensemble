@@ -14,6 +14,7 @@ struct MainCueView: View {
     @Environment(CueStore.self) private var store
     @State private var mode: CueGridView.Mode = .scenes
     @State private var lastSceneID: ShowScene.ID?   // 트리거 단위로 다시 갈 때 보던 씬
+    @State private var newSceneID: ShowScene.ID?    // 방금 추가한 씬 (잠깐 강조)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -22,9 +23,9 @@ struct MainCueView: View {
             toolBar
                 .padding(.top, 11)
                 .padding(.bottom, 13)
-            CueGridView(mode: mode) { sceneID in
+            CueGridView(mode: mode, onSelectScene: { sceneID in
                 showTriggers(of: sceneID)
-            }
+            }, highlightedSceneID: newSceneID)
             .id(mode)   // 화면이 바뀌면 스크롤 위치 처음으로
         }
         .padding(.horizontal, 32)
@@ -59,12 +60,11 @@ struct MainCueView: View {
                 }
                 // 트리거 단위에서 누르면 새 열이 보이도록 씬 단위로 돌아감
                 ToolbarButton(title: "+ 씬 추가", style: .filled(Color(hex: 0xE2E2E2))) {
-                    store.addScene(name: "#\(store.scenes.count + 1) Scene")
-                    mode = .scenes
+                    addScene()
                 }
                 ToolbarButton(title: "리허설 모드", style: .filled(Color(hex: 0xB6B6B6))) {}
-                // 씬 단위 ↔ 트리거 단위 전환
-                ToolbarButton(title: mode == .scenes ? "트리거 단위" : "씬 단위", style: .outline) {
+                // 지금 보는 화면 이름이 적힌 버튼. 누르면 반대 화면으로 바뀌고 글자도 바뀜
+                ToolbarButton(title: mode == .scenes ? "씬 단위" : "트리거 단위", style: .outline) {
                     if mode == .scenes {
                         if let sceneID = lastSceneID ?? store.scenes.first?.id {
                             showTriggers(of: sceneID)
@@ -74,6 +74,17 @@ struct MainCueView: View {
                     }
                 }
             }
+        }
+    }
+
+    // 새 씬은 자동 이름(#N Scene)으로 바로 추가 → 그 열로 스크롤 + 2초간 헤더 강조
+    private func addScene() {
+        let scene = store.addScene(name: "#\(store.scenes.count + 1) Scene")
+        mode = .scenes
+        newSceneID = scene.id
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            if newSceneID == scene.id { newSceneID = nil }
         }
     }
 

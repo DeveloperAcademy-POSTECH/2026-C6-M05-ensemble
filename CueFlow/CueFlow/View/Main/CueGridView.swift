@@ -25,10 +25,22 @@ struct CueGridView: View {
 
     var mode: Mode = .scenes
     var onSelectScene: (ShowScene.ID) -> Void = { _ in }   // 씬 헤더를 누르면 그 씬의 트리거 단위로
+    var highlightedSceneID: ShowScene.ID?                  // 방금 추가한 씬: 그 열로 스크롤 + 헤더 강조
 
     @Environment(CueStore.self) private var store
 
     var body: some View {
+        ScrollViewReader { proxy in
+            grid
+                .task(id: highlightedSceneID) {
+                    guard let highlightedSceneID else { return }
+                    await Task.yield()   // 새 열이 그려진 뒤에 스크롤
+                    withAnimation { proxy.scrollTo(highlightedSceneID, anchor: .topTrailing) }
+                }
+        }
+    }
+
+    private var grid: some View {
         FrozenHeaderScrollView {
             Grid(alignment: .topLeading, horizontalSpacing: 0, verticalSpacing: 0) {
                 // 맨 윗줄: 씬 또는 트리거
@@ -42,8 +54,10 @@ struct CueGridView: View {
                         .pinned(x: true, y: true)
                     ForEach(columns) { column in
                         ColumnHeaderCell(title: column.title, subtitle: column.subtitle,
-                                         action: column.trigger == nil ? { onSelectScene(column.sceneID) } : nil)
+                                         isHighlighted: column.id == highlightedSceneID,
+                                         action: mode == .scenes ? { onSelectScene(column.sceneID) } : nil)
                             .frame(width: Metrics.sceneColumnWidth, height: Metrics.headerHeight)
+                            .id(column.id)
                             .gridLines(top: true)
                             .pinned(y: true)
                     }
@@ -79,7 +93,7 @@ struct CueGridView: View {
         let title: String
         let subtitle: String
         let sceneID: ShowScene.ID
-        let trigger: Trigger?   // 트리거 단위일 때만
+        let trigger: Trigger?   // 트리거 단위일 때만 (트리거가 없는 씬의 빈 열은 nil)
     }
 
     private var columns: [Column] {
@@ -91,7 +105,13 @@ struct CueGridView: View {
         case .triggers(let sceneID):
             // 헤더 이름: S#씬번호 - 트리거순서 (예: S#1 - 2)
             let sceneNumber = (store.scenes.firstIndex { $0.id == sceneID } ?? 0) + 1
-            return store.triggers(in: sceneID).map {
+            let triggers = store.triggers(in: sceneID)
+            // 트리거가 없는 씬(새로 추가한 씬 등)은 빈 열 하나. 여기서 Add new로 첫 트리거를 만든다
+            guard !triggers.isEmpty else {
+                return [Column(id: sceneID, title: "S#\(sceneNumber)", subtitle: "아직 트리거가 없어요",
+                               sceneID: sceneID, trigger: nil)]
+            }
+            return triggers.map {
                 Column(id: $0.id, title: "S#\(sceneNumber) - \($0.order)", subtitle: $0.text,
                        sceneID: sceneID, trigger: $0)
             }
@@ -113,6 +133,7 @@ struct CueGridView: View {
 private struct ColumnHeaderCell: View {
     let title: String
     let subtitle: String
+    var isHighlighted = false
     var action: (() -> Void)?
 
     var body: some View {
@@ -133,8 +154,10 @@ private struct ColumnHeaderCell: View {
         .lineLimit(1)
         .padding(.leading, 26)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .background(.white, in: .rect(cornerRadius: 4))
-        .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color(hex: 0xC9CED6)))
+        .background(isHighlighted ? Color(hex: 0xE8ECF8) : .white, in: .rect(cornerRadius: 4))
+        .overlay(RoundedRectangle(cornerRadius: 4)
+            .stroke(isHighlighted ? Color(hex: 0x4A6BD6) : Color(hex: 0xC9CED6), lineWidth: isHighlighted ? 1.5 : 1))
+        .animation(.easeOut(duration: 0.4), value: isHighlighted)
         .padding(5)
         .contentShape(.rect)
     }
