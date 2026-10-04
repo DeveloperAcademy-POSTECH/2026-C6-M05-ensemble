@@ -14,7 +14,7 @@ import SwiftUI
 struct CheckCountButton: View {
     @Environment(CueStore.self) private var store
     let cueID: Cue.ID
-    var currentMemberID: Member.ID? = nil   // 넣으면 팝오버에 "확인했어요" 버튼이 생김
+    var currentMemberID: Member.ID? = nil   // 비우면 store.currentMemberID (지금 앱을 쓰는 사람)
 
     @State private var isPresented = false
 
@@ -42,7 +42,7 @@ struct CheckCountButton: View {
         }
         .buttonStyle(.plain)
         .popover(isPresented: $isPresented, arrowEdge: .bottom) {
-            CheckStatusPopover(cueID: cueID, currentMemberID: currentMemberID)
+            CheckStatusPopover(cueID: cueID, currentMemberID: currentMemberID ?? store.currentMemberID)
         }
     }
 }
