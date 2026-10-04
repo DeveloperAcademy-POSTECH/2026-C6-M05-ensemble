@@ -25,6 +25,13 @@ struct Member: Identifiable, Hashable {
 struct ShowScene: Identifiable {
     let id = UUID()
     var name: String
+    var subtitle: String = ""
+}
+
+// 큐가 일어나는 무대 쪽. 없으면 nil (카드에 "-")
+enum StageSide: String, CaseIterable {
+    case sangsu = "상수"
+    case hasu = "하수"
 }
 
 // 씬 안의 트리거 (예: "배우 A 퇴장"). 순서는 트리거가 가진다.
@@ -47,6 +54,7 @@ struct Cue: Identifiable {
     var triggerID: Trigger.ID
     var partID: Part.ID
     var action: String
+    var position: StageSide?                // 상수 / 하수
     var order: Int                          // 같은 칸(파트 × 트리거) 안에서의 순서
     var checkedBy: Set<Member.ID> = []      // 이 큐를 확인한 팀원
     var comments: [Comment] = []

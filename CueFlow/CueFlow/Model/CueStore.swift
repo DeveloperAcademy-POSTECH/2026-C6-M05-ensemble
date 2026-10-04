@@ -11,19 +11,21 @@ import Observation
 
 @Observable
 class CueStore {
+    var showTitle = ""
     var parts: [Part] = []
     var members: [Member] = []
     var scenes: [ShowScene] = []
     var triggers: [Trigger] = []
     var cues: [Cue] = []
 
-    var hiddenPartIDs: Set<Part.ID> = []    // 파트 필터로 숨긴 열
+    var selectedPartID: Part.ID?            // 파트 필터. nil = 전체
 
     // MARK: - 조회
 
-    // 필터를 거친, 지금 화면에 보여줄 열
+    // 필터를 거친, 지금 화면에 보여줄 파트(행)
     var visibleParts: [Part] {
-        parts.filter { !hiddenPartIDs.contains($0.id) }
+        guard let selectedPartID else { return parts }
+        return parts.filter { $0.id == selectedPartID }
     }
 
     func part(_ id: Part.ID) -> Part? {
@@ -38,6 +40,15 @@ class CueStore {
         cues.first { $0.id == id }
     }
 
+    func trigger(_ id: Trigger.ID) -> Trigger? {
+        triggers.first { $0.id == id }
+    }
+
+    // 파트 행 헤더의 "총 N개"
+    func cueCount(partID: Part.ID) -> Int {
+        cues.filter { $0.partID == partID }.count
+    }
+
     // 씬 안의 트리거를 순서대로
     func triggers(in sceneID: ShowScene.ID) -> [Trigger] {
         triggers.filter { $0.sceneID == sceneID }.sorted { $0.order < $1.order }
@@ -48,7 +59,7 @@ class CueStore {
         cues.filter { $0.partID == partID && $0.triggerID == triggerID }.sorted { $0.order < $1.order }
     }
 
-    // 씬 화면의 한 칸 (파트 × 씬): 트리거 순서 → 칸 안 순서대로 (트리거, 큐) 쌍
+    // 메인 화면의 한 칸 (파트 × 씬): 트리거 순서 → 칸 안 순서대로 (트리거, 큐) 쌍
     func cuePairs(partID: Part.ID, sceneID: ShowScene.ID) -> [(trigger: Trigger, cue: Cue)] {
         triggers(in: sceneID).flatMap { t in
             cues(partID: partID, triggerID: t.id).map { (trigger: t, cue: $0) }
@@ -65,8 +76,8 @@ class CueStore {
     // MARK: - 추가 / 변경
 
     @discardableResult
-    func addScene(name: String) -> ShowScene {
-        let scene = ShowScene(name: name)
+    func addScene(name: String, subtitle: String = "") -> ShowScene {
+        let scene = ShowScene(name: name, subtitle: subtitle)
         scenes.append(scene)
         return scene
     }
@@ -78,12 +89,9 @@ class CueStore {
         return part
     }
 
-    func togglePartVisibility(_ partID: Part.ID) {
-        if hiddenPartIDs.contains(partID) {
-            hiddenPartIDs.remove(partID)
-        } else {
-            hiddenPartIDs.insert(partID)
-        }
+    // nil을 넣으면 전체 보기
+    func selectPart(_ partID: Part.ID?) {
+        selectedPartID = partID
     }
 
     // 같은 글자 트리거가 있으면 재사용, 없으면 새로 추가
@@ -109,10 +117,10 @@ class CueStore {
     // 큐 추가 = 트리거 찾거나 만들고 + 큐 붙이기
     @discardableResult
     func addCue(sceneID: ShowScene.ID, triggerText: String, partID: Part.ID, action: String,
-                after afterID: Trigger.ID? = nil) -> Cue {
+                position: StageSide? = nil, after afterID: Trigger.ID? = nil) -> Cue {
         let trigger = findOrCreateTrigger(text: triggerText, sceneID: sceneID, after: afterID)
         let order = cues(partID: partID, triggerID: trigger.id).count + 1
-        let cue = Cue(triggerID: trigger.id, partID: partID, action: action, order: order)
+        let cue = Cue(triggerID: trigger.id, partID: partID, action: action, position: position, order: order)
         cues.append(cue)
         return cue
     }
