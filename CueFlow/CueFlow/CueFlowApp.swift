@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct CueFlowApp: App {
+    @State private var store = CueStore.sample()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(store)
         }
     }
 }
