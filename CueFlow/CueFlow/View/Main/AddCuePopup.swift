@@ -73,8 +73,12 @@ struct AddCuePopup: View {
             store.updateCue(editingCueID, action: trimmedAction, position: position,
                             triggerText: trimmedTrigger)
         } else {
-            store.addCue(sceneID: sceneID, triggerText: trimmedTrigger, partID: partID,
-                         action: trimmedAction, position: position)
+            let cue = store.addCue(sceneID: sceneID, triggerText: trimmedTrigger, partID: partID,
+                                   action: trimmedAction, position: position)
+            // 내가 만든 큐는 내 미확인에 넣지 않음 (다른 팀원에게만 미확인)
+            if let me = store.currentMemberID {
+                store.toggleCheck(cueID: cue.id, memberID: me)
+            }
         }
     }
 

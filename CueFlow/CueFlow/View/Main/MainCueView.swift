@@ -27,7 +27,7 @@ struct MainCueView: View {
         .background(.white)
     }
 
-    // 변경건 · 미확인 · 초대하기는 이번 유저테스트 범위 밖이라 모양만 (동작 없음)
+    // 변경건 + 미확인 → "미확인" 버튼 하나로 합침 (B). 초대하기는 모양만
     private var titleBar: some View {
         HStack {
             Text(store.showTitle)
@@ -35,8 +35,7 @@ struct MainCueView: View {
                 .foregroundStyle(.black)
             Spacer()
             HStack(spacing: 6) {
-                ToolbarButton(title: "변경건", style: .outline) {}
-                ToolbarButton(title: "미확인 4", style: .outline) {}
+                UncheckedButton()
                 InviteBox()
             }
         }
@@ -89,6 +88,46 @@ private struct ToolbarButton: View {
         case .outline: .white
         case .filled(let color): color
         }
+    }
+}
+
+// 미확인 버튼 (B)
+// 끔: [미확인]  →  누르면 켬: [미확인 4] + 내가 아직 확인 안 한 큐에 점선 테두리
+// 확인할수록 숫자가 줄고, 다시 누르면 끔
+private struct UncheckedButton: View {
+    @Environment(CueStore.self) private var store
+
+    var body: some View {
+        let isOn = store.isShowingUnchecked
+
+        Button {
+            withAnimation(.easeOut(duration: 0.15)) { store.isShowingUnchecked.toggle() }
+        } label: {
+            HStack(spacing: 6) {
+                Text("미확인")
+                if isOn {
+                    Text("\(store.uncheckedCount)")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(store.uncheckedCount > 0 ? .black : Color(hex: 0x6B7280))
+                        .padding(.horizontal, 7)
+                        .frame(minWidth: 20, minHeight: 18)
+                        .background(.white, in: .capsule)
+                        .contentTransition(.numericText())
+                }
+            }
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(isOn ? .white : Color(hex: 0x111827))
+            .padding(.horizontal, 14)
+            .frame(minWidth: 85, minHeight: 34)
+            .background(isOn ? Color(hex: 0x2E2E2E) : .white, in: .rect(cornerRadius: 6))
+            .overlay {
+                if !isOn { RoundedRectangle(cornerRadius: 6).stroke(Color(hex: 0xC9CED6)) }
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .animation(.easeOut(duration: 0.2), value: store.uncheckedCount)
+        .help(isOn ? "점선 테두리 끄기" : "내가 아직 확인 안 한 큐 보기")
     }
 }
 

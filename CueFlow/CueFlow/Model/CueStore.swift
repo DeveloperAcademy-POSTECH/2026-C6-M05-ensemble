@@ -20,6 +20,7 @@ class CueStore {
 
     var selectedPartID: Part.ID?            // 파트 필터. nil = 전체
     var currentMemberID: Member.ID?         // 지금 앱을 쓰는 사람 (확인·댓글 작성자). 유저테스트용으로 고정
+    var isShowingUnchecked = false          // 미확인 버튼을 켰는지: 켜면 내가 아직 확인 안 한 큐에 점선 테두리
 
     // MARK: - 조회
 
@@ -43,6 +44,17 @@ class CueStore {
 
     func trigger(_ id: Trigger.ID) -> Trigger? {
         triggers.first { $0.id == id }
+    }
+
+    // 내가 아직 확인 안 한 큐인지 (새로 생겼거나, 수정돼서 확인이 초기화된 큐)
+    func isUnchecked(_ cue: Cue) -> Bool {
+        guard let currentMemberID else { return false }
+        return !cue.checkedBy.contains(currentMemberID)
+    }
+
+    // 미확인 버튼 옆 숫자: 내가 파악해야 하는 변경점 개수
+    var uncheckedCount: Int {
+        cues.filter(isUnchecked).count
     }
 
     // 파트 행 헤더의 "총 N개"

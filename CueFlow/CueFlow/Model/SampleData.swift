@@ -86,6 +86,17 @@ extension CueStore {
         cue(s5, sound, "등장하면 BGM", nil, trigger: "유림·윤서 · Fadeout", checked: [kou])
         cue(s5, etc, "혜원·정원 퇴장", .hasu, trigger: "마루 퇴장 전", checked: [minji, rami])
 
+        // 미확인 예시: 셀리나는 아래 4개 큐만 아직 확인 안 함 (새로 생기거나 수정된 큐라는 설정)
+        let uncheckedForSelina: Set<String> = ["정원 전화 받으며 퇴장", "하수 IN / 상수 OUT",
+                                               "전주 시작", "상의 니트로 환복"]
+        for i in store.cues.indices {
+            if uncheckedForSelina.contains(store.cues[i].action) {
+                store.cues[i].checkedBy.remove(selina.id)
+            } else {
+                store.cues[i].checkedBy.insert(selina.id)
+            }
+        }
+
         // 주석 팝업 예시: 댓글 + 답글 (피그마 주석 팝업)
         if let phoneCue = store.cues.first(where: { $0.action == "정원 전화 받으며 퇴장" }) {
             store.addComment(cueID: phoneCue.id, authorID: selina.id,

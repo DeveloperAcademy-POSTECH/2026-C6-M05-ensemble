@@ -177,6 +177,12 @@ private struct TempCueCard: View {
     let trigger: Trigger
     @State private var isEditing = false   // B: 카드를 누르면 수정 팝업
     @State private var isHovering = false
+    @Environment(CueStore.self) private var store
+
+    // 미확인 버튼이 켜져 있고, 내가 아직 확인 안 한 큐면 점선 테두리
+    private var showsUncheckedBorder: Bool {
+        store.isShowingUnchecked && store.isUnchecked(cue)
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
@@ -214,10 +220,17 @@ private struct TempCueCard: View {
         }
         .background(.white, in: .rect(cornerRadius: 8))
         .overlay {
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(hex: 0x2E2E2E), lineWidth: 1)
-                .opacity(isHovering || isEditing ? 0.5 : 0)
-                .allowsHitTesting(false)
+            if showsUncheckedBorder {
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(Color(hex: 0x2E2E2E),
+                                  style: StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
+                    .allowsHitTesting(false)
+            } else {
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(hex: 0x2E2E2E), lineWidth: 1)
+                    .opacity(isHovering || isEditing ? 0.5 : 0)
+                    .allowsHitTesting(false)
+            }
         }
         .popover(isPresented: $isEditing, arrowEdge: .trailing) {
             AddCuePopup(partID: cue.partID, sceneID: trigger.sceneID, editingCueID: cue.id) {
