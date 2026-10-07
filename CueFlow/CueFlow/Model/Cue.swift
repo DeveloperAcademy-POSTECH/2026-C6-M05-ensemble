@@ -14,6 +14,7 @@ enum CuePosition: String, Codable, CaseIterable {
     case sangsu = "상수"
     case hasu = "하수"
     case stage = "무대"
+    case console = "콘솔"
 }
 
 @Model
