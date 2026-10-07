@@ -21,6 +21,8 @@ final class Part {
     @Relationship(deleteRule: .cascade, inverse: \Cue.part)
     var cues: [Cue]? = []
 
+    var members: [Member]? = []     // 이 파트를 맡은 멤버들 (Member.parts의 짝)
+
     init(name: String, order: Int, colorIndex: Int) {
         self.name = name
         self.order = order

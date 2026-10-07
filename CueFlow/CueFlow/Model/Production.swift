@@ -24,6 +24,9 @@ final class Production {
     @Relationship(deleteRule: .cascade, inverse: \Part.production)
     var parts: [Part]? = []
 
+    @Relationship(deleteRule: .cascade, inverse: \Member.production)
+    var members: [Member]? = []
+
     init(title: String, genre: String, firstShowDate: Date) {
         self.title = title
         self.genre = genre

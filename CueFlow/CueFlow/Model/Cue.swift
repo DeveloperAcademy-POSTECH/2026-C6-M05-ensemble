@@ -27,6 +27,13 @@ final class Cue {
     var part: Part?                         // 어느 파트의 큐인지 (예: 조명)
     var trigger: Trigger?                   // 언제 실행하는지 (카드 둘째 줄)
 
+    // 큐를 지우면 댓글·확인 기록도 같이 지운다.
+    @Relationship(deleteRule: .cascade, inverse: \Comment.cue)
+    var comments: [Comment]? = []
+
+    @Relationship(deleteRule: .cascade, inverse: \CueCheck.cue)
+    var checks: [CueCheck]? = []
+
     init(title: String, position: CuePosition, order: Int) {
         self.title = title
         self.position = position
