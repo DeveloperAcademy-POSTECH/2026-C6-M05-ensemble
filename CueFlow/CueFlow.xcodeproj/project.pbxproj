@@ -7,11 +7,11 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		49A77B5E307251FC0058E239 /* CueFlow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CueFlow.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4983429F3075D055008F260A /* CueFlow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CueFlow.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		49A77B60307251FC0058E239 /* CueFlow */ = {
+		498342A13075D055008F260A /* CueFlow */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = CueFlow;
 			sourceTree = "<group>";
@@ -19,7 +19,7 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		49A77B5B307251FC0058E239 /* Frameworks */ = {
+		4983429C3075D055008F260A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -29,18 +29,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		49A77B55307251FC0058E239 = {
+		498342963075D054008F260A = {
 			isa = PBXGroup;
 			children = (
-				49A77B60307251FC0058E239 /* CueFlow */,
-				49A77B5F307251FC0058E239 /* Products */,
+				498342A13075D055008F260A /* CueFlow */,
+				498342A03075D055008F260A /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		49A77B5F307251FC0058E239 /* Products */ = {
+		498342A03075D055008F260A /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				49A77B5E307251FC0058E239 /* CueFlow.app */,
+				4983429F3075D055008F260A /* CueFlow.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,64 +48,64 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		49A77B5D307251FC0058E239 /* CueFlow */ = {
+		4983429E3075D055008F260A /* CueFlow */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 49A77B69307251FD0058E239 /* Build configuration list for PBXNativeTarget "CueFlow" */;
+			buildConfigurationList = 498342AC3075D055008F260A /* Build configuration list for PBXNativeTarget "CueFlow" */;
 			buildPhases = (
-				49A77B5A307251FC0058E239 /* Sources */,
-				49A77B5B307251FC0058E239 /* Frameworks */,
-				49A77B5C307251FC0058E239 /* Resources */,
+				4983429B3075D055008F260A /* Sources */,
+				4983429C3075D055008F260A /* Frameworks */,
+				4983429D3075D055008F260A /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				49A77B60307251FC0058E239 /* CueFlow */,
+				498342A13075D055008F260A /* CueFlow */,
 			);
 			name = CueFlow;
 			packageProductDependencies = (
 			);
 			productName = CueFlow;
-			productReference = 49A77B5E307251FC0058E239 /* CueFlow.app */;
+			productReference = 4983429F3075D055008F260A /* CueFlow.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		49A77B56307251FC0058E239 /* Project object */ = {
+		498342973075D054008F260A /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
-					49A77B5D307251FC0058E239 = {
+					4983429E3075D055008F260A = {
 						CreatedOnToolsVersion = 26.3;
 					};
 				};
 			};
-			buildConfigurationList = 49A77B59307251FC0058E239 /* Build configuration list for PBXProject "CueFlow" */;
+			buildConfigurationList = 4983429A3075D054008F260A /* Build configuration list for PBXProject "CueFlow" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
 			);
-			mainGroup = 49A77B55307251FC0058E239;
+			mainGroup = 498342963075D054008F260A;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 49A77B5F307251FC0058E239 /* Products */;
+			productRefGroup = 498342A03075D055008F260A /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				49A77B5D307251FC0058E239 /* CueFlow */,
+				4983429E3075D055008F260A /* CueFlow */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		49A77B5C307251FC0058E239 /* Resources */ = {
+		4983429D3075D055008F260A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -115,7 +115,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		49A77B5A307251FC0058E239 /* Sources */ = {
+		4983429B3075D055008F260A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -125,7 +125,7 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		49A77B67307251FD0058E239 /* Debug */ = {
+		498342AA3075D055008F260A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -189,7 +189,7 @@
 			};
 			name = Debug;
 		};
-		49A77B68307251FD0058E239 /* Release */ = {
+		498342AB3075D055008F260A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -245,7 +245,7 @@
 			};
 			name = Release;
 		};
-		49A77B6A307251FD0058E239 /* Debug */ = {
+		498342AD3075D055008F260A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -253,7 +253,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6QFF4AK3Y6;
+				DEVELOPMENT_TEAM = 5MCRVVWA6Z;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -277,7 +277,7 @@
 			};
 			name = Debug;
 		};
-		49A77B6B307251FD0058E239 /* Release */ = {
+		498342AE3075D055008F260A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -285,7 +285,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6QFF4AK3Y6;
+				DEVELOPMENT_TEAM = 5MCRVVWA6Z;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -312,25 +312,25 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		49A77B59307251FC0058E239 /* Build configuration list for PBXProject "CueFlow" */ = {
+		4983429A3075D054008F260A /* Build configuration list for PBXProject "CueFlow" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				49A77B67307251FD0058E239 /* Debug */,
-				49A77B68307251FD0058E239 /* Release */,
+				498342AA3075D055008F260A /* Debug */,
+				498342AB3075D055008F260A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		49A77B69307251FD0058E239 /* Build configuration list for PBXNativeTarget "CueFlow" */ = {
+		498342AC3075D055008F260A /* Build configuration list for PBXNativeTarget "CueFlow" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				49A77B6A307251FD0058E239 /* Debug */,
-				49A77B6B307251FD0058E239 /* Release */,
+				498342AD3075D055008F260A /* Debug */,
+				498342AE3075D055008F260A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = 49A77B56307251FC0058E239 /* Project object */;
+	rootObject = 498342973075D054008F260A /* Project object */;
 }

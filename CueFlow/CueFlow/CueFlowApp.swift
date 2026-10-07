@@ -2,19 +2,31 @@
 //  CueFlowApp.swift
 //  CueFlow
 //
-//  Created by yunseo on 10/4/26.
+//  Created by yunseo on 10/7/26.
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct CueFlowApp: App {
-    @State private var store = CueStore.sample()
+    var sharedModelContainer: ModelContainer = {
+        let schema = Schema([
+            Item.self,
+        ])
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+
+        do {
+            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+        } catch {
+            fatalError("Could not create ModelContainer: \(error)")
+        }
+    }()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environment(store)
         }
+        .modelContainer(sharedModelContainer)
     }
 }
