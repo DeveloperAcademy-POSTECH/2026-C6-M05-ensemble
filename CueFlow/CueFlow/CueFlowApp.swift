@@ -13,6 +13,11 @@ struct CueFlowApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
+            Production.self,
+            Cue.self,
+            Part.self,
+            ShowScene.self,
+            Trigger.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
