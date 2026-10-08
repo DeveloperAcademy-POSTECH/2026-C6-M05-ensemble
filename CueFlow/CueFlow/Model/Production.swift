@@ -16,6 +16,9 @@ final class Production {
     var genre: String = ""              // 공연 유형 (예: "뮤지컬")
     var firstShowDate: Date = Date()    // 첫 공연일
     var createdAt: Date = Date()
+    var updatedAt: Date = Date()        // 마지막으로 수정한 날짜 (홈 목록 "수정한 날짜")
+    var lastOpenedAt: Date = Date()     // 마지막으로 연 시간 (홈 "최근에 열어본 프로젝트")
+    var isFavorite: Bool = false        // 즐겨찾기 여부
 
     // 공연을 지우면 그 안의 씬·파트(와 그 아래 전부)도 같이 지운다.
     @Relationship(deleteRule: .cascade, inverse: \ShowScene.production)
