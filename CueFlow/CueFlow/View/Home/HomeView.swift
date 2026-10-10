@@ -63,9 +63,23 @@ struct HomeView: View {
             Spacer()
 
             HStack(spacing: 10) {
+                // TODO: 다크모드 스위치 — 디자인 수정 중이라 확정되면 추가
+
                 NotificationBellButton(hasUnread: true) {
                     // TODO: 알림 목록 열기
                 }
+
+                Button {
+                    // TODO: 설정 화면 (동작 미정)
+                } label: {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 18))
+                        .foregroundStyle(Color.brandPrimary)
+                        .frame(width: 40, height: 40)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("설정")
 
                 Button {
                     // TODO: 프로젝트 생성 화면으로 이동 (다른 팀원 담당 화면)
@@ -184,15 +198,15 @@ struct NotificationBellButton: View {
                 .font(.system(size: 18))
                 .foregroundStyle(Color.brandPrimary)
                 .frame(width: 40, height: 40)
-                .background(Color.brandPrimarySubtle, in: Circle())
                 .overlay {
                     if hasUnread {
                         Circle()
                             .fill(.red)
-                            .frame(width: 4, height: 4)
-                            .offset(x: 5, y: -3)
+                            .frame(width: 6, height: 6)
+                            .offset(x: 6, y: -6)
                     }
                 }
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

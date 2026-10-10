@@ -45,9 +45,9 @@ struct RecentProjectCard: View {
 
             HStack(spacing: 10) {
                 Button("리허설 모드", action: onRehearsal)
-                    .buttonStyle(.primary)
+                    .buttonStyle(.softPrimary)
                 Button("이어서 작업하기", action: onContinue)
-                    .buttonStyle(.secondary)
+                    .buttonStyle(.tertiary)
             }
             .frame(height: 33)
         }
@@ -56,7 +56,9 @@ struct RecentProjectCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 208)
         .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
-        .shadow(color: .gray.opacity(0.35), radius: 0.5, x: 2, y: 2)
+        // 디자인 시스템 Shadow/lg (#101828, 3% · 8% 두 겹)
+        .shadow(color: Color(red: 16 / 255, green: 24 / 255, blue: 40 / 255).opacity(0.03), radius: 3, y: 4)
+        .shadow(color: Color(red: 16 / 255, green: 24 / 255, blue: 40 / 255).opacity(0.08), radius: 8, y: 12)
     }
 }
 
