@@ -19,6 +19,7 @@ struct NoticeListView: View {
 
     @State private var filter: NoticeFilter = .all
     @State private var isComposing = false   // true가 되면 쓰기 화면으로 이동
+    @State private var openedNotice: Notice?  // 누른 공지 (상세로 이동)
 
     // 고른 필터에 맞는 공지
     private var filteredNotices: [Notice] {
@@ -50,19 +51,16 @@ struct NoticeListView: View {
                     .padding(.bottom, 20)
 
                 ForEach(filteredNotices) { notice in
-                    // 줄을 누르면 상세 화면으로 이동
-                    NavigationLink(value: notice) {
-                        NoticeRow(
-                            title: notice.title,
-                            preview: notice.body,           // 공지 "내용" 칸
-                            sentDate: notice.sentDateText,
-                            sender: notice.senderName,            // Notice+List에서 만든 것
-                            isImportant: notice.isImportant
-                        )
-                        .padding(.vertical, 14)
-                        .contentShape(Rectangle())   // 글자 없는 빈 곳을 눌러도 이동
-                    }
-                    .buttonStyle(.plain)
+                    NoticeRow(
+                        title: notice.title,
+                        preview: notice.body,           // 공지 "내용" 칸
+                        sentDate: notice.sentDateText,
+                        sender: notice.senderName,            // Notice+List에서 만든 것
+                        isStarred: notice.isImportant,
+                        onToggleStar: { notice.isImportant.toggle() },
+                        onOpen: { openedNotice = notice }
+                    )
+                    .padding(.vertical, 14)
                     Divider()
                 }
             }
@@ -70,7 +68,8 @@ struct NoticeListView: View {
             .padding(.top, 37)
             .padding(.bottom, 40)
         }
-        .navigationDestination(for: Notice.self) { notice in
+        // openedNotice에 공지가 들어오면 상세 화면으로 이동
+        .navigationDestination(item: $openedNotice) { notice in
             NoticeDetailView(notice: notice)
         }
         .navigationDestination(isPresented: $isComposing) {
