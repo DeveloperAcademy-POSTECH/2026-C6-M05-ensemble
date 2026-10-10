@@ -29,3 +29,14 @@ final class Part {
         self.colorIndex = colorIndex
     }
 }
+
+extension Part {
+    static let defaultNames = ["무대", "소품", "의상", "조명", "음향"]
+
+    // 기본 파트 5개를 순서·색 번호를 붙여서 만들기
+    static func makeDefaultParts() -> [Part] {
+        defaultNames.enumerated().map { index, name in
+            Part(name: name, order: index, colorIndex: index)
+        }
+    }
+}
