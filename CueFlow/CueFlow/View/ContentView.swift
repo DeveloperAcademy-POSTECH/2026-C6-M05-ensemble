@@ -16,6 +16,10 @@ struct ContentView: View {
     @Query(sort: \Production.updatedAt, order: .reverse)
     private var productions: [Production]
 
+    // 저장된 공지 전부. 최근에 보낸 순서.
+    @Query(sort: \Notice.sentAt, order: .reverse)
+    private var notices: [Notice]
+
     var body: some View {
         NavigationSplitView {
             // 왼쪽: 사이드바
@@ -31,7 +35,7 @@ struct ContentView: View {
                     HomeView(productions: productions)
                 }
             case .notice:
-                Text("공지사항 화면")
+                NoticeListView(notices: notices)
             case .help:
                 Text("도움말 화면")
             }
