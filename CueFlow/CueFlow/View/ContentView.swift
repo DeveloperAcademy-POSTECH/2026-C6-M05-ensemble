@@ -2,58 +2,49 @@
 //  ContentView.swift
 //  CueFlow
 //
-//  Created by yunseo on 10/7/26.
+//  앱의 가장 바깥 틀. 왼쪽 사이드바 + 오른쪽 내용 영역.
 //
 
 import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    // 지금 선택된 메뉴. 앱을 켜면 "프로젝트"가 선택된 상태로 시작한다.
+    @State private var selectedMenu: SidebarMenu = .project
+
+    // 저장된 공연 전부. 최근에 수정한 순서.
+    @Query(sort: \Production.updatedAt, order: .reverse)
+    private var productions: [Production]
 
     var body: some View {
         NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
-            }
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-            .toolbar {
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
+            // 왼쪽: 사이드바
+            SidebarView(selectedMenu: $selectedMenu)
+                .navigationSplitViewColumnWidth(220)
         } detail: {
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+            // 오른쪽: 선택된 메뉴에 따라 다른 화면
+            switch selectedMenu {
+            case .project:
+                if productions.isEmpty {
+                    HomeEmptyView()
+                } else {
+                    HomeView(productions: productions)
+                }
+            case .notice:
+                Text("공지사항 화면")
+            case .help:
+                Text("도움말 화면")
             }
         }
     }
 }
 
-#Preview {
+#Preview("프로젝트 없음") {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: Production.self, inMemory: true)
+}
+
+#Preview("프로젝트 있음") {
+    ContentView()
+        .modelContainer(HomePreviewData.container)
 }
