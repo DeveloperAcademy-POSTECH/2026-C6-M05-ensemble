@@ -33,4 +33,11 @@ extension Notice {
     var productionTitle: String {
         production?.title ?? ""
     }
+
+    // 상세·알림 카드의 대상 태그: "전체공지" / "조명 공지" / "개인 공지"
+    var targetTag: String {
+        if let part = targetPart { return "\(part.name) 공지" }
+        if targetMember != nil { return "개인 공지" }
+        return "전체공지"
+    }
 }

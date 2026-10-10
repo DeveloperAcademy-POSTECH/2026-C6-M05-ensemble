@@ -27,8 +27,8 @@ struct NoticeDetailView: View {
     // 공지 내용이 들어가는 큰 카드
     private var card: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // 보낼 대상 태그 (지금은 항상 전체)
-            Text("전체공지")
+            // 보낼 대상 태그: 전체공지 / 조명 공지 / 개인 공지
+            Text(notice.targetTag)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Color.brandPrimaryText)
                 .padding(.horizontal, 10)

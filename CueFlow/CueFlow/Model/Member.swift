@@ -38,6 +38,10 @@ final class Member {
     @Relationship(deleteRule: .cascade, inverse: \NoticeRead.member)
     var noticeReads: [NoticeRead]? = []
 
+    // 이 사람에게만 보낸 공지들. 멤버가 나가도 공지는 남긴다 (대상만 비어짐).
+    @Relationship(deleteRule: .nullify, inverse: \Notice.targetMember)
+    var targetedNotices: [Notice]? = []
+
     init(name: String, role: String) {
         self.name = name
         self.role = role

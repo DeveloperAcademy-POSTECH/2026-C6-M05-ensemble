@@ -18,6 +18,7 @@ struct NoticeComposeView: View {
     private var productions: [Production]
 
     @State private var selectedProduction: Production?
+    @State private var recipient: NoticeRecipient = .all
     @State private var title = ""
     @State private var content = ""
 
@@ -43,15 +44,15 @@ struct NoticeComposeView: View {
                         }
                     }
                     .labelsHidden()
+                    // 프로젝트를 바꾸면 이전 프로젝트의 파트·사람은 고를 수 없으니 전체로 되돌린다
+                    .onChange(of: selectedProduction) {
+                        recipient = .all
+                    }
                 }
 
-                // 지금은 항상 프로젝트 전체 멤버에게 보낸다
+                // 이름·파트 검색해서 고르기. 비워 두면 전체
                 field("보낼 대상") {
-                    Text("프로젝트 전체 멤버 (\(selectedProduction?.members?.count ?? 0)명)")
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, minHeight: 49, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .overlay(fieldBorder)
+                    NoticeRecipientField(production: selectedProduction, recipient: $recipient)
                 }
 
                 field("공지 제목") {
@@ -121,6 +122,11 @@ struct NoticeComposeView: View {
         )
         modelContext.insert(notice)
         notice.production = selectedProduction
+        switch recipient {
+        case .all: break                              // 둘 다 비워 두면 전체
+        case .part(let part): notice.targetPart = part
+        case .member(let member): notice.targetMember = member
+        }
         // TODO: "나"를 알게 되면 notice.author = 나 (지금은 "알 수 없음"으로 보임)
         dismiss()
     }
