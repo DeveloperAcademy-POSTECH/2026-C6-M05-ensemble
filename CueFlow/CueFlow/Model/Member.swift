@@ -29,6 +29,14 @@ final class Member {
     // 멤버가 나가면 그 사람의 확인 기록은 지운다 (확인 숫자에서 빠지도록).
     @Relationship(deleteRule: .cascade, inverse: \CueCheck.member)
     var checks: [CueCheck]? = []
+    
+    // 멤버가 나가도 공지는 남긴다 (보낸 사람만 비어짐).
+    @Relationship(deleteRule: .nullify, inverse: \Notice.author)
+    var notices: [Notice]? = []
+    
+    // 멤버가 나가면 그 사람의 읽음 기록은 지운다.
+    @Relationship(deleteRule: .cascade, inverse: \NoticeRead.member)
+    var noticeReads: [NoticeRead]? = []
 
     init(name: String, role: String) {
         self.name = name
