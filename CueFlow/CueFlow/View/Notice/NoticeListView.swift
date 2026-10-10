@@ -18,6 +18,7 @@ struct NoticeListView: View {
     let notices: [Notice]   // 최근에 보낸 순서로 들어온다
 
     @State private var filter: NoticeFilter = .all
+    @State private var isComposing = false   // true가 되면 쓰기 화면으로 이동
 
     // 고른 필터에 맞는 공지
     private var filteredNotices: [Notice] {
@@ -72,6 +73,9 @@ struct NoticeListView: View {
         .navigationDestination(for: Notice.self) { notice in
             NoticeDetailView(notice: notice)
         }
+        .navigationDestination(isPresented: $isComposing) {
+            NoticeComposeView()
+        }
     }
 
     private var header: some View {
@@ -84,7 +88,7 @@ struct NoticeListView: View {
             Spacer()
 
             Button {
-                // TODO: 공지 쓰기 화면으로 이동
+                isComposing = true
             } label: {
                 Label("작성하기", systemImage: "plus")
             }
