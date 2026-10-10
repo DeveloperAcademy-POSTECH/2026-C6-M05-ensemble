@@ -4,11 +4,6 @@
 //
 //  Created by 김나현 on 10/10/26.
 //
-
-//
-//  CueCard.swift
-//  CueFlow
-//
 //  큐 카드 하나: 번호 · 트리거 · 큐 제목 · 위치 태그
 //
 
@@ -17,6 +12,7 @@ import SwiftData
 
 struct CueCard: View {
     @Bindable var cue: Cue   // 카드 안에서 cue의 값을 바꿀 수 있게 (위치 선택용)
+    @State private var isEditingNumber = false   // 번호 수정 창이 열려 있는지
     
     var body: some View {
         VStack(alignment: .leading, spacing: 13) {
@@ -30,26 +26,41 @@ struct CueCard: View {
     }
 }
 
-// 서브뷰
-
 extension CueCard {
     // 윗부분: [01] 트리거 / 큐 제목 ……… [상수]
     private var cueHeader: some View {
         HStack(alignment: .top, spacing: 5) {
-            cueNumberBadge
+            cueNumberButton
             cueTexts
             Spacer(minLength: 0)
             positionTag
         }
     }
     
-    // 번호 동그라미 (01, 02 …)
-    private var cueNumberBadge: some View {
+    // 번호 버튼: 누르면 번호를 고치는 작은 창이 뜸
+    private var cueNumberButton: some View {
+        Button { isEditingNumber = true } label: { cueNumberLabel }
+            .buttonStyle(.plain)
+            .popover(isPresented: $isEditingNumber, arrowEdge: .bottom) { cueNumberEditor }
+    }
+    
+    // 번호 동그라미 생김새 (01, 02 …)
+    private var cueNumberLabel: some View {
         Text(cueNumberText)
             .font(.system(size: 8, weight: .medium))
             .foregroundStyle(partColor.number)
             .frame(width: 20, height: 20)
             .background(partColor.background, in: .circle)
+            .contentShape(.circle)
+    }
+    
+    // 번호 입력 창: 숫자를 입력하고 Enter를 누르면 저장되고 창이 닫힘
+    private var cueNumberEditor: some View {
+        TextField("번호", value: $cue.order, format: .number)
+            .textFieldStyle(.roundedBorder)
+            .frame(width: 60)
+            .padding(10)
+            .onSubmit { isEditingNumber = false }
     }
     
     // 트리거(윗줄) + 큐 제목(아랫줄)
@@ -122,9 +133,9 @@ extension CueCard {
         cue.part?.color ?? PartColor.at(0)
     }
     
-    // order 0 → "01", 1 → "02"
+    // 사용자가 입력한 번호를 두 자리로 (1 → "01")
     private var cueNumberText: String {
-        String(format: "%02d", cue.order + 1)
+        String(format: "%02d", cue.order)
     }
 }
 
