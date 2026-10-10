@@ -1,5 +1,5 @@
 //
-//  PartFilterTabBarView.swift
+//  PartFilterTabBar.swift
 //  CueFlow
 //
 //  Created by 김나현 on 10/9/26.
@@ -114,24 +114,4 @@ extension PartChipButtonStyle {
     private func textColor(isPressed: Bool) -> Color {
         isSelected || isPressed ? .white : .brandPrimaryText
     }
-}
-
-//MARK: 프리뷰를 위한 코드
-extension ModelContainer {
-    // 메모리에만 있는 임시 저장소 + 기본 파트 5개
-    @MainActor static let partPreview: ModelContainer = {
-        let container = try! ModelContainer(for: Part.self, configurations: .init(isStoredInMemoryOnly: true))
-        for part in Part.makeDefaultParts() {
-            container.mainContext.insert(part)
-        }
-        return container
-    }()
-}
-
-#Preview {
-    @Previewable @State var selectedPart: Part?
-    PartFilterTabBar(selectedPart: $selectedPart)
-        .padding(30)
-        .frame(width: 600)
-        .modelContainer(.partPreview)
 }
