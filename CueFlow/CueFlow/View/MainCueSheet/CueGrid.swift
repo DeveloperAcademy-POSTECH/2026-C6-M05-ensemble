@@ -1,0 +1,234 @@
+//
+//  CueGrid.swift
+//  CueFlow
+//
+//  Created by 김나현 on 10/11/26.
+//
+
+import SwiftUI
+import SwiftData
+
+struct CueGrid: View {
+    @State private var hoveredSlotKey: String?   // 마우스가 올라가 있는 칸 (파트id-씬id)
+    let production: Production                                  // 어느 공연의 표인지
+    var selectedPart: Part? = nil                               // 파트 탭바에서 고른 파트 (nil = 전체)
+    var onAddCue: (Part, ShowScene) -> Void = { _, _ in }       // 칸의 Add new를 눌렀을 때 할 일
+    
+    var body: some View {
+        ScrollView([.horizontal, .vertical]) {
+            cueTable
+        }
+    }
+}
+
+// 표 전체
+
+extension CueGrid {
+    // 머리줄 + 파트 줄들 + 파트 추가 줄
+    private var cueTable: some View {
+        Grid(horizontalSpacing: 0, verticalSpacing: 0) {
+            headerRow
+            ForEach(visibleParts) { partRow($0) }
+            addPartRow
+        }
+    }
+    
+    private var headerRow: some View {
+        GridRow {
+            cornerHeaderCell
+            ForEach(sortedScenes.indices, id: \.self) { sceneHeaderCell(number: $0 + 1) }
+            addSceneHeaderCell
+        }
+    }
+    
+    private func partRow(_ part: Part) -> some View {
+        GridRow {
+            partHeaderCell(part)
+            ForEach(sortedScenes) { scene in cueCellSlot(part: part, scene: scene) }
+            emptyCell(width: GridStyle.addSceneColumnWidth)
+        }
+    }
+
+    private var addPartRow: some View {
+        GridRow {
+            addPartHeaderCell
+            ForEach(sortedScenes) { _ in emptyCell(width: GridStyle.sceneColumnWidth) }
+            emptyCell(width: GridStyle.addSceneColumnWidth)
+        }
+    }
+}
+
+// 칸
+extension CueGrid {
+    // 왼쪽 위 모서리 칸
+    private var cornerHeaderCell: some View {
+        Text("파트 / 씬")
+            .font(.subheadline)
+            .foregroundStyle(GridStyle.textPrimary)
+            .padding(.leading, 16)
+            .frame(width: GridStyle.partColumnWidth, height: GridStyle.headerHeight, alignment: .leading)
+            .background(GridStyle.headerBackground)
+            .gridCellBorder()
+    }
+    
+    // 씬 머리칸: #1, #2, #3 … (왼쪽부터 자동으로 번호)
+    private func sceneHeaderCell(number: Int) -> some View {
+        Text("#\(number)")
+            .font(.callout.weight(.semibold))
+            .foregroundStyle(GridStyle.textPrimary)
+            .padding(.leading, 12)
+            .frame(width: GridStyle.sceneColumnWidth, height: GridStyle.headerHeight, alignment: .leading)
+            .background(GridStyle.headerBackground)
+            .gridCellBorder()
+    }
+    
+    // + 씬 추가 칸
+    private var addSceneHeaderCell: some View {
+        Button(action: addScene) { Image(systemName: "plus").font(.system(size: 16)) }
+            .buttonStyle(.plain)
+            .foregroundStyle(GridStyle.iconGray)
+            .frame(width: GridStyle.addSceneColumnWidth, height: GridStyle.headerHeight)
+            .background(GridStyle.headerBackground)
+            .gridCellBorder()
+    }
+    
+    // 파트 칸: 파트 이름(왼쪽 위, 피그마 위치) + 왼쪽 파트색 막대
+    private func partHeaderCell(_ part: Part) -> some View {
+        Text(part.name)
+            .font(.body)
+            .foregroundStyle(GridStyle.textPrimary)
+            .padding(.leading, 16)
+            .padding(.top, 25)
+            .frame(width: GridStyle.partColumnWidth, alignment: .leading)
+            .frame(minHeight: GridStyle.minRowHeight, maxHeight: .infinity, alignment: .top)
+            .background(.white)
+            .overlay(alignment: .leading) { part.color.accent.frame(width: 6) }
+            .gridCellBorder()
+    }
+    
+    // 파트 × 씬 칸: 큐가 있으면 항상 보이고, 비어 있으면 마우스를 올렸을 때만 셀이 보임
+    private func cueCellSlot(part: Part, scene: ShowScene) -> some View {
+        let key = "\(part.id)-\(scene.id)"                              // 이 칸의 이름표
+        let slotCues = cues(of: part, in: scene)
+        let isCellVisible = !slotCues.isEmpty || hoveredSlotKey == key
+        return CueCell(part: part, cues: slotCues) { onAddCue(part, scene) }
+            .opacity(isCellVisible ? 1 : 0)
+            .padding(.horizontal, 13)
+            .padding(.vertical, 5)
+            .frame(width: GridStyle.sceneColumnWidth)
+            .frame(maxHeight: .infinity, alignment: .top)
+            .background(.white)
+            .contentShape(.rect)
+            .onHover { hoveredSlotKey = $0 ? key : nil }                // 들어오면 이 칸, 나가면 없음
+            .gridCellBorder()
+    }
+    
+    // + 파트 추가 칸
+    private var addPartHeaderCell: some View {
+        Button(action: addPart) { Image(systemName: "plus").font(.system(size: 16)) }
+            .buttonStyle(.plain)
+            .foregroundStyle(GridStyle.iconGray)
+            .frame(width: GridStyle.partColumnWidth, height: GridStyle.addPartRowHeight)
+            .background(GridStyle.addPartBackground)
+            .overlay(alignment: .leading) { Color.partAddaccent.frame(width: 6) }
+            .gridCellBorder()
+    }
+    
+    // 아무것도 없는 흰 칸 (줄 높이에 맞춰 늘어남)
+    private func emptyCell(width: CGFloat) -> some View {
+        Color.white
+            .frame(width: width)
+            .frame(maxHeight: .infinity)
+            .gridCellBorder()
+    }
+}
+
+// 동작
+
+extension CueGrid {
+    // + 씬 추가: 맨 오른쪽에 새 씬 한 칸 (#번호는 자동)
+    private func addScene() {
+        let nextOrder = sortedScenes.count
+        let newScene = ShowScene(title: "", kind: .scene, order: nextOrder)
+        production.scenes = (production.scenes ?? []) + [newScene]
+    }
+    
+    // + 파트 추가: 맨 아래에 새 파트 한 줄 (색은 다음 순서 색)
+    private func addPart() {
+        let nextOrder = sortedParts.count
+        let newPart = Part(name: "새 파트", order: nextOrder, colorIndex: sortedParts.count)
+        production.parts = (production.parts ?? []) + [newPart]
+    }
+}
+
+// 데이터
+
+extension CueGrid {
+    // 씬을 왼쪽부터 순서대로
+    private var sortedScenes: [ShowScene] {
+        (production.scenes ?? []).sorted { $0.order < $1.order }
+    }
+    
+    // 파트를 위에서부터 순서대로
+    private var sortedParts: [Part] {
+        (production.parts ?? []).sorted { $0.order < $1.order }
+    }
+    
+    // 파트 탭바에서 고른 파트만 (안 골랐으면 전체)
+    private var visibleParts: [Part] {
+        guard let selectedPart else { return sortedParts }
+        return sortedParts.filter { $0 == selectedPart }
+    }
+    
+    // 이 파트의 큐 중에서, 이 씬에 속한 것만
+    private func cues(of part: Part, in scene: ShowScene) -> [Cue] {
+        (part.cues ?? []).filter { $0.trigger?.scene == scene }
+    }
+}
+
+// 크기 · 임시 색상
+
+private enum GridStyle {
+    static let partColumnWidth: CGFloat = 192
+    static let sceneColumnWidth: CGFloat = 250
+    static let addSceneColumnWidth: CGFloat = 252
+    static let headerHeight: CGFloat = 58
+    static let addPartRowHeight: CGFloat = 100
+    static let minRowHeight: CGFloat = 148
+    
+    
+    //임시 색상들(확정은 아니고 피그마 상 색상들을 바탕으로 일단 넣어둠.)
+    static let headerBackground = Color(red: 0.973, green: 0.976, blue: 0.984)    // #F8F9FB
+    static let addPartBackground = Color(red: 0.984, green: 0.988, blue: 0.996)   // #FBFCFE
+    static let lineColor = Color(red: 0.890, green: 0.910, blue: 0.937)           // #E3E8EF (칸 사이 선)
+    static let textPrimary = Color(red: 0.071, green: 0.098, blue: 0.149)         // #121926
+    static let iconGray = Color(red: 0.294, green: 0.333, blue: 0.396)           // #4B5565
+}
+
+// 칸마다 오른쪽 · 아래에 얇은 선
+private extension View {
+    func gridCellBorder() -> some View {
+        overlay(alignment: .trailing) { GridStyle.lineColor.frame(width: 1) }
+            .overlay(alignment: .bottom) { GridStyle.lineColor.frame(height: 1) }
+    }
+}
+
+
+#Preview {
+    let container = try! ModelContainer(for: Production.self, configurations: .init(isStoredInMemoryOnly: true))
+    let production = Production(title: "레미제라블", genre: "뮤지컬", firstShowDate: .now)
+    let firstScene = ShowScene(title: "죄수들 들어오는 씬", kind: .scene, order: 0)
+    let secondScene = ShowScene(title: "장발장 연행", kind: .scene, order: 1)
+    let trigger = Trigger(text: "오프닝 \"Look Down\" 전주", order: 0)
+    let cue = Cue(title: "죄수들 노역 위치 입장", position: .sangsu, order: 1)
+    container.mainContext.insert(production)
+    production.parts = Part.makeDefaultParts()
+    production.scenes = [firstScene, secondScene]
+    firstScene.triggers = [trigger]
+    cue.trigger = trigger
+    cue.part = production.parts?.first { $0.order == 0 }
+    
+    return CueGrid(production: production)
+        .frame(width: 1100, height: 600)
+        .modelContainer(container)
+}
