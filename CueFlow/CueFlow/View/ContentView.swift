@@ -35,7 +35,10 @@ struct ContentView: View {
                     HomeView(productions: productions)
                 }
             case .notice:
-                NoticeListView(notices: notices)
+                // NavigationStack: 목록 → 상세로 들어갔다가 뒤로 돌아올 수 있게
+                NavigationStack {
+                    NoticeListView(notices: notices)
+                }
             case .help:
                 Text("도움말 화면")
             }

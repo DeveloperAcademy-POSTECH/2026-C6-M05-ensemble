@@ -20,4 +20,17 @@ extension Notice {
     var senderName: String {
         author?.name ?? "알 수 없음"
     }
+
+    // 상세의 "2026.10.02(금) 18:32"
+    var sentDateDetailText: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "yyyy.MM.dd(E) HH:mm"   // E = 요일 한 글자 (금)
+        return formatter.string(from: sentAt)
+    }
+
+    // 상세의 "프로젝트 별마루". 공연이 없으면 빈칸
+    var productionTitle: String {
+        production?.title ?? ""
+    }
 }

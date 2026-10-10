@@ -49,20 +49,28 @@ struct NoticeListView: View {
                     .padding(.bottom, 20)
 
                 ForEach(filteredNotices) { notice in
-                    NoticeRow(
-                        title: notice.title,
-                        preview: notice.body,           // 공지 "내용" 칸
-                        sentDate: notice.sentDateText,
-                        sender: notice.senderName,            // Notice+List에서 만든 것
-                        isImportant: notice.isImportant
-                    )
-                    .padding(.vertical, 14)
+                    // 줄을 누르면 상세 화면으로 이동
+                    NavigationLink(value: notice) {
+                        NoticeRow(
+                            title: notice.title,
+                            preview: notice.body,           // 공지 "내용" 칸
+                            sentDate: notice.sentDateText,
+                            sender: notice.senderName,            // Notice+List에서 만든 것
+                            isImportant: notice.isImportant
+                        )
+                        .padding(.vertical, 14)
+                        .contentShape(Rectangle())   // 글자 없는 빈 곳을 눌러도 이동
+                    }
+                    .buttonStyle(.plain)
                     Divider()
                 }
             }
             .padding(.horizontal, 40)
             .padding(.top, 37)
             .padding(.bottom, 40)
+        }
+        .navigationDestination(for: Notice.self) { notice in
+            NoticeDetailView(notice: notice)
         }
     }
 
@@ -120,6 +128,8 @@ struct NoticeListView: View {
 }
 
 #Preview {
-    NoticeListView(notices: NoticePreviewData.samples)
-        .frame(width: 1290, height: 930)
+    NavigationStack {
+        NoticeListView(notices: NoticePreviewData.samples)
+    }
+    .frame(width: 1290, height: 930)
 }
