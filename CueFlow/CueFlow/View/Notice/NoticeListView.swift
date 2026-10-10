@@ -112,17 +112,17 @@ struct NoticeListView: View {
                             .font(.body.weight(.semibold))
                         Text("\(count(of: item))")
                             .font(.caption2.bold())
-                            .foregroundStyle(isSelected ? Color.brandPrimary : .white)
+                            .foregroundStyle(Color.brandPrimaryText)   // .primary는 바깥 흰 글자를 따라가서 안 보였음
                             .frame(width: 24, height: 24)
-                            .background(isSelected ? Color.white.opacity(0.6) : Color.brandPrimary, in: Circle())
+                            .background(isSelected ? Color.white : Color.brandPrimarySubtle, in: Circle())
                     }
                     .foregroundStyle(isSelected ? .white : Color.brandPrimaryText)
                     .padding(.leading, 10)
                     .padding(.trailing, 6)
                     .frame(height: 36)
-                    .background(isSelected ? Color.brandPrimary : Color.clear, in: Capsule())
+                    .background(isSelected ? Color.brandPrimaryHover : Color.clear, in: Capsule())
                     .overlay {
-                        Capsule().strokeBorder(Color.brandPrimary, lineWidth: 1)
+                        Capsule().strokeBorder(isSelected ? Color.clear : Color.brandPrimaryHover, lineWidth: 1)
                     }
                 }
                 .buttonStyle(.plain)

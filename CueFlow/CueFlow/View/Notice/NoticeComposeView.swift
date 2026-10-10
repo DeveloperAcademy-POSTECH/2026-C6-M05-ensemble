@@ -87,7 +87,7 @@ struct NoticeComposeView: View {
                         send()
                     }
                     .buttonStyle(.primary)
-                    .frame(width: 125, height: 40)
+                    .frame(width: 110, height: 30)
                     .disabled(!canSend)
                     .opacity(canSend ? 1 : 0.4)
                 }

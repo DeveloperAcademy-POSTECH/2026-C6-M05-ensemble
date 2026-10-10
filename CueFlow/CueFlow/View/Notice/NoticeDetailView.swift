@@ -30,10 +30,10 @@ struct NoticeDetailView: View {
             // 보낼 대상 태그 (지금은 항상 전체)
             Text("전체공지")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Color.brandPrimaryText)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 4)
-                .background(Color.brandPrimary, in: Capsule())
+                .background(Color.brandPrimarySubtle, in: Capsule())
 
             Text(notice.title)
                 .font(.title.bold())
@@ -59,15 +59,13 @@ struct NoticeDetailView: View {
         }
     }
 
-    // "프로젝트 [별마루]" 처럼 이름표 + 연보라 칩
+    // "프로젝트  별마루" 처럼 이름표 + 값
     private func infoRow(label: String, value: String) -> some View {
         HStack(spacing: 12) {
             Text(label)
+                .font(.body.weight(.semibold))
                 .frame(width: 60, alignment: .leading)
             Text(value)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 3)
-                .background(Color.brandPrimarySubtle, in: Capsule())
         }
     }
 }

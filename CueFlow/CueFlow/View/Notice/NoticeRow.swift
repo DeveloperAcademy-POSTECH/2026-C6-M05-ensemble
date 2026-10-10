@@ -26,10 +26,10 @@ struct NoticeRow: View {
 
             // 보낸 사람 첫 글자 동그라미
             Text(String(sender.prefix(1)))
-                .font(.title2.bold())
-                .foregroundStyle(Color.brandPrimary)
-                .frame(width: 50, height: 50)
-                .background(Color.brandPrimarySubtle, in: Circle())
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 40, height: 40)
+                .background(Color(nsColor: .quaternarySystemFill), in: Circle())
 
             // 제목 + 미리보기 (위아래로 쌓기)
             VStack(alignment: .leading, spacing: 6) {
