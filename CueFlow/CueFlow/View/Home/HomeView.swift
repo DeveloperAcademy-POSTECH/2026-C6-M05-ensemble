@@ -16,6 +16,7 @@ enum ProjectFilter: String, CaseIterable {
 
 struct HomeView: View {
     let productions: [Production]   // 최근에 수정한 순서로 들어온다
+    var onRehearsal: (Production) -> Void = { _ in }   // 카드의 "리허설 모드"
 
     @State private var filter: ProjectFilter = .recent
 
@@ -94,7 +95,7 @@ struct HomeView: View {
                         schedule: production.scheduleText,
                         onRehearsal: {
                             production.lastOpenedAt = .now
-                            // TODO: 리허설 모드로 이동
+                            onRehearsal(production)
                         },
                         onContinue: {
                             production.lastOpenedAt = .now

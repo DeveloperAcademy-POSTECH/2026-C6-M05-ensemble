@@ -12,11 +12,25 @@ struct ContentView: View {
     // 지금 선택된 메뉴. 앱을 켜면 "프로젝트"가 선택된 상태로 시작한다.
     @State private var selectedMenu: SidebarMenu = .project
 
+    // 리허설 중인 공연. 있으면 사이드바 없이 리허설 모드 화면만 보인다.
+    @State private var rehearsingProduction: Production?
+
     // 저장된 공연 전부. 최근에 수정한 순서.
     @Query(sort: \Production.updatedAt, order: .reverse)
     private var productions: [Production]
 
     var body: some View {
+        if let rehearsingProduction {
+            RehearsalView(production: rehearsingProduction) {
+                self.rehearsingProduction = nil   // 종료하면 홈으로
+            }
+        } else {
+            mainView
+        }
+    }
+
+    // 사이드바 + 내용 영역
+    private var mainView: some View {
         NavigationSplitView {
             // 왼쪽: 사이드바
             SidebarView(selectedMenu: $selectedMenu)
@@ -28,7 +42,9 @@ struct ContentView: View {
                 if productions.isEmpty {
                     HomeEmptyView()
                 } else {
-                    HomeView(productions: productions)
+                    HomeView(productions: productions) { production in
+                        rehearsingProduction = production
+                    }
                 }
             case .notice:
                 Text("공지사항 화면")

@@ -27,6 +27,7 @@ final class Cue {
 
     var part: Part?                         // 어느 파트의 큐인지 (예: 조명)
     var trigger: Trigger?                   // 언제 실행하는지 (카드 둘째 줄)
+    var stageCell: Int?                     // 위치가 무대일 때 3×3 중 몇 번 칸 (0~8, 왼쪽 위부터). 리허설 모드에서 정함, 비어 있으면 미정
 
     // 큐를 지우면 댓글·확인 기록도 같이 지운다.
     @Relationship(deleteRule: .cascade, inverse: \Comment.cue)
