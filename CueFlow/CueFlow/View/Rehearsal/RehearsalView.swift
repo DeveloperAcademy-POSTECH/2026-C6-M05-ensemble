@@ -15,6 +15,9 @@ struct RehearsalView: View {
     // 지금 보고 있는 장면 (공연 흐름 순서에서 몇 번째인지)
     @State private var sceneIndex = 0
 
+    // 지금 큐 = 지금 장면에서 몇 번째 트리거인지 (같은 트리거의 큐는 동시에 실행)
+    @State private var triggerIndex = 0
+
     // 공연 흐름 순서대로 정렬한 장면들
     private var scenes: [ShowScene] {
         (production.scenes ?? []).sorted { $0.order < $1.order }
@@ -24,10 +27,19 @@ struct RehearsalView: View {
         scenes.indices.contains(sceneIndex) ? scenes[sceneIndex] : nil
     }
 
+    // 지금 장면의 트리거 (순서대로)
+    private var currentTriggers: [Trigger] {
+        (currentScene?.triggers ?? []).sorted { $0.order < $1.order }
+    }
+
     // 지금 장면의 큐 (트리거 순서 → 트리거 안 큐 순서)
     private var currentSceneCues: [Cue] {
-        let triggers = (currentScene?.triggers ?? []).sorted { $0.order < $1.order }
-        return triggers.flatMap { ($0.cues ?? []).sorted { $0.order < $1.order } }
+        currentTriggers.flatMap { ($0.cues ?? []).sorted { $0.order < $1.order } }
+    }
+
+    // 파트 필터 칩에 보여줄 파트 (화면 순서대로)
+    private var parts: [Part] {
+        (production.parts ?? []).sorted { $0.order < $1.order }
     }
 
     var body: some View {
@@ -42,10 +54,23 @@ struct RehearsalView: View {
                     RehearsalStageMap(cues: currentSceneCues)
                         .frame(height: 378)
 
-                    // TODO: 4단계 큐 목록 (셀리나 메인 큐시트 PR #40 머지 후)
-                    RehearsalCard(title: "큐 목록")
+                    RehearsalCueList(
+                        sceneCode: currentScene?.code(in: scenes) ?? "",
+                        triggers: currentTriggers,
+                        parts: parts,
+                        currentIndex: $triggerIndex,
+                        canGoPrevious: sceneIndex > 0 || triggerIndex > 0,
+                        canGoNext: sceneIndex < scenes.count - 1 || triggerIndex < currentTriggers.count - 1,
+                        onPrevious: goToPreviousCue,
+                        onNext: goToNextCue
+                    )
                 }
             }
+        }
+        // 장면을 직접 바꾸면 그 장면의 첫 큐부터
+        .onChange(of: sceneIndex) {
+            if !isMovingByCue { triggerIndex = 0 }
+            isMovingByCue = false
         }
         .padding(.leading, 52)
         .padding(.trailing, 70)
@@ -53,6 +78,31 @@ struct RehearsalView: View {
         .padding(.bottom, 45)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    // 이전 큐 / 다음 큐로 장면을 넘어갈 때는 onChange에서 첫 큐로 되돌리지 않게
+    @State private var isMovingByCue = false
+
+    // 이전 큐: 장면 첫 큐에서 누르면 앞 장면의 마지막 큐로
+    private func goToPreviousCue() {
+        if triggerIndex > 0 {
+            triggerIndex -= 1
+        } else if sceneIndex > 0 {
+            isMovingByCue = true
+            sceneIndex -= 1
+            triggerIndex = max(currentTriggers.count - 1, 0)
+        }
+    }
+
+    // 다음 큐: 장면 마지막 큐에서 누르면 다음 장면의 첫 큐로
+    private func goToNextCue() {
+        if triggerIndex < currentTriggers.count - 1 {
+            triggerIndex += 1
+        } else if sceneIndex < scenes.count - 1 {
+            isMovingByCue = true
+            sceneIndex += 1
+            triggerIndex = 0
+        }
     }
 
     // 공연 이름 · 장면 이동 · 종료 버튼
@@ -68,7 +118,13 @@ struct RehearsalView: View {
                 scenePicker
             }
 
-            Spacer()
+            Button("동기화 모드") {
+                // TODO: 누르면 모두가 같은 화면(같은 장면 · 같은 큐)을 보게 — 실제 공유(iCloud) 생긴 뒤
+            }
+            .buttonStyle(.primary)
+            .frame(width: 90, height: 36)
+            .padding(.leading, 10)
+            .padding(.trailing, 24)
 
             // TODO: #41 머지 후 .buttonStyle(.tertiary)로 교체
             Button("리허설 모드 종료", action: onExit)

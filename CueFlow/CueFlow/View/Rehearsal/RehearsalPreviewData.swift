@@ -31,20 +31,23 @@ enum RehearsalPreviewData {
         production.scenes = scenes.enumerated().map { index, item in
             ShowScene(title: item.0, kind: item.1, order: index)
         }
-        production.scenes?.first?.triggers = sampleTriggers
+        let parts = Part.samples
+        production.parts = Array(parts.values)
+        production.scenes?.first?.triggers = sampleTriggers(parts: parts)
         return production
     }
 
     // 미리보기에서 바로 쓰는 첫 장면의 큐
     static var sceneCues: [Cue] {
-        sampleTriggers.flatMap { $0.cues ?? [] }
+        sampleTriggers(parts: Part.samples).flatMap { $0.cues ?? [] }
     }
 
     // 피그마 큐 목록 (S#3 시장 등장): 트리거 3개, 큐 5개
-    private static var sampleTriggers: [Trigger] {
-        let parts = Part.samples
+    private static func sampleTriggers(parts: [String: Part]) -> [Trigger] {
+        var nextOrder = 0   // 트리거 안 순서가 섞이지 않게 차례로 번호
         func cue(_ title: String, _ position: CuePosition, _ part: String, cell: Int? = nil) -> Cue {
-            let cue = Cue(title: title, position: position, order: 0)
+            nextOrder += 1
+            let cue = Cue(title: title, position: position, order: nextOrder)
             cue.part = parts[part]
             cue.stageCell = cell
             return cue
