@@ -12,8 +12,7 @@ struct CueGrid: View {
     @State private var hoveredSlotKey: String?   // 마우스가 올라가 있는 칸 (파트id-씬id)
     let production: Production                                  // 어느 공연의 표인지
     var selectedPart: Part? = nil                               // 파트 탭바에서 고른 파트 (nil = 전체)
-    var onAddCue: (Part, ShowScene) -> Void = { _, _ in }       // 칸의 Add new를 눌렀을 때 할 일
-    
+    @Environment(\.modelContext) private var modelContext   // 새 큐를 저장할 곳
     var body: some View {
         ScrollView([.horizontal, .vertical]) {
             cueTable
@@ -48,7 +47,7 @@ extension CueGrid {
             emptyCell(width: GridStyle.addSceneColumnWidth)
         }
     }
-
+    
     private var addPartRow: some View {
         GridRow {
             addPartHeaderCell
@@ -111,8 +110,7 @@ extension CueGrid {
         let key = "\(part.id)-\(scene.id)"                              // 이 칸의 이름표
         let slotCues = cues(of: part, in: scene)
         let isCellVisible = !slotCues.isEmpty || hoveredSlotKey == key
-        return CueCell(part: part, cues: slotCues) { onAddCue(part, scene) }
-            .opacity(isCellVisible ? 1 : 0)
+        return CueCell(part: part, cues: slotCues) { addCue(part: part, scene: scene, triggerText: $0, cueTitle: $1, position: $2)}            .opacity(isCellVisible ? 1 : 0)
             .padding(.horizontal, 13)
             .padding(.vertical, 5)
             .frame(width: GridStyle.sceneColumnWidth)
@@ -158,6 +156,21 @@ extension CueGrid {
         let nextOrder = sortedParts.count
         let newPart = Part(name: "새 파트", order: nextOrder, colorIndex: sortedParts.count)
         production.parts = (production.parts ?? []) + [newPart]
+    }
+    
+    // Add new 팝오버에서 입력을 마치면: 트리거와 큐를 새로 만들어 이 칸 맨 아래에 넣기
+    private func addCue(part: Part, scene: ShowScene, triggerText: String, cueTitle: String, position: CuePosition) {
+        let trigger = Trigger(text: triggerText, order: scene.triggers?.count ?? 0)
+        let cue = Cue(title: cueTitle, position: position, order: nextCueNumber(in: part))
+        modelContext.insert(cue)
+        cue.trigger = trigger
+        cue.part = part
+        scene.triggers = (scene.triggers ?? []) + [trigger]
+    }
+    
+    // 이 파트의 큐 번호 중 가장 큰 번호 + 1 (처음이면 1)
+    private func nextCueNumber(in part: Part) -> Int {
+        ((part.cues ?? []).map(\.order).max() ?? 0) + 1
     }
 }
 

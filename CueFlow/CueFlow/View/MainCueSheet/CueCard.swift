@@ -13,6 +13,7 @@ import SwiftData
 struct CueCard: View {
     @Bindable var cue: Cue   // 카드 안에서 cue의 값을 바꿀 수 있게 (위치 선택용)
     @State private var isEditingNumber = false   // 번호 수정 창이 열려 있는지
+    @State private var isEditingCue = false      // 큐 수정 팝오버가 열려 있는지
     
     var body: some View {
         VStack(alignment: .leading, spacing: 13) {
@@ -23,6 +24,9 @@ struct CueCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.white, in: .rect(cornerRadius: 6))
         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(partColor.background, lineWidth: 1))
+        .contentShape(.rect)
+        .onTapGesture(count: 2) { isEditingCue = true }   // 더블클릭하면 수정 팝오버
+        .popover(isPresented: $isEditingCue, arrowEdge: .trailing) { cueEditor }
     }
 }
 
@@ -122,6 +126,20 @@ extension CueCard {
     private var buttonSpace: some View {
         Color.clear
             .frame(height: 17)
+    }
+    
+    // 더블클릭했을 때 뜨는 수정 팝오버 (원래 값이 채워진 채로)
+    private var cueEditor: some View {
+        AddCueCardInfo(triggerText: cue.trigger?.text ?? "", cueTitle: cue.title, position: cue.position) {
+            updateCue(triggerText: $0, cueTitle: $1, position: $2)
+        }
+    }
+    
+    // 팝오버에서 Enter를 누르면 이 카드의 값만 바꿈
+    private func updateCue(triggerText: String, cueTitle: String, position: CuePosition) {
+        cue.title = cueTitle
+        cue.position = position
+        cue.trigger?.text = triggerText
     }
 }
 
