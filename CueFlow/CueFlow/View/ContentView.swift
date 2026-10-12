@@ -12,11 +12,32 @@ struct ContentView: View {
     // 지금 선택된 메뉴. 앱을 켜면 "프로젝트"가 선택된 상태로 시작한다.
     @State private var selectedMenu: SidebarMenu = .project
 
+    // 받은 초대. 있으면 사이드바 없이 초대 수락 화면만 보인다.
+    // TODO: 초대 링크로 앱을 열었을 때 여기에 넣기 (공유 방식 정해진 뒤)
+    @State private var pendingInvite: PendingInvite?
+
     // 저장된 공연 전부. 최근에 수정한 순서.
     @Query(sort: \Production.updatedAt, order: .reverse)
     private var productions: [Production]
 
+    init(pendingInvite: PendingInvite? = nil) {
+        _pendingInvite = State(initialValue: pendingInvite)
+    }
+
     var body: some View {
+        if let pendingInvite {
+            InviteAcceptView(invite: pendingInvite) {
+                // TODO: 실제로 공연에 참여시키기
+                self.pendingInvite = nil
+                selectedMenu = .project   // 수락하면 홈 화면으로
+            }
+        } else {
+            mainView
+        }
+    }
+
+    // 사이드바 + 내용 영역
+    private var mainView: some View {
         NavigationSplitView {
             // 왼쪽: 사이드바
             SidebarView(selectedMenu: $selectedMenu)
@@ -46,5 +67,10 @@ struct ContentView: View {
 
 #Preview("프로젝트 있음") {
     ContentView()
+        .modelContainer(HomePreviewData.container)
+}
+
+#Preview("초대 받음") {
+    ContentView(pendingInvite: PendingInvite(productionTitle: "별이 빛나는 밤 뮤지컬"))
         .modelContainer(HomePreviewData.container)
 }
