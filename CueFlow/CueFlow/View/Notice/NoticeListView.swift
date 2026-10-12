@@ -70,7 +70,7 @@ struct NoticeListView: View {
         }
         // openedNotice에 공지가 들어오면 상세 화면으로 이동
         .navigationDestination(item: $openedNotice) { notice in
-            NoticeDetailView(notice: notice)
+            NoticeDetailView(notice: notice, notices: filteredNotices)
         }
         .navigationDestination(isPresented: $isComposing) {
             NoticeComposeView()

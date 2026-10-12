@@ -21,6 +21,12 @@ extension Notice {
         author?.name ?? "알 수 없음"
     }
 
+    // 상세 아래 이전/다음 글의 "무대연출 이진환". 맡은 일이 없으면 이름만
+    var senderRoleAndName: String {
+        guard let author else { return "알 수 없음" }
+        return author.role.isEmpty ? author.name : "\(author.role) \(author.name)"
+    }
+
     // 상세의 "2026.10.02(금) 18:32"
     var sentDateDetailText: String {
         let formatter = DateFormatter()
