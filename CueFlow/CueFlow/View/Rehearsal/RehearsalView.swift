@@ -37,6 +37,13 @@ struct RehearsalView: View {
         currentTriggers.flatMap { ($0.cues ?? []).sorted { $0.order < $1.order } }
     }
 
+    // 지금 장면의 대본 (순서대로)
+    private var currentScriptLines: [ScriptLine] {
+        (currentScene?.scriptLines ?? []).sorted { $0.order < $1.order }
+    }
+
+    @State private var isEditingScript = false   // "대본 입력" 창
+
     // 파트 필터 칩에 보여줄 파트 (화면 순서대로)
     private var parts: [Part] {
         (production.parts ?? []).sorted { $0.order < $1.order }
@@ -47,8 +54,10 @@ struct RehearsalView: View {
             header
 
             HStack(alignment: .top, spacing: 21) {
-                RehearsalScriptPanel(lines: RehearsalPreviewData.scriptLines)   // TODO: 장면별 대본 (모델 생기면)
-                    .frame(width: 360)
+                RehearsalScriptPanel(lines: currentScriptLines) {
+                    isEditingScript = true
+                }
+                .frame(width: 360)
 
                 VStack(spacing: 23) {
                     RehearsalStageMap(cues: currentSceneCues)
@@ -66,6 +75,9 @@ struct RehearsalView: View {
                     )
                 }
             }
+        }
+        .sheet(isPresented: $isEditingScript) {
+            ScriptInputSheet(production: production, currentScene: currentScene)
         }
         // 장면을 직접 바꾸면 그 장면의 첫 큐부터
         .onChange(of: sceneIndex) {

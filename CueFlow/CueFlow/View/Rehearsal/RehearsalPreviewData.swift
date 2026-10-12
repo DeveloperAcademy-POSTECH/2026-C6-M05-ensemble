@@ -34,6 +34,7 @@ enum RehearsalPreviewData {
         let parts = Part.samples
         production.parts = Array(parts.values)
         production.scenes?.first?.triggers = sampleTriggers(parts: parts)
+        production.scenes?.first?.scriptLines = scriptLines
         return production
     }
 
@@ -68,21 +69,31 @@ enum RehearsalPreviewData {
         return [first, second, third]
     }
 
-    // 피그마 예시 대본 (S#3 시장 등장)
-    // TODO: 대본 모델이 생기기 전까지 리허설 모드 화면에서도 이 대본을 보여준다
-    static let scriptLines: [ScriptLine] = [
-        ScriptLine(text: "하루가 끝날 무렵, 공장 안…"),
-        ScriptLine(speaker: "판틴", direction: "편지를 품에 급히 숨기며 작게",
-                   text: "…아무것도 아니에요. 그냥 집에서 온 편지예요.", isHighlighted: true),
-        ScriptLine(speaker: "공장장", direction: "작업대를 탕 치며, 노동자들을 둘러보고",
-                   text: "일하는 시간에 편지라니! 여기가 무슨 우체국인 줄 알아? 다들 손 멈추지 말고 계속해! 판틴, 너는 이리 와."),
-        ScriptLine(speaker: "판틴", direction: "동료들의 시선을 피하며 고개를 숙이고",
-                   text: "죄송해요… 금방 다시 일할게요. 제발 한 번만 봐주세요.", isHighlighted: true),
-        ScriptLine(speaker: "공장장",
-                   text: "딸이 있다는 소문이 사실이었군. 이 공장은 그런 사람을 둘 수 없어. 시장님 공장이 어떤 곳인지 알면서 숨기고 들어왔다니, 오늘까지만 일하고 나가."),
-        ScriptLine(speaker: "판틴", direction: "로켓을 꼭 움켜쥔다. 떨리는 목소리로",
-                   text: "…제가 일을 못 하면 그 아이는 어떻게 되나요. 제발요.", isHighlighted: true),
-        ScriptLine(speaker: "공장장",
-                   text: "사정은 알 바 아니야. 이 공장에 흠 있는 사람 자리는 없어!"),
-    ]
+    // 피그마 예시 대본 (시장 등장) — 대본 패널 미리보기용
+    static var scriptLines: [ScriptLine] {
+        ScriptParser.parse(sampleScriptText, cast: ["판틴", "공장장"])
+            .first?.lines
+            .enumerated()
+            .map { index, line in ScriptLine(order: index, speaker: line.speaker, text: line.text) } ?? []
+    }
+
+    // 대본 입력 창 미리보기용 글 (구글 닥스에서 붙여넣은 모양)
+    // 앱의 예시 공연엔 씬 3개 · 넘버 2개 → S5는 "새 장면으로 만들어요"로 보인다
+    static let sampleScriptText = """
+    S1 (하루가 끝날 무렵, 공장 안…)
+    판틴 (편지를 품에 급히 숨기며 작게) …아무것도 아니에요. 그냥 집에서 온 편지예요.
+    공장장 (작업대를 탕 치며, 노동자들을 둘러보고) 일하는 시간에 편지라니! 여기가 무슨 우체국인 줄 알아? 다들 손 멈추지 말고 계속해! 판틴, 너는 이리 와.
+    판틴 죄송해요… 금방 다시 일할게요. 제발 한 번만 봐주세요. (동료들의 시선을 피하며 고개를 숙이고)
+    공장장 딸이 있다는 소문이 사실이었군. 오늘까지만 일하고 나가.
+    판틴 (로켓을 꼭 움켜쥔다. 떨리는 목소리로) …제가 일을 못 하면 그 아이는 어떻게 되나요. 제발요.
+    공장장 사정은 알 바 아니야. 이 공장에 흠 있는 사람 자리는 없어!
+
+    N1 At the End of the Day - 노동자들 합창. 더 거칠게.
+    노동자들 하루가 또 끝나고 (주먹을 쥐고 앞으로
+    한 걸음씩 걸어 나온다)
+    공장장 다들 자리로 돌아가!
+
+    S5 공장 앞 거리
+    판틴 (혼자 남아 편지를 다시 펼친다) 조금만 기다려, 금방 갈게.
+    """
 }

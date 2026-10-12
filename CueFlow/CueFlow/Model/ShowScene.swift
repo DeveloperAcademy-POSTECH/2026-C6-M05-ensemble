@@ -29,6 +29,10 @@ final class ShowScene {
     @Relationship(deleteRule: .cascade, inverse: \Trigger.scene)
     var triggers: [Trigger]? = []
 
+    // 이 장면의 대본. 장면을 지우면 대본도 같이 지운다.
+    @Relationship(deleteRule: .cascade, inverse: \ScriptLine.scene)
+    var scriptLines: [ScriptLine]? = []
+
     init(title: String, kind: SceneKind, order: Int) {
         self.title = title
         self.kind = kind

@@ -2,83 +2,135 @@
 //  RehearsalScriptPanel.swift
 //  CueFlow
 //
-//  리허설 모드 왼쪽 대본 패널. 지문 / 인물 이름 + (행동 지시) 대사.
-//  TODO: 대본은 아직 모델에 없음 → 저장 방식 팀과 정한 뒤 장면별 대본 연결. 지금은 예시 대본만 보여준다.
+//  리허설 모드 왼쪽 대본 패널. 지금 장면의 대본을 보여준다.
+//  지문 줄은 회색, 대사 줄은 배역 이름 + 대사 (괄호 지문은 회색 기울임).
 //
 
 import SwiftUI
 
-// 대본 한 줄
-struct ScriptLine: Identifiable {
-    let id = UUID()
-    var speaker: String?        // 인물 이름. 없으면 지문만 있는 줄 (예: "하루가 끝날 무렵, 공장 안…")
-    var direction: String?      // 괄호 안 행동 지시 (예: "편지를 품에 급히 숨기며 작게")
-    var text: String            // 대사 (지문 줄이면 지문)
-    var isHighlighted = false   // 보라색 이름 (피그마의 판틴). TODO: 무슨 뜻인지 디자이너 확인 (내 배역? 지금 큐와 연결된 줄?)
-}
-
 struct RehearsalScriptPanel: View {
-    let lines: [ScriptLine]
+    let lines: [ScriptLine]        // 지금 장면의 대본 (순서대로)
+    let onEdit: () -> Void         // "대본 입력" 창 열기
 
     var body: some View {
         RehearsalCard(title: "대본") {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    ForEach(lines) { line in
-                        ScriptLineView(line: line)
-                    }
-                }
-                .padding(.horizontal, 22)
-                .padding(.top, 20)
-                .padding(.bottom, 96)   // 마지막 줄이 아래 흐림에 가리지 않게
+            if lines.isEmpty {
+                emptyView
+            } else {
+                scriptView
             }
-            // 아래쪽이 흐려지며 사라지는 효과 (피그마 Fade)
-            .overlay(alignment: .bottom) {
-                LinearGradient(
-                    colors: [Color(nsColor: .textBackgroundColor).opacity(0), Color(nsColor: .textBackgroundColor)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 96)
-                .allowsHitTesting(false)
-            }
-            .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 12, bottomTrailingRadius: 12))
         }
+        .overlay(alignment: .topTrailing) {
+            Button(action: onEdit) {
+                Label("대본 입력", systemImage: "square.and.pencil")
+                    .font(.callout)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.brandPrimaryText)
+            .padding(.trailing, 18)
+            .frame(height: 54)
+        }
+    }
+
+    private var scriptView: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                ForEach(lines) { line in
+                    ScriptLineView(speaker: line.speaker, text: line.text)
+                }
+            }
+            .padding(.horizontal, 22)
+            .padding(.top, 20)
+            .padding(.bottom, 96)   // 마지막 줄이 아래 흐림에 가리지 않게
+        }
+        // 아래쪽이 흐려지며 사라지는 효과 (피그마 Fade)
+        .overlay(alignment: .bottom) {
+            LinearGradient(
+                colors: [Color(nsColor: .textBackgroundColor).opacity(0), Color(nsColor: .textBackgroundColor)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 96)
+            .allowsHitTesting(false)
+        }
+        .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 12, bottomTrailingRadius: 12))
+    }
+
+    private var emptyView: some View {
+        VStack(spacing: 12) {
+            Text("이 장면의 대본이 없어요")
+                .font(.callout.weight(.semibold))
+            Text("구글 닥스에서 복사해 붙여넣거나\n파일을 불러올 수 있어요")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Button("대본 입력", action: onEdit)
+                .buttonStyle(.primary)
+                .frame(width: 120, height: 32)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
+// 대본 한 줄 모양 (대본 패널 · 대본 입력 미리보기 공용)
 struct ScriptLineView: View {
-    let line: ScriptLine
+    let speaker: String?
+    let text: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            if let speaker = line.speaker {
+            if let speaker {
                 Text(speaker)
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(line.isHighlighted ? Color.brandPrimary : Color.secondary)
+                    .foregroundStyle(.secondary)
             }
 
-            dialogue
+            Text(ScriptLineView.styled(text, isDirection: speaker == nil))
                 .font(.system(size: 15))
                 .lineSpacing(6)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    // "(행동 지시) 대사" — 행동 지시는 회색 기울임, 지문 줄은 전부 회색
-    private var dialogue: Text {
-        if line.speaker == nil {
-            return Text(line.text).foregroundStyle(.secondary)
+    // 괄호 (지문) 부분만 회색 기울임. 지문 줄이면 전부 회색
+    static func styled(_ text: String, isDirection: Bool) -> AttributedString {
+        var result = AttributedString()
+        var depth = 0          // 괄호 안에 있는지
+        var piece = ""
+
+        func flush() {
+            guard !piece.isEmpty else { return }
+            var run = AttributedString(piece)
+            if isDirection || depth > 0 {
+                run.foregroundColor = .secondary
+            }
+            if depth > 0 {
+                run.inlinePresentationIntent = .emphasized
+            }
+            result += run
+            piece = ""
         }
-        guard let direction = line.direction else {
-            return Text(line.text)
+
+        for character in text {
+            if character == "(" {
+                flush()
+                depth += 1
+                piece.append(character)
+            } else if character == ")" {
+                piece.append(character)
+                flush()
+                depth = max(depth - 1, 0)
+            } else {
+                piece.append(character)
+            }
         }
-        return Text("(\(direction)) ").italic().foregroundStyle(.secondary) + Text(line.text)
+        flush()
+        return result
     }
 }
 
 #Preview {
-    RehearsalScriptPanel(lines: RehearsalPreviewData.scriptLines)
+    RehearsalScriptPanel(lines: RehearsalPreviewData.scriptLines) { }
         .frame(width: 360, height: 772)
         .padding()
 }
