@@ -63,8 +63,6 @@ struct HomeView: View {
             Spacer()
 
             HStack(spacing: 10) {
-                // TODO: 다크모드 스위치 — 디자인 수정 중이라 확정되면 추가
-
                 NotificationBellButton(hasUnread: true) {
                     // TODO: 알림 목록 열기
                 }

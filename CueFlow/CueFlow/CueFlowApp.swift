@@ -10,6 +10,9 @@ import SwiftData
 
 @main
 struct CueFlowApp: App {
+    // 사이드바 다크모드 스위치가 바꾸는 값
+    @AppStorage("isDarkMode") private var isDarkMode = false
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -34,6 +37,7 @@ struct CueFlowApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .preferredColorScheme(isDarkMode ? .dark : .light)
         }
         .modelContainer(sharedModelContainer)
     }
