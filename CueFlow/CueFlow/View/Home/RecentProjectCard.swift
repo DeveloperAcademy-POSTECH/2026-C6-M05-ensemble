@@ -55,10 +55,14 @@ struct RecentProjectCard: View {
         .padding(24)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 208)
-        .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
-        // 디자인 시스템 Shadow/lg (#101828, 3% · 8% 두 겹)
-        .shadow(color: Color(red: 16 / 255, green: 24 / 255, blue: 40 / 255).opacity(0.03), radius: 3, y: 4)
-        .shadow(color: Color(red: 16 / 255, green: 24 / 255, blue: 40 / 255).opacity(0.08), radius: 8, y: 12)
+        .background {
+            // 디자인 시스템 Shadow/lg (#101828, 3% · 8% 두 겹)
+            // 그림자는 카드 바탕에만 (글자에 붙으면 글자가 번져 보임)
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color(nsColor: .textBackgroundColor))
+                .shadow(color: Color(red: 16 / 255, green: 24 / 255, blue: 40 / 255).opacity(0.03), radius: 3, y: 4)
+                .shadow(color: Color(red: 16 / 255, green: 24 / 255, blue: 40 / 255).opacity(0.08), radius: 8, y: 12)
+        }
     }
 }
 
