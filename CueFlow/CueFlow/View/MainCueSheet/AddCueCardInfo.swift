@@ -87,26 +87,12 @@ extension AddCueCardInfo {
         }
     }
     
-    // 흰 입력칸 + 오른쪽 ↩ 아이콘
+    // 입력칸
     private func inputField(text: Binding<String>, field: InputField) -> some View {
-        HStack {
-            TextField("", text: text, prompt: placeholder)
-                .textFieldStyle(.plain)
-                .focused($focusedField, equals: field)
-                .onSubmit { handleReturn(in: field) }
-            Image(systemName: "return")
-                .foregroundStyle(Color.neutral300)
-        }
-        .font(.callout)
-        .foregroundStyle(Color.neutral800)
-        .padding(.horizontal, 12)
-        .frame(height: 30)
-        .background(.white, in: .rect(cornerRadius: 8))
-    }
-    
-    private var placeholder: Text {
-        Text("내용을 입력하세요")
-            .foregroundStyle(Color.neutral400)
+        TextField("", text: text, prompt: .popoverPlaceholder)
+            .focused($focusedField, equals: field)
+            .onSubmit { handleReturn(in: field) }
+            .popoverInputStyle()
     }
 }
 
