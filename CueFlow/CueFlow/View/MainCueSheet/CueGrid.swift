@@ -110,7 +110,8 @@ extension CueGrid {
         let key = "\(part.id)-\(scene.id)"                              // 이 칸의 이름표
         let slotCues = cues(of: part, in: scene)
         let isCellVisible = !slotCues.isEmpty || hoveredSlotKey == key
-        return CueCell(part: part, cues: slotCues) { addCue(part: part, scene: scene, triggerText: $0, cueTitle: $1, position: $2)}            .opacity(isCellVisible ? 1 : 0)
+        return CueCell(part: part, cues: slotCues, isHovering: hoveredSlotKey == key) { addCue(part: part, scene: scene, triggerText: $0, cueTitle: $1, position: $2) }
+            .opacity(isCellVisible ? 1 : 0)
             .padding(.horizontal, 13)
             .padding(.vertical, 5)
             .frame(width: GridStyle.sceneColumnWidth)

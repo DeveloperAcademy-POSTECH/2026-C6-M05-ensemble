@@ -12,15 +12,15 @@ import SwiftData
 struct CueCell: View {
     let part: Part                      // 이 칸이 속한 파트 (칸 색을 정함)
     let cues: [Cue]                     // 이 칸에 들어갈 큐들
+    var isHovering = false              // 마우스가 이 칸 위에 있는지 (CueGrid가 알려줌)
     var onAddCue: (String, String, CuePosition) -> Void = { _, _, _ in }   // 팝오버에서 입력을 마치면 할 일
     
-    @State private var isHoveringCell = false   // 마우스가 칸 위에 올라가 있는지
     @State private var isAddingCue = false          // Add new 팝오버가 열려 있는지
     
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             cueCards
-            if isHoveringCell || isAddingCue { addNewButton }
+            if isHovering || isAddingCue { addNewButton }
         }
         .padding(7)
         .padding(.leading, 4)
@@ -28,9 +28,6 @@ struct CueCell: View {
         .background(partColor.background.opacity(0.2))
         .overlay(alignment: .leading) { partColorBar }
         .clipShape(.rect(cornerRadius: 5))
-        .contentShape(.rect)
-        .onHover { isHoveringCell = $0 }
-        .animation(.easeOut(duration: 0.15), value: isHoveringCell) // 마우스를 올리면 자연스럽게 칸이 늘어나게 하기 위해 추가함
     }
 }
 
