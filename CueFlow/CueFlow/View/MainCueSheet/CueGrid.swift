@@ -9,10 +9,16 @@ import SwiftUI
 import SwiftData
 
 struct CueGrid: View {
-    @State private var hoveredSlotKey: String?   // 마우스가 올라가 있는 칸 (파트id-씬id)
-    let production: Production                                  // 어느 공연의 표인지
-    var selectedPart: Part? = nil                               // 파트 탭바에서 고른 파트 (nil = 전체)
+    let production: Production                    // 어느 공연의 표인지
+    var selectedPart: Part? = nil                 // 파트 탭바에서 고른 파트 (nil = 전체)
     @Environment(\.modelContext) private var modelContext   // 새 큐를 저장할 곳
+
+    @State private var hoveredSlotKey: String?    // 마우스가 올라가 있는 칸 (파트id-씬id)
+    @State private var isAddingScene = false      // 씬 추가 팝오버가 열려 있는지
+    @State private var isAddingPart = false       // 파트 추가 팝오버가 열려 있는지
+    @State private var editingScene: ShowScene?   // 더블클릭해서 수정 중인 씬
+    @State private var editingPart: Part?         // 더블클릭해서 수정 중인 파트
+
     var body: some View {
         ScrollView([.horizontal, .vertical]) {
             cueTable
@@ -35,7 +41,7 @@ extension CueGrid {
     private var headerRow: some View {
         GridRow {
             cornerHeaderCell
-            ForEach(sortedScenes.indices, id: \.self) { sceneHeaderCell(number: $0 + 1) }
+            ForEach(sortedScenes) { sceneHeaderCell($0) }
             addSceneHeaderCell
         }
     }
@@ -63,31 +69,43 @@ extension CueGrid {
     private var cornerHeaderCell: some View {
         Text("파트 / 씬")
             .font(.subheadline)
-            .foregroundStyle(GridStyle.textPrimary)
+            .foregroundStyle(Color.neutral900)
             .padding(.leading, 16)
             .frame(width: GridStyle.partColumnWidth, height: GridStyle.headerHeight, alignment: .leading)
-            .background(GridStyle.headerBackground)
+            .background(Color.neutral50)
             .gridCellBorder()
     }
     
-    // 씬 머리칸: #1, #2, #3 … (왼쪽부터 자동으로 번호)
-    private func sceneHeaderCell(number: Int) -> some View {
-        Text("#\(number)")
-            .font(.callout.weight(.semibold))
-            .foregroundStyle(GridStyle.textPrimary)
-            .padding(.leading, 12)
-            .frame(width: GridStyle.sceneColumnWidth, height: GridStyle.headerHeight, alignment: .leading)
-            .background(GridStyle.headerBackground)
-            .gridCellBorder()
+    // 씬 머리칸: 윗줄은 S#1 / N#1 / 전환, 아랫줄은 입력한 내용
+    private func sceneHeaderCell(_ scene: ShowScene) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(sceneLabel(for: scene))
+                .font(.callout.weight(.semibold))
+            Text(scene.title)
+                .font(.caption)
+                .foregroundStyle(Color.neutral500)
+                .lineLimit(1)
+        }
+        .foregroundStyle(Color.neutral900)
+        .padding(.leading, 12)
+        .frame(width: GridStyle.sceneColumnWidth, height: GridStyle.headerHeight, alignment: .leading)
+        .background(Color.neutral50)
+        .gridCellBorder()
+        .contentShape(.rect)
+        .onTapGesture(count: 2) { editingScene = scene }   // 더블클릭하면 수정 팝오버
+        .popover(isPresented: isEditing(scene), arrowEdge: .bottom) {
+            AddScene(title: scene.title, kind: scene.kind) { scene.title = $0; scene.kind = $1 }
+        }
     }
     
     // + 씬 추가 칸
     private var addSceneHeaderCell: some View {
-        Button(action: addScene) { Image(systemName: "plus").font(.system(size: 16)) }
+        Button { isAddingScene = true } label: { Image(systemName: "plus").font(.system(size: 16)) }
+            .popover(isPresented: $isAddingScene, arrowEdge: .bottom) { AddScene(onSave: addScene) }
             .buttonStyle(.plain)
-            .foregroundStyle(GridStyle.iconGray)
+            .foregroundStyle(Color.neutral600)
             .frame(width: GridStyle.addSceneColumnWidth, height: GridStyle.headerHeight)
-            .background(GridStyle.headerBackground)
+            .background(Color.neutral50)
             .gridCellBorder()
     }
     
@@ -95,7 +113,7 @@ extension CueGrid {
     private func partHeaderCell(_ part: Part) -> some View {
         Text(part.name)
             .font(.body)
-            .foregroundStyle(GridStyle.textPrimary)
+            .foregroundStyle(Color.neutral900)
             .padding(.leading, 16)
             .padding(.top, 25)
             .frame(width: GridStyle.partColumnWidth, alignment: .leading)
@@ -103,6 +121,11 @@ extension CueGrid {
             .background(.white)
             .overlay(alignment: .leading) { part.color.accent.frame(width: 6) }
             .gridCellBorder()
+            .contentShape(.rect)
+            .onTapGesture(count: 2) { editingPart = part }   // 더블클릭하면 수정 팝오버
+            .popover(isPresented: isEditing(part), arrowEdge: .trailing) {
+                AddPart(name: part.name) { part.name = $0 }
+            }
     }
     
     // 파트 × 씬 칸: 큐가 있으면 항상 보이고, 비어 있으면 마우스를 올렸을 때만 셀이 보임
@@ -124,11 +147,12 @@ extension CueGrid {
     
     // + 파트 추가 칸
     private var addPartHeaderCell: some View {
-        Button(action: addPart) { Image(systemName: "plus").font(.system(size: 16)) }
+        Button { isAddingPart = true } label: { Image(systemName: "plus").font(.system(size: 16)) }
+            .popover(isPresented: $isAddingPart, arrowEdge: .trailing) { AddPart(onSave: addPart) }
             .buttonStyle(.plain)
-            .foregroundStyle(GridStyle.iconGray)
+            .foregroundStyle(Color.neutral600)
             .frame(width: GridStyle.partColumnWidth, height: GridStyle.addPartRowHeight)
-            .background(GridStyle.addPartBackground)
+            .background(Color.neutral25)
             .overlay(alignment: .leading) { Color.partAddaccent.frame(width: 6) }
             .gridCellBorder()
     }
@@ -145,17 +169,16 @@ extension CueGrid {
 // 동작
 
 extension CueGrid {
-    // + 씬 추가: 맨 오른쪽에 새 씬 한 칸 (#번호는 자동)
-    private func addScene() {
-        let nextOrder = sortedScenes.count
-        let newScene = ShowScene(title: "", kind: .scene, order: nextOrder)
+    // 씬 추가 팝오버에서 Enter: 맨 오른쪽에 새 씬 한 칸 (#번호는 자동)
+    private func addScene(title: String, kind: SceneKind) {
+        let newScene = ShowScene(title: title, kind: kind, order: sortedScenes.count)
         production.scenes = (production.scenes ?? []) + [newScene]
     }
     
-    // + 파트 추가: 맨 아래에 새 파트 한 줄 (색은 다음 순서 색)
-    private func addPart() {
+    // 파트 추가 팝오버에서 Enter: 맨 아래에 새 파트 한 줄 (색은 다음 순서 색)
+    private func addPart(name: String) {
         let nextOrder = sortedParts.count
-        let newPart = Part(name: "새 파트", order: nextOrder, colorIndex: sortedParts.count)
+        let newPart = Part(name: name, order: nextOrder, colorIndex: nextOrder)
         production.parts = (production.parts ?? []) + [newPart]
     }
     
@@ -172,6 +195,16 @@ extension CueGrid {
     // 이 파트의 큐 번호 중 가장 큰 번호 + 1 (처음이면 1)
     private func nextCueNumber(in part: Part) -> Int {
         ((part.cues ?? []).map(\.order).max() ?? 0) + 1
+    }
+    
+    // 이 씬의 수정 팝오버를 열고 닫는 스위치 (닫히면 수정 중인 씬을 비움)
+    private func isEditing(_ scene: ShowScene) -> Binding<Bool> {
+        Binding(get: { editingScene == scene }, set: { if !$0 { editingScene = nil } })
+    }
+    
+    // 이 파트의 수정 팝오버를 열고 닫는 스위치
+    private func isEditing(_ part: Part) -> Binding<Bool> {
+        Binding(get: { editingPart == part }, set: { if !$0 { editingPart = nil } })
     }
 }
 
@@ -198,9 +231,24 @@ extension CueGrid {
     private func cues(of part: Part, in scene: ShowScene) -> [Cue] {
         (part.cues ?? []).filter { $0.trigger?.scene == scene }
     }
+    
+    // 씬 머리칸 윗줄: 씬 → S#1, 넘버 → N#1, 전환 → 전환
+    private func sceneLabel(for scene: ShowScene) -> String {
+        let number = kindNumber(of: scene)
+        switch scene.kind {
+        case .scene: return "S#\(number)"
+        case .number: return "N#\(number)"
+        case .transition: return "전환"
+        }
+    }
+    
+    // 같은 종류끼리 왼쪽부터 몇 번째인지 (씬은 씬끼리, 넘버는 넘버끼리 1, 2, 3 …)
+    private func kindNumber(of scene: ShowScene) -> Int {
+        sortedScenes.filter { $0.kind == scene.kind && $0.order <= scene.order }.count
+    }
 }
 
-// 크기 · 임시 색상
+// 크기
 
 private enum GridStyle {
     static let partColumnWidth: CGFloat = 192
@@ -209,21 +257,13 @@ private enum GridStyle {
     static let headerHeight: CGFloat = 58
     static let addPartRowHeight: CGFloat = 100
     static let minRowHeight: CGFloat = 148
-    
-    
-    //임시 색상들(확정은 아니고 피그마 상 색상들을 바탕으로 일단 넣어둠.)
-    static let headerBackground = Color(red: 0.973, green: 0.976, blue: 0.984)    // #F8F9FB
-    static let addPartBackground = Color(red: 0.984, green: 0.988, blue: 0.996)   // #FBFCFE
-    static let lineColor = Color(red: 0.890, green: 0.910, blue: 0.937)           // #E3E8EF (칸 사이 선)
-    static let textPrimary = Color(red: 0.071, green: 0.098, blue: 0.149)         // #121926
-    static let iconGray = Color(red: 0.294, green: 0.333, blue: 0.396)           // #4B5565
 }
 
 // 칸마다 오른쪽 · 아래에 얇은 선
 private extension View {
     func gridCellBorder() -> some View {
-        overlay(alignment: .trailing) { GridStyle.lineColor.frame(width: 1) }
-            .overlay(alignment: .bottom) { GridStyle.lineColor.frame(height: 1) }
+        overlay(alignment: .trailing) { Color.neutral200.frame(width: 1) }
+            .overlay(alignment: .bottom) { Color.neutral200.frame(height: 1) }
     }
 }
 
