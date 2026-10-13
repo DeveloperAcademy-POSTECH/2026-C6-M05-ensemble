@@ -1,15 +1,18 @@
+
 //
 //  RehearsalScriptPanel.swift
 //  CueFlow
 //
 //  리허설 모드 왼쪽 대본 패널. 지금 장면의 대본을 보여준다.
 //  지문 줄은 회색, 대사 줄은 배역 이름 + 대사 (괄호 지문은 회색 기울임).
+//  지금 큐에 해당하는 줄(ScriptCueMatcher가 찾은 줄)은 연보라 + 왼쪽 막대로 하이라이트하고 그 줄로 스크롤한다.
 //
 
 import SwiftUI
 
 struct RehearsalScriptPanel: View {
     let lines: [ScriptLine]        // 지금 장면의 대본 (순서대로)
+    var highlightedLineID: UUID?   // 지금 큐에 해당하는 줄
     let onEdit: () -> Void         // "대본 입력" 창 열기
 
     var body: some View {
@@ -33,15 +36,23 @@ struct RehearsalScriptPanel: View {
     }
 
     private var scriptView: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                ForEach(lines) { line in
-                    ScriptLineView(speaker: line.speaker, text: line.text)
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(lines) { line in
+                        lineRow(line, isHighlighted: line.id == highlightedLineID)
+                            .id(line.id)
+                    }
                 }
+                .padding(.horizontal, 10)
+                .padding(.top, 14)
+                .padding(.bottom, 96)   // 마지막 줄이 아래 흐림에 가리지 않게
             }
-            .padding(.horizontal, 22)
-            .padding(.top, 20)
-            .padding(.bottom, 96)   // 마지막 줄이 아래 흐림에 가리지 않게
+            // 큐를 넘기면 그 줄로 스크롤
+            .onChange(of: highlightedLineID, initial: true) { _, id in
+                guard let id else { return }
+                withAnimation { proxy.scrollTo(id, anchor: .center) }
+            }
         }
         // 아래쪽이 흐려지며 사라지는 효과 (피그마 Fade)
         .overlay(alignment: .bottom) {
@@ -54,6 +65,20 @@ struct RehearsalScriptPanel: View {
             .allowsHitTesting(false)
         }
         .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 12, bottomTrailingRadius: 12))
+    }
+
+    // 대본 한 줄. 하이라이트면 연보라 바탕 + 왼쪽 보라 막대 (큐 목록의 지금 큐 줄과 같은 모양)
+    private func lineRow(_ line: ScriptLine, isHighlighted: Bool) -> some View {
+        HStack(spacing: 0) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(isHighlighted ? Color.brandPrimary : Color.clear)
+                .frame(width: 4)
+            ScriptLineView(speaker: line.speaker, text: line.text)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(isHighlighted ? Color.brandPrimarySubtle : Color.clear, in: RoundedRectangle(cornerRadius: 6))
     }
 
     private var emptyView: some View {

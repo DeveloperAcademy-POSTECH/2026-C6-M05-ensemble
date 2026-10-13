@@ -55,7 +55,14 @@ enum ScriptImporter {
     // 나눈 대본을 공연에 넣는다. 그 장면의 원래 대본은 새 대본으로 바뀐다.
     // 앱에 없는 장면(예: 대본엔 S15가 있는데 앱엔 씬이 3개뿐)은 맨 뒤에 새로 만든다.
     // 장면 표시 앞에 있던 글은 currentScene(지금 보고 있는 장면)에 넣는다.
-    static func apply(_ parsedScenes: [ParsedScene], to production: Production, currentScene: ShowScene?) {
+    // cast · props = 사용자가 체크한 배역 · 소품 → 공연에 이름 목록으로 저장 (무대 배치도에서 큐 제목과 맞춰 본다)
+    static func apply(
+        _ parsedScenes: [ParsedScene],
+        to production: Production,
+        currentScene: ShowScene?,
+        cast: Set<String>,
+        props: Set<String>
+    ) {
         var nextOrder = ((production.scenes ?? []).map(\.order).max() ?? -1) + 1
 
         for parsed in parsedScenes {
@@ -80,5 +87,8 @@ enum ScriptImporter {
                 ScriptLine(order: index, speaker: line.speaker, text: line.text)
             }
         }
+
+        production.castNames = cast.sorted()
+        production.propNames = props.sorted()
     }
 }

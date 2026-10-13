@@ -37,6 +37,21 @@ struct RehearsalView: View {
         currentTriggers.flatMap { ($0.cues ?? []).sorted { $0.order < $1.order } }
     }
 
+    // 지금 큐(트리거)에 붙은 큐들 → 무대 배치도에서 진하게
+    private var currentCueIDs: Set<UUID> {
+        guard currentTriggers.indices.contains(triggerIndex) else { return [] }
+        return Set((currentTriggers[triggerIndex].cues ?? []).map(\.id))
+    }
+
+    // 지금 큐에 해당하는 대본 줄 (트리거 글로 찾음)
+    private var highlightedLineID: UUID? {
+        guard currentTriggers.indices.contains(triggerIndex) else { return nil }
+        let matches = ScriptCueMatcher.match(
+            triggers: currentTriggers, lines: currentScriptLines, castNames: production.castNames
+        )
+        return matches[currentTriggers[triggerIndex].id]
+    }
+
     // 지금 장면의 대본 (순서대로)
     private var currentScriptLines: [ScriptLine] {
         (currentScene?.scriptLines ?? []).sorted { $0.order < $1.order }
@@ -54,13 +69,13 @@ struct RehearsalView: View {
             header
 
             HStack(alignment: .top, spacing: 21) {
-                RehearsalScriptPanel(lines: currentScriptLines) {
+                RehearsalScriptPanel(lines: currentScriptLines, highlightedLineID: highlightedLineID) {
                     isEditingScript = true
                 }
                 .frame(width: 360)
 
                 VStack(spacing: 23) {
-                    RehearsalStageMap(cues: currentSceneCues)
+                    RehearsalStageMap(cues: currentSceneCues, currentCueIDs: currentCueIDs, production: production)
                         .frame(height: 378)
 
                     RehearsalCueList(

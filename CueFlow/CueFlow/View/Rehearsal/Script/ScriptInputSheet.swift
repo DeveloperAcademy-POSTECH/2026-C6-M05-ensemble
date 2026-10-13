@@ -23,15 +23,24 @@ struct ScriptInputSheet: View {
     @State private var cast: [String] = []             // 배역 목록 (자동으로 찾은 것 + 직접 추가)
     @State private var selectedCast: Set<String> = []  // 체크된 배역만 배역으로 본다
     @State private var newName = ""
+    @State private var props: [String] = []            // 소품 목록 (괄호 지문에서 찾은 것 + 직접 추가)
+    @State private var selectedProps: Set<String> = []
+    @State private var newProp = ""
+    @State private var overrides = SceneOverrides()     // 미리보기에서 직접 나누기 · 합치기한 것
 
     init(production: Production, currentScene: ShowScene?, initialText: String = "") {
         self.production = production
         self.currentScene = currentScene
         _text = State(initialValue: initialText)
+        // 전에 확인한 배역 · 소품은 체크된 채로 시작
+        _cast = State(initialValue: production.castNames)
+        _selectedCast = State(initialValue: Set(production.castNames))
+        _props = State(initialValue: production.propNames)
+        _selectedProps = State(initialValue: Set(production.propNames))
     }
 
     private var parsedScenes: [ParsedScene] {
-        ScriptParser.parse(text, cast: selectedCast)
+        ScriptParser.parse(text, cast: selectedCast, overrides: overrides)
     }
 
     var body: some View {
@@ -43,6 +52,7 @@ struct ScriptInputSheet: View {
         }
         .padding(28)
         .frame(width: 760, height: 640)
+        .onChange(of: text) { overrides = SceneOverrides() }   // 글이 바뀌면 문단 번호가 달라지니 고친 것도 처음부터
         .fileImporter(isPresented: $isImportingFile, allowedContentTypes: ScriptImporter.fileTypes) { result in
             guard case .success(let url) = result else { return }
             if let loaded = ScriptImporter.text(from: url), !loaded.isEmpty {
@@ -62,7 +72,7 @@ struct ScriptInputSheet: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("대본 입력")
                         .font(.title2.bold())
-                    Text("구글 닥스에서 복사해 붙여넣거나, 직접 쓰거나, 파일을 불러오세요.\n장면은 줄 맨 앞에 S1 · N1 · D1 처럼 적으면 장면별로 나눠져요.")
+                    Text("구글 닥스에서 복사해 붙여넣거나, 직접 쓰거나, 파일을 불러오세요.\n줄 맨 앞의 S1 · 씬 1 · 1장 · N1 · M1 · D1 같은 표시로 장면을 나눠요. 다음 화면에서 고칠 수 있어요.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
@@ -119,6 +129,10 @@ struct ScriptInputSheet: View {
         // 앞에서 직접 추가했던 배역은 남긴다
         cast = found + cast.filter { !found.contains($0) }
         selectedCast = selectedCast.union(found)
+
+        let foundProps = ScriptParser.propCandidates(in: text, cast: selectedCast)
+        props = foundProps + props.filter { !foundProps.contains($0) }
+        selectedProps = selectedProps.union(foundProps.filter(ScriptParser.isLikelyProp))   // 손 · 고개 · 노동자들 같은 말은 꺼 둔다
         step = .review
     }
 
@@ -129,12 +143,13 @@ struct ScriptInputSheet: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("이렇게 나눴어요")
                     .font(.title2.bold())
-                Text("배역이 맞는지 확인해 주세요. 체크를 풀면 그 이름으로 시작하는 줄은 지문이 돼요.")
+                Text("배역 · 소품이 맞는지 확인해 주세요. 체크한 것만 무대 배치도에 나와요.\n장면이 잘못 나뉘었으면 줄에 마우스를 올려 '여기서 나누기', 장면 제목 옆 '앞 장면에 합치기'를 눌러요.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
 
-            castBar
+            chipBar(title: "배역", names: $cast, selected: $selectedCast, newName: $newName, placeholder: "배역 추가")
+            chipBar(title: "소품", names: $props, selected: $selectedProps, newName: $newProp, placeholder: "소품 추가")
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
@@ -160,7 +175,10 @@ struct ScriptInputSheet: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Button("적용") {
-                    ScriptImporter.apply(parsedScenes, to: production, currentScene: currentScene)
+                    ScriptImporter.apply(
+                        parsedScenes, to: production, currentScene: currentScene,
+                        cast: selectedCast, props: selectedProps
+                    )
                     dismiss()
                 }
                 .buttonStyle(.primary)
@@ -169,19 +187,25 @@ struct ScriptInputSheet: View {
         }
     }
 
-    // 배역 체크 칩 + 직접 추가
-    private var castBar: some View {
+    // 배역 · 소품 체크 칩 + 직접 추가
+    private func chipBar(
+        title: String,
+        names: Binding<[String]>,
+        selected: Binding<Set<String>>,
+        newName: Binding<String>,
+        placeholder: String
+    ) -> some View {
         HStack(spacing: 6) {
-            Text("배역")
+            Text(title)
                 .font(.callout.weight(.semibold))
                 .padding(.trailing, 4)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
-                    ForEach(cast, id: \.self) { name in
-                        let isOn = selectedCast.contains(name)
+                    ForEach(names.wrappedValue, id: \.self) { name in
+                        let isOn = selected.wrappedValue.contains(name)
                         Button {
-                            if isOn { selectedCast.remove(name) } else { selectedCast.insert(name) }
+                            if isOn { selected.wrappedValue.remove(name) } else { selected.wrappedValue.insert(name) }
                         } label: {
                             Label(name, systemImage: isOn ? "checkmark" : "plus")
                                 .font(.caption)
@@ -198,19 +222,19 @@ struct ScriptInputSheet: View {
                 }
             }
 
-            TextField("배역 추가", text: $newName)
+            TextField(placeholder, text: newName)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 110)
-                .onSubmit(addName)
+                .onSubmit { add(newName, to: names, selected: selected) }
         }
     }
 
-    private func addName() {
-        let name = newName.trimmingCharacters(in: .whitespaces)
+    private func add(_ newName: Binding<String>, to names: Binding<[String]>, selected: Binding<Set<String>>) {
+        let name = newName.wrappedValue.trimmingCharacters(in: .whitespaces)
         guard !name.isEmpty else { return }
-        if !cast.contains(name) { cast.append(name) }
-        selectedCast.insert(name)
-        newName = ""
+        if !names.wrappedValue.contains(name) { names.wrappedValue.append(name) }
+        selected.wrappedValue.insert(name)
+        newName.wrappedValue = ""
     }
 
     // 미리보기: 장면 하나
@@ -231,10 +255,22 @@ struct ScriptInputSheet: View {
                 Text("\(parsed.lines.count)줄")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if let index = parsed.headingIndex {
+                    Button("앞 장면에 합치기") { overrides.merged.insert(index) }
+                        .buttonStyle(.link)
+                        .font(.caption)
+                } else if let index = parsed.splitIndex {
+                    Button("나누기 취소") { overrides.splits[index] = nil }
+                        .buttonStyle(.link)
+                        .font(.caption)
+                }
             }
 
-            ForEach(parsed.lines) { line in
-                ScriptLineView(speaker: line.speaker, text: line.text)
+            ForEach(Array(parsed.lines.enumerated()), id: \.element.id) { position, line in
+                // 장면 첫 줄에서 나누면 빈 장면이 생기니 둘째 줄부터
+                PreviewLineRow(line: line, canSplit: position > 0) { kind in
+                    overrides.splits[line.index] = kind
+                }
             }
         }
     }
@@ -252,6 +288,36 @@ struct ScriptInputSheet: View {
             return currentScene == nil ? "넣을 장면 없음" : "지금 장면에 넣어요"
         }
         return ScriptImporter.existingScene(for: parsed, in: production) == nil ? "새 장면으로 만들어요" : nil
+    }
+}
+
+// 미리보기 대본 한 줄. 마우스를 올리면 "여기서 나누기" 메뉴가 보인다
+private struct PreviewLineRow: View {
+    let line: ParsedLine
+    let canSplit: Bool
+    let onSplit: (SceneKind) -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            ScriptLineView(speaker: line.speaker, text: line.text)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            if canSplit {
+                Menu("여기서 나누기") {
+                    ForEach(SceneKind.allCases, id: \.self) { kind in
+                        Button("새 \(kind.rawValue)으로") { onSplit(kind) }
+                    }
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .font(.caption)
+                .opacity(isHovered ? 1 : 0)
+            }
+        }
+        .contentShape(Rectangle())
+        .onHover { isHovered = $0 }
     }
 }
 

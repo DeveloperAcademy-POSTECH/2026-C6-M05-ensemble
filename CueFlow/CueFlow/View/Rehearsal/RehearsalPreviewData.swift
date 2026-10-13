@@ -35,6 +35,8 @@ enum RehearsalPreviewData {
         production.parts = Array(parts.values)
         production.scenes?.first?.triggers = sampleTriggers(parts: parts)
         production.scenes?.first?.scriptLines = scriptLines
+        production.castNames = ["판틴", "공장장", "시장", "노동자들"]
+        production.propNames = ["로켓", "편지", "작업대"]
         return production
     }
 

@@ -20,6 +20,10 @@ final class Production {
     var lastOpenedAt: Date = Date()     // 마지막으로 연 시간 (홈 "최근에 열어본 프로젝트")
     var isFavorite: Bool = false        // 즐겨찾기 여부
 
+    // 대본 입력에서 확인한 배역 · 소품 이름. 리허설 무대 배치도에서 큐 제목과 맞춰 본다
+    var castNames: [String] = []
+    var propNames: [String] = []
+
     // 공연을 지우면 그 안의 씬·파트(와 그 아래 전부)도 같이 지운다.
     @Relationship(deleteRule: .cascade, inverse: \ShowScene.production)
     var scenes: [ShowScene]? = []
