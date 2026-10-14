@@ -2,7 +2,7 @@
 //  RehearsalCueList.swift
 //  CueFlow
 //
-//  리허설 모드 큐 목록 (피그마 Card/큐 목록).
+//  리허설 모드 큐 목록 (피그마 리허설모드_무대배치01 · ver1). 제목 · 필터 · 버튼은 표 상자 밖 위에.
 //  메인 큐시트와 같은 데이터(장면 → 트리거 → 큐)를 표로 읽어서 보여준다. 한 줄 = 트리거 하나.
 //  지금 큐(트리거) 줄은 연보라 + 왼쪽 막대, 이전 큐 / 다음 큐로 이동.
 //
@@ -42,105 +42,139 @@ struct RehearsalCueList: View {
     }
 
     var body: some View {
-        RehearsalCard {
-            VStack(spacing: 0) {
-                header
-                Divider()
-                columnTitles
-                Divider()
+        VStack(alignment: .leading, spacing: 8) {
+            // "큐 목록  5개 큐"
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("큐 목록")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.neutral800)
+                Text("\(cueCount)개 큐")
+                    .font(.body)
+                    .foregroundStyle(Color.neutral400)
+            }
 
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            ForEach(Array(triggers.enumerated()), id: \.element.id) { index, trigger in
-                                let rowCues = cues(of: trigger)
-                                // 필터로 큐가 하나도 없는 트리거는 숨긴다 (지금 큐는 남긴다)
-                                if !rowCues.isEmpty || index == currentIndex {
-                                    CueListRow(
-                                        code: "\(sceneCode) - \(index + 1)",
-                                        trigger: trigger,
-                                        cues: rowCues,
-                                        isCurrent: index == currentIndex
-                                    )
-                                    .id(index)
-                                    .onTapGesture { currentIndex = index }
-                                    Divider()
-                                }
+            // 파트 필터 | 이전 큐 · 다음 큐
+            HStack(spacing: 8) {
+                partFilter
+                Spacer()
+                previousButton
+                nextButton
+            }
+
+            table
+        }
+    }
+
+    // 표: 회색 테두리 상자 안에 열 제목 + 줄들
+    private var table: some View {
+        VStack(spacing: 0) {
+            columnTitles
+            Divider()
+
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach(Array(triggers.enumerated()), id: \.element.id) { index, trigger in
+                            let rowCues = cues(of: trigger)
+                            // 필터로 큐가 하나도 없는 트리거는 숨긴다 (지금 큐는 남긴다)
+                            if !rowCues.isEmpty || index == currentIndex {
+                                CueListRow(
+                                    code: "\(sceneCode) - \(index + 1)",
+                                    trigger: trigger,
+                                    cues: rowCues,
+                                    isCurrent: index == currentIndex
+                                )
+                                .id(index)
+                                .onTapGesture { currentIndex = index }
+                                Divider()
                             }
                         }
                     }
-                    .scrollIndicators(.never)   // 스크롤바 자리만큼 줄이 좁아져 열 제목과 어긋나지 않게
-                    // 지금 큐가 바뀌면 그 줄이 보이게
-                    .onChange(of: currentIndex) {
-                        withAnimation { proxy.scrollTo(currentIndex, anchor: .center) }
-                    }
                 }
-                .overlay { columnLines }
+                .scrollIndicators(.never)   // 스크롤바 자리만큼 줄이 좁아져 열 제목과 어긋나지 않게
+                // 지금 큐가 바뀌면 그 줄이 보이게
+                .onChange(of: currentIndex) {
+                    withAnimation { proxy.scrollTo(currentIndex, anchor: .center) }
+                }
             }
+            .overlay { columnLines }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color.neutral25)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(Color.neutral300, lineWidth: 1)
         }
     }
 
-    // "큐 목록  5개 큐  (전체)(무대)(소품)…      < 이전 큐  다음 큐 >"
-    private var header: some View {
-        HStack(spacing: 10) {
-            Text("큐 목록")
-                .font(.body.weight(.semibold))
-            Text("\(cueCount)개 큐")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-
-            HStack(spacing: 6) {
-                filterChip("전체", isSelected: selectedPart == nil) { selectedPart = nil }
-                ForEach(parts) { part in
-                    filterChip(part.name, isSelected: selectedPart == part) { selectedPart = part }
-                }
-            }
-            .padding(.leading, 10)
-
-            Spacer()
-
-            Button(action: onPrevious) {
-                Label("이전 큐", systemImage: "chevron.left")
-                    .labelStyle(.titleAndIcon)
-            }
-            .buttonStyle(.secondary)
-            .frame(width: 78, height: 28)
-            .disabled(!canGoPrevious)
-            .opacity(canGoPrevious ? 1 : 0.4)
-
-            Button(action: onNext) {
-                HStack(spacing: 4) {
-                    Text("다음 큐")
-                    Image(systemName: "chevron.right")
-                }
-            }
-            .buttonStyle(.softPrimaryCompat)
-            .frame(width: 75, height: 28)
-            .disabled(!canGoNext)
-            .opacity(canGoNext ? 1 : 0.4)
-            .keyboardShortcut(.space, modifiers: [])   // 스페이스바 = 다음 큐
-        }
-        .font(.callout)
-        .padding(.leading, 22)
-        .padding(.trailing, 18)
-        .frame(height: 56)
-    }
-
-    // 파트 필터 알약. 고른 것은 회색 바탕.
+    // 회색 긴 알약 안에 전체 · 파트들. 고른 것만 연보라 바탕
     // TODO: 셀리나 PartFilterTabBar(PR #40)와 모양 · 동작 합치기
+    private var partFilter: some View {
+        HStack(spacing: 0) {
+            filterChip("전체", isSelected: selectedPart == nil) { selectedPart = nil }
+            ForEach(parts) { part in
+                filterChip(part.name, isSelected: selectedPart == part) { selectedPart = part }
+            }
+        }
+        .padding(.horizontal, 6)
+        .frame(height: 36)
+        .background(Color.neutral50, in: Capsule())
+    }
+
     private func filterChip(_ title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.caption)
-                .foregroundStyle(isSelected ? Color.white : Color.primary)
-                .padding(.horizontal, 11)
-                .frame(height: 23)
-                .background(isSelected ? Color.secondary : Color.clear, in: Capsule())
-                .overlay {
-                    Capsule().strokeBorder(isSelected ? Color.clear : Color.secondary.opacity(0.5), lineWidth: 1)
-                }
+                .font(.system(size: 12))
+                .foregroundStyle(Color.neutral900)
+                .padding(.horizontal, 12)
+                .frame(minWidth: 48)
+                .frame(height: 27)
+                .background(isSelected ? Color.brandPrimarySubtle : Color.clear, in: Capsule())
+                .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+    }
+
+    // "< 이전 큐": 흰 바탕 + 회색 테두리
+    private var previousButton: some View {
+        Button(action: onPrevious) {
+            HStack(spacing: 4) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Color.neutral600)
+                Text("이전 큐")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color.neutral800)
+            }
+            .frame(width: 78, height: 28)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 6))
+            .overlay {
+                RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(Color.neutral400, lineWidth: 1)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+        .disabled(!canGoPrevious)
+        .opacity(canGoPrevious ? 1 : 0.4)
+    }
+
+    // "다음 큐 >": 연보라 바탕 + 흰 글자. 스페이스바로도 누른다
+    private var nextButton: some View {
+        Button(action: onNext) {
+            HStack(spacing: 4) {
+                Text("다음 큐")
+                    .font(.system(size: 12, weight: .medium))
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+            }
+        }
+        .buttonStyle(.softPrimaryCompat)
+        .frame(width: 75, height: 28)
+        .disabled(!canGoNext)
+        .opacity(canGoNext ? 1 : 0.4)
+        .keyboardShortcut(.space, modifiers: [])   // 스페이스바 = 다음 큐
     }
 
     // 열 제목: 씬 & 큐 | 트리거 | 큐 | 위치 | 파트

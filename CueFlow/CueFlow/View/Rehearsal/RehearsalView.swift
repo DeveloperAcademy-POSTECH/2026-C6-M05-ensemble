@@ -63,7 +63,7 @@ struct RehearsalView: View {
                 }
                 .frame(width: 360)
 
-                VStack(spacing: 23) {
+                VStack(spacing: 32) {
                     RehearsalStageMap(
                         production: production,
                         scene: currentScene,
