@@ -50,7 +50,7 @@ struct SoftPrimaryButtonStyle: ButtonStyle {
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
-                configuration.isPressed ? Color.brandPrimary : Color.brandPrimaryHover,
+                configuration.isPressed ? Color.brandPrimary : Color.brandPrimarySoft,   // 피그마 #9188FF
                 in: RoundedRectangle(cornerRadius: 6)
             )
             .contentShape(RoundedRectangle(cornerRadius: 6))
