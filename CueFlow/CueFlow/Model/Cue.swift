@@ -22,7 +22,7 @@ final class Cue {
     var id: UUID = UUID()
     var title: String = ""                  // 카드 첫 줄 (예: "자베르 고지대 등장")
     var position: CuePosition = CuePosition.stage
-    var order: Int = 0                      // 같은 칸(파트 × 트리거) 안에서의 순서 → 카드의 01, 02
+    var order: Int = 0                      // 사용자가 직접 입력한 큐 번호 → 카드의 01, 02
     var createdAt: Date = Date()
 
     var part: Part?                         // 어느 파트의 큐인지 (예: 조명)
