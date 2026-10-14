@@ -29,7 +29,7 @@ struct RehearsalStageMap: View {
     let currentCueIDs: Set<UUID>  // 지금 큐(트리거)의 큐들 → 진하게
     let production: Production    // 배역 · 소품 이름 목록
 
-    @State private var isEditingNames = false   // "배역 · 소품 목록" 창
+    @State private var isEditingNames = false   // "배역 · 소품 목록" 팝오버
 
     // 큐 제목에서 찾은 배역 · 소품 (배역 먼저). "공장장"을 찾았으면 그 안의 "공장"은 뺀다
     private func items(in title: String) -> [(String, StageItemKind)] {
@@ -76,25 +76,59 @@ struct RehearsalStageMap: View {
 
     var body: some View {
         RehearsalCard {
-            VStack(spacing: 16) {
-                HStack(spacing: 23) {
-                    sideZone(.sangsu)
-                        .frame(width: 166)
+            if hasNames {
+                VStack(spacing: 16) {
+                    HStack(spacing: 23) {
+                        sideZone(.sangsu)
+                            .frame(width: 166)
 
-                    stageGrid
+                        stageGrid
 
-                    sideZone(.hasu)
-                        .frame(width: 166)
+                        sideZone(.hasu)
+                            .frame(width: 166)
+                    }
+
+                    unplacedRow
                 }
-
-                unplacedRow
+                .padding(.horizontal, 31)
+                .padding(.vertical, 22)
+            } else {
+                emptyView
             }
-            .padding(.horizontal, 31)
-            .padding(.vertical, 22)
         }
-        .sheet(isPresented: $isEditingNames) {
+        // 바깥을 누르면 닫히는 팝오버 (피그마 리허설모드_Popover).
+        // 카드에 붙여야 이름을 처음 넣어 빈 화면 → 배치도로 바뀌어도 팝오버가 안 닫힌다
+        .popover(isPresented: $isEditingNames, arrowEdge: .bottom) {
             CastPropListSheet(production: production)
         }
+    }
+
+    // 배역 · 소품 이름이 하나도 없을 때 (피그마 리허설모드_무대배치01)
+    private var emptyView: some View {
+        VStack(spacing: 10) {
+            Text("첫 무대 배치를 시작해보세요")
+                .font(.system(size: 20, weight: .semibold))
+                .tracking(-0.45)
+                .foregroundStyle(Color.neutral900)
+            Text("배우와 소품을 추가하고 무대 위 원하는 위치에 배치해보세요.\n첫 무대 배치 이후 장면별 무대 구성을 한눈에 확인할 수 있어요.")
+                .font(.body)
+                .lineSpacing(4)
+                .foregroundStyle(Color.neutral500)
+                .multilineTextAlignment(.center)
+            Button {
+                isEditingNames = true
+            } label: {
+                Text("배치하기")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Color.brandPrimaryText)
+                    .frame(width: 89, height: 36)
+                    .background(Color.brandPrimarySubtle, in: RoundedRectangle(cornerRadius: 6))
+                    .contentShape(RoundedRectangle(cornerRadius: 6))
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 10)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // 상수 / 하수: 칸 없이 위에서부터 나열
@@ -146,11 +180,7 @@ struct RehearsalStageMap: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
-                    if !hasNames {
-                        Text("대본을 불러오거나 배역 · 소품 목록에 이름을 넣으면 큐 위치에 나와요")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    } else if unplacedItems.isEmpty {
+                    if unplacedItems.isEmpty {
                         Text("무대 큐를 모두 배치했어요")
                             .font(.caption)
                             .foregroundStyle(.tertiary)

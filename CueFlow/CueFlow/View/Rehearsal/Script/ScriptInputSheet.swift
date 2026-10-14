@@ -50,8 +50,11 @@ struct ScriptInputSheet: View {
             case .review: reviewStep
             }
         }
-        .padding(28)
-        .frame(width: 760, height: 640)
+        .padding(.horizontal, 51)
+        .padding(.top, 39)
+        .padding(.bottom, 32)
+        .frame(width: 1009, height: 769)
+        .background(Color.neutral25)
         .onChange(of: text) { overrides = SceneOverrides() }   // 글이 바뀌면 문단 번호가 달라지니 고친 것도 처음부터
         .fileImporter(isPresented: $isImportingFile, allowedContentTypes: ScriptImporter.fileTypes) { result in
             guard case .success(let url) = result else { return }
@@ -68,22 +71,11 @@ struct ScriptInputSheet: View {
 
     private var inputStep: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("대본 입력")
-                        .font(.title2.bold())
-                    Text("구글 닥스에서 복사해 붙여넣거나, 직접 쓰거나, 파일을 불러오세요.\n줄 맨 앞의 S1 · 씬 1 · 1장 · N1 · M1 · D1 같은 표시로 장면을 나눠요. 다음 화면에서 고칠 수 있어요.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Button {
-                    isImportingFile = true
-                } label: {
-                    Label("파일에서 불러오기", systemImage: "doc.badge.plus")
-                }
-                .buttonStyle(.secondary)
-                .frame(width: 150, height: 32)
+            SheetHeader(
+                title: "대본 입력",
+                subtitle: "작성해둔 대본을 복사해 붙여넣거나, 직접 쓰거나, 파일을 불러오세요.\n줄 맨 앞의 S1 · 씬 1 · 1장 · N1 · M1 · D1 같은 표시로 장면을 나눠요. 다음 화면에서 고칠 수 있어요."
+            ) {
+                importButton
             }
 
             if let fileError {
@@ -93,20 +85,21 @@ struct ScriptInputSheet: View {
             }
 
             TextEditor(text: $text)
-                .font(.system(size: 13))
+                .font(.system(size: 17))
+                .lineSpacing(5)
+                .foregroundStyle(Color.neutral900)
                 .scrollContentBackground(.hidden)
-                .padding(8)
-                .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8)
-                        .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
-                }
+                .padding(.horizontal, 36)
+                .padding(.vertical, 32)
+                .sheetBox()
                 .overlay(alignment: .topLeading) {
                     if text.isEmpty {
                         Text("S1 (하루가 끝날 무렵, 공장 안)\n판틴 (편지를 숨기며) 아무것도 아니에요.\n공장장 일하는 시간에 편지라니!")
-                            .font(.system(size: 13))
-                            .foregroundStyle(.tertiary)
-                            .padding(13)
+                            .font(.system(size: 17))
+                            .lineSpacing(5)
+                            .foregroundStyle(Color.neutral400)
+                            .padding(.leading, 41)
+                            .padding(.top, 32)
                             .allowsHitTesting(false)
                     }
                 }
@@ -115,13 +108,33 @@ struct ScriptInputSheet: View {
                 Spacer()
                 Button("취소") { dismiss() }
                     .buttonStyle(.secondary)
-                    .frame(width: 90, height: 34)
+                    .frame(width: 112, height: 36)
                 Button("다음") { goToReview() }
-                    .buttonStyle(.primary)
-                    .frame(width: 90, height: 34)
+                    .buttonStyle(SheetPrimaryButtonStyle())
+                    .frame(width: 112, height: 36)
                     .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
+    }
+
+    // 오른쪽 위 "불러오기" (파일에서 대본 불러오기)
+    private var importButton: some View {
+        Button {
+            isImportingFile = true
+        } label: {
+            Label("불러오기", systemImage: "arrow.down.document")
+                .font(.body)
+                .foregroundStyle(Color.brandPrimaryText)
+                .frame(width: 95, height: 30)
+                .background(Color.neutral25, in: RoundedRectangle(cornerRadius: 6))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(Color.brandPrimary, lineWidth: 1)
+                }
+                .contentShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+        .help("txt · docx · pdf · rtf 파일에서 불러오기")
     }
 
     private func goToReview() {
@@ -140,16 +153,17 @@ struct ScriptInputSheet: View {
 
     private var reviewStep: some View {
         VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("이렇게 나눴어요")
-                    .font(.title2.bold())
-                Text("배역 · 소품이 맞는지 확인해 주세요. 체크한 것만 무대 배치도에 나와요.\n장면이 잘못 나뉘었으면 줄에 마우스를 올려 '여기서 나누기', 장면 제목 옆 '앞 장면에 합치기'를 눌러요.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+            SheetHeader(
+                title: "나눈 배역과 소품을 확인해주세요",
+                subtitle: "배역 · 소품이 맞는지 확인해 주세요. 체크한 것만 무대 배치도에 나와요."
+            ) {
+                importButton
             }
 
-            chipBar(title: "배역", names: $cast, selected: $selectedCast, newName: $newName, placeholder: "배역 추가")
-            chipBar(title: "소품", names: $props, selected: $selectedProps, newName: $newProp, placeholder: "소품 추가")
+            VStack(alignment: .leading, spacing: 14) {
+                chipBar(title: "배역", names: $cast, selected: $selectedCast, newName: $newName, placeholder: "배역 추가")
+                chipBar(title: "소품", names: $props, selected: $selectedProps, newName: $newProp, placeholder: "소품 추가")
+            }
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
@@ -157,37 +171,31 @@ struct ScriptInputSheet: View {
                         sceneSection(parsed)
                     }
                 }
-                .padding(16)
+                .padding(.horizontal, 36)
+                .padding(.vertical, 28)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
-            .overlay {
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
-            }
+            .sheetBox()
 
             HStack {
+                Spacer()
                 Button("뒤로") { step = .input }
                     .buttonStyle(.secondary)
-                    .frame(width: 90, height: 34)
-                Spacer()
-                Text("\(parsedScenes.count)개 장면")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                Button("적용") {
+                    .frame(width: 112, height: 43)
+                Button("적용하기") {
                     ScriptImporter.apply(
                         parsedScenes, to: production, currentScene: currentScene,
                         cast: selectedCast, props: selectedProps
                     )
                     dismiss()
                 }
-                .buttonStyle(.primary)
-                .frame(width: 90, height: 34)
+                .buttonStyle(SheetPrimaryButtonStyle())
+                .frame(width: 112, height: 43)
             }
         }
     }
 
-    // 배역 · 소품 체크 칩 + 직접 추가
+    // 배역 · 소품 칩 (누르면 체크 켜기/끄기) + 맨 끝 "+"로 직접 추가
     private func chipBar(
         title: String,
         names: Binding<[String]>,
@@ -195,37 +203,39 @@ struct ScriptInputSheet: View {
         newName: Binding<String>,
         placeholder: String
     ) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 4) {
             Text(title)
-                .font(.callout.weight(.semibold))
-                .padding(.trailing, 4)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color.neutral900)
+                .frame(width: 37, alignment: .leading)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
+                HStack(spacing: 4) {
                     ForEach(names.wrappedValue, id: \.self) { name in
                         let isOn = selected.wrappedValue.contains(name)
                         Button {
                             if isOn { selected.wrappedValue.remove(name) } else { selected.wrappedValue.insert(name) }
                         } label: {
-                            Label(name, systemImage: isOn ? "checkmark" : "plus")
-                                .font(.caption)
-                                .foregroundStyle(isOn ? Color.white : Color.brandPrimaryText)
-                                .padding(.horizontal, 10)
-                                .frame(height: 24)
-                                .background(isOn ? Color.brandPrimaryHover : Color.clear, in: Capsule())
+                            // 체크한 것: 연보라 바탕 + 보라 글자 / 뺀 것: 테두리만 + 회색 글자
+                            Text(name)
+                                .font(.system(size: 10.5, weight: .medium))
+                                .foregroundStyle(isOn ? Color.brandPrimaryText : Color.neutral400)
+                                .padding(.horizontal, 8)
+                                .frame(height: 26)
+                                .background(isOn ? Color.brandPrimarySubtle.opacity(0.5) : Color.clear, in: Capsule())
                                 .overlay {
-                                    Capsule().strokeBorder(Color.brandPrimaryHover, lineWidth: isOn ? 0 : 1)
+                                    Capsule().strokeBorder(Color.neutral300, lineWidth: isOn ? 0 : 1)
                                 }
                         }
                         .buttonStyle(.plain)
+                        .help(isOn ? "\(name) 빼기" : "\(name) 넣기")
+                    }
+
+                    AddChip(text: newName, placeholder: placeholder) {
+                        add(newName, to: names, selected: selected)
                     }
                 }
             }
-
-            TextField(placeholder, text: newName)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 110)
-                .onSubmit { add(newName, to: names, selected: selected) }
         }
     }
 
@@ -242,19 +252,20 @@ struct ScriptInputSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 Text(sceneTitle(parsed))
-                    .font(.headline)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(Color.neutral900)
                 if let badge = sceneBadge(parsed) {
                     Text(badge)
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(Color.brandPrimaryText)
+                        .font(.system(size: 10.5, weight: .medium))
+                        .foregroundStyle(Color.neutral900)
                         .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(Color.brandPrimarySubtle, in: Capsule())
+                        .frame(height: 26)
+                        .background(Color.neutral100, in: Capsule())
                 }
                 Spacer()
                 Text("\(parsed.lines.count)줄")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.neutral500)
                 if let index = parsed.headingIndex {
                     Button("앞 장면에 합치기") { overrides.merged.insert(index) }
                         .buttonStyle(.link)
@@ -291,6 +302,110 @@ struct ScriptInputSheet: View {
     }
 }
 
+// 창 위쪽 제목 + 설명 + 오른쪽 버튼 (대본 입력 · 배역 소품 확인 · 배역 소품 목록 공용)
+struct SheetHeader<Trailing: View>: View {
+    let title: String
+    let subtitle: String
+    @ViewBuilder var trailing: Trailing
+
+    var body: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 11) {
+                Text(title)
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(Color.neutral900)
+                Text(subtitle)
+                    .font(.system(size: 17))
+                    .lineSpacing(3)
+                    .foregroundStyle(Color.neutral600)
+            }
+            Spacer()
+            trailing
+        }
+    }
+}
+
+// 연한 바탕 + 회색 테두리 상자 (대본 글 상자 · 미리보기)
+extension View {
+    func sheetBox() -> some View {
+        background(Color.neutral25, in: RoundedRectangle(cornerRadius: 10))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(Color.neutral300, lineWidth: 1)
+            }
+    }
+}
+
+// 대본 입력 창의 "다음" · "적용하기". 못 누를 때는 연보라 바탕 + 보라 글자 (피그마)
+// TODO: 다른 화면에도 쓰이면 AppButtonStyle의 primary에 합치기 (#39 머지 후, 충돌 피하려고 지금은 따로)
+struct SheetPrimaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        SheetPrimaryButton(configuration: configuration)
+    }
+
+    private struct SheetPrimaryButton: View {
+        let configuration: ButtonStyleConfiguration
+        @Environment(\.isEnabled) private var isEnabled
+
+        var body: some View {
+            configuration.label
+                .font(.body.weight(.semibold))
+                .foregroundStyle(isEnabled ? Color.white : Color.brandPrimaryText)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(background, in: RoundedRectangle(cornerRadius: 6))
+                .contentShape(RoundedRectangle(cornerRadius: 6))
+        }
+
+        private var background: Color {
+            if !isEnabled { return .brandPrimaryDisabled }
+            return configuration.isPressed ? .brandPrimaryPressed : .brandPrimary
+        }
+    }
+}
+
+// 칩 줄 맨 끝 "+". 누르면 이름 입력 칸으로 바뀌고, Enter로 추가
+private struct AddChip: View {
+    @Binding var text: String
+    let placeholder: String
+    let onAdd: () -> Void
+
+    @State private var isEditing = false
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        if isEditing {
+            TextField(placeholder, text: $text)
+                .textFieldStyle(.plain)
+                .font(.system(size: 10.5, weight: .medium))
+                .focused($isFocused)
+                .padding(.horizontal, 10)
+                .frame(width: 90, height: 26)
+                .background(Color.neutral100, in: Capsule())
+                .onAppear { isFocused = true }
+                .onSubmit {
+                    onAdd()
+                    isEditing = false
+                }
+                .onChange(of: isFocused) { _, focused in
+                    if !focused { isEditing = false }   // 다른 곳을 누르면 다시 "+"로
+                }
+        } else {
+            Button {
+                isEditing = true
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color.neutral600)
+                    .padding(.horizontal, 12)
+                    .frame(height: 26)
+                    .background(Color.neutral100, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .help(placeholder)
+        }
+    }
+}
+
 // 미리보기 대본 한 줄. 마우스를 올리면 "여기서 나누기" 메뉴가 보인다
 private struct PreviewLineRow: View {
     let line: ParsedLine
@@ -301,7 +416,7 @@ private struct PreviewLineRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
-            ScriptLineView(speaker: line.speaker, text: line.text)
+            ScriptLineView(speaker: line.speaker, text: line.text, fontSize: 17)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             if canSplit {

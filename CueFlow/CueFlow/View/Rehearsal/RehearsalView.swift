@@ -59,6 +59,11 @@ struct RehearsalView: View {
 
     @State private var isEditingScript = false   // "대본 입력" 창
 
+    // 배역 · 소품 이름이 하나라도 있는지 (없으면 무대 배치 빈 화면)
+    private var hasNames: Bool {
+        !production.castNames.isEmpty || !production.propNames.isEmpty
+    }
+
     // 파트 필터 칩에 보여줄 파트 (화면 순서대로)
     private var parts: [Part] {
         (production.parts ?? []).sorted { $0.order < $1.order }
@@ -78,16 +83,21 @@ struct RehearsalView: View {
                     RehearsalStageMap(cues: currentSceneCues, currentCueIDs: currentCueIDs, production: production)
                         .frame(height: 378)
 
-                    RehearsalCueList(
-                        sceneCode: currentScene?.code(in: scenes) ?? "",
-                        triggers: currentTriggers,
-                        parts: parts,
-                        currentIndex: $triggerIndex,
-                        canGoPrevious: sceneIndex > 0 || triggerIndex > 0,
-                        canGoNext: sceneIndex < scenes.count - 1 || triggerIndex < currentTriggers.count - 1,
-                        onPrevious: goToPreviousCue,
-                        onNext: goToNextCue
-                    )
+                    // 무대 배치 빈 화면일 때는 큐 목록도 숨긴다 (피그마 리허설모드_무대배치01)
+                    if hasNames {
+                        RehearsalCueList(
+                            sceneCode: currentScene?.code(in: scenes) ?? "",
+                            triggers: currentTriggers,
+                            parts: parts,
+                            currentIndex: $triggerIndex,
+                            canGoPrevious: sceneIndex > 0 || triggerIndex > 0,
+                            canGoNext: sceneIndex < scenes.count - 1 || triggerIndex < currentTriggers.count - 1,
+                            onPrevious: goToPreviousCue,
+                            onNext: goToNextCue
+                        )
+                    } else {
+                        Spacer(minLength: 0)
+                    }
                 }
             }
         }
@@ -247,8 +257,8 @@ struct RehearsalCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             if let title {
                 Text(title)
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.neutral700)
                     .padding(.horizontal, 22)
                     .frame(height: 54)
                 Divider()
@@ -267,5 +277,14 @@ struct RehearsalCard<Content: View>: View {
 
 #Preview {
     RehearsalView(production: RehearsalPreviewData.production) { }
+        .frame(width: 1512, height: 932)
+}
+
+// 배역 · 소품 이름이 없을 때 → 무대 배치 빈 화면 + 큐 목록 숨김
+#Preview("무대 배치 빈 화면") {
+    let production = RehearsalPreviewData.production
+    production.castNames = []
+    production.propNames = []
+    return RehearsalView(production: production) { }
         .frame(width: 1512, height: 932)
 }

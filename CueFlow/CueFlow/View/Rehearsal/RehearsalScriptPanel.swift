@@ -25,12 +25,16 @@ struct RehearsalScriptPanel: View {
         }
         .overlay(alignment: .topTrailing) {
             Button(action: onEdit) {
-                Label("대본 입력", systemImage: "square.and.pencil")
-                    .font(.callout)
+                HStack(spacing: 8) {
+                    Image(systemName: "paperclip")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("대본 입력")
+                        .font(.system(size: 15, weight: .semibold))
+                }
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(Color.brandPrimaryText)
-            .padding(.trailing, 18)
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.brandPrimaryText)
+                .padding(.trailing, 22)
             .frame(height: 54)
         }
     }
@@ -82,16 +86,21 @@ struct RehearsalScriptPanel: View {
     }
 
     private var emptyView: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             Text("이 장면의 대본이 없어요")
-                .font(.callout.weight(.semibold))
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color.neutral900)
             Text("구글 닥스에서 복사해 붙여넣거나\n파일을 불러올 수 있어요")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.body)
+                .lineSpacing(2)
+                .foregroundStyle(Color.neutral600)
                 .multilineTextAlignment(.center)
-            Button("대본 입력", action: onEdit)
-                .buttonStyle(.primary)
-                .frame(width: 120, height: 32)
+            Button(action: onEdit) {
+                Label("대본 가져오기", systemImage: "square.and.arrow.up")
+                    .font(.body.weight(.regular))
+            }
+            .buttonStyle(.primary)
+            .frame(width: 120, height: 30)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -101,17 +110,19 @@ struct RehearsalScriptPanel: View {
 struct ScriptLineView: View {
     let speaker: String?
     let text: String
+    var fontSize: CGFloat = 15   // 대본 입력 미리보기는 17
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             if let speaker {
                 Text(speaker)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.neutral500)
             }
 
             Text(ScriptLineView.styled(text, isDirection: speaker == nil))
-                .font(.system(size: 15))
+                .font(.system(size: fontSize))
+                .foregroundStyle(Color.neutral900)
                 .lineSpacing(6)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -127,7 +138,7 @@ struct ScriptLineView: View {
             guard !piece.isEmpty else { return }
             var run = AttributedString(piece)
             if isDirection || depth > 0 {
-                run.foregroundColor = .secondary
+                run.foregroundColor = Color.neutral500
             }
             if depth > 0 {
                 run.inlinePresentationIntent = .emphasized
