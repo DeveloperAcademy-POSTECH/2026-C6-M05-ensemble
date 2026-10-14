@@ -37,6 +37,9 @@ enum RehearsalPreviewData {
         production.scenes?.first?.scriptLines = scriptLines
         production.castNames = ["판틴", "공장장", "시장", "노동자들"]
         production.propNames = ["로켓", "편지", "작업대"]
+        production.initialPlacements = stageMarks.map {
+            StagePlacement(name: $0.name, kind: $0.kind, area: $0.area, x: $0.x, y: $0.y)
+        }
         return production
     }
 
@@ -58,7 +61,7 @@ enum RehearsalPreviewData {
 
         let first = Trigger(text: "공장 넘버 전주", order: 0)
         first.cues = [
-            cue("공장 전체조명 ON", .stage, "조명", cell: 4),
+            cue("공장 전체조명 ON", .stage, "조명"),
             cue("판틴 공장복 착용 확인", .sangsu, "의상"),
             cue("공장 노동자 입장", .sangsu, "무대"),
         ]
@@ -66,10 +69,21 @@ enum RehearsalPreviewData {
         second.cues = [cue("시장 공장 등장", .stage, "무대", cell: 1)]
 
         let third = Trigger(text: "판틴 - 공장 다툼 중", order: 2)
-        third.cues = [cue("판틴 로켓, 편지", .stage, "소품")]   // 칸 미정
+        third.cues = [cue("판틴 로켓, 편지", .stage, "소품", cell: 4)]   // 로켓 · 편지 → 무대 5구역
 
         return [first, second, third]
     }
+
+    // 최초 상태 무대 배치 (피그마 리허설모드_ver1 비슷하게)
+    static let stageMarks: [StageMark] = [
+        StageMark(name: "노동자들", kind: .cast, area: .sangsu, x: 0.2, y: 0.36),
+        StageMark(name: "시장", kind: .cast, area: .hasu, x: 0.3, y: 0.6),
+        StageMark(name: "판틴", kind: .cast, area: .stage, x: 0.42, y: 0.5),
+        StageMark(name: "공장장", kind: .cast, area: .hasu, x: 0.72, y: 0.16),
+        StageMark(name: "작업대", kind: .prop, area: .stage, x: 0.8, y: 0.45),
+        StageMark(name: "로켓", kind: .prop, area: .stage, x: 0.88, y: 0.6),
+        StageMark(name: "편지", kind: .prop, area: .stage, x: 0.5, y: 0.75),
+    ]
 
     // 피그마 예시 대본 (시장 등장) — 대본 패널 미리보기용
     static var scriptLines: [ScriptLine] {

@@ -9,12 +9,13 @@
 
 import SwiftUI
 
-// 표 열 너비 (피그마 기준). 큐 열은 남는 만큼.
+// 표 열 너비 (피그마 리허설모드_ver1 기준). 큐 열은 남는 만큼.
 private enum CueListColumn {
-    static let scene: CGFloat = 130
-    static let trigger: CGFloat = 220
+    static let scene: CGFloat = 110
+    static let trigger: CGFloat = 240
     static let position: CGFloat = 100
-    static let part: CGFloat = 110
+    static let part: CGFloat = 117
+    static let cueHeight: CGFloat = 42   // 큐 한 줄 높이
 }
 
 struct RehearsalCueList: View {
@@ -68,6 +69,7 @@ struct RehearsalCueList: View {
                             }
                         }
                     }
+                    .scrollIndicators(.never)   // 스크롤바 자리만큼 줄이 좁아져 열 제목과 어긋나지 않게
                     // 지금 큐가 바뀌면 그 줄이 보이게
                     .onChange(of: currentIndex) {
                         withAnimation { proxy.scrollTo(currentIndex, anchor: .center) }
@@ -144,11 +146,11 @@ struct RehearsalCueList: View {
     // 열 제목: 씬 & 큐 | 트리거 | 큐 | 위치 | 파트
     private var columnTitles: some View {
         HStack(spacing: 0) {
-            columnTitle("씬 & 큐").frame(width: CueListColumn.scene, alignment: .leading)
-            columnTitle("트리거").frame(width: CueListColumn.trigger, alignment: .leading)
-            columnTitle("큐").frame(maxWidth: .infinity, alignment: .leading)
-            columnTitle("위치").frame(width: CueListColumn.position, alignment: .leading)
-            columnTitle("파트").frame(width: CueListColumn.part, alignment: .leading)
+            columnTitle("씬 & 큐").frame(width: CueListColumn.scene)
+            columnTitle("트리거").frame(width: CueListColumn.trigger)
+            columnTitle("큐").frame(maxWidth: .infinity)
+            columnTitle("위치").frame(width: CueListColumn.position)
+            columnTitle("파트").frame(width: CueListColumn.part)
         }
         .frame(height: 36)
         .overlay { columnLines }
@@ -156,9 +158,8 @@ struct RehearsalCueList: View {
 
     private func columnTitle(_ text: String) -> some View {
         Text(text)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.secondary)
-            .padding(.leading, 14)
+            .font(.body)
+            .foregroundStyle(Color.neutral800)
     }
 
     // 열 사이 세로선
@@ -178,7 +179,7 @@ struct RehearsalCueList: View {
     }
 }
 
-// 표 한 줄 = 트리거 하나. 큐가 여러 개면 큐 · 위치 · 파트가 아래로 쌓인다.
+// 표 한 줄 = 트리거 하나. 큐가 여러 개면 큐 · 위치 · 파트가 한 줄(42pt)씩 아래로 쌓이고 사이에 가로선.
 struct CueListRow: View {
     let code: String       // "S#3 - 1"
     let trigger: Trigger
@@ -188,46 +189,27 @@ struct CueListRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
             Text(code)
-                .font(.callout.weight(isCurrent ? .semibold : .regular))
-                .foregroundStyle(isCurrent ? Color.brandPrimaryText : Color.primary)
+                .font(.body.weight(isCurrent ? .semibold : .medium))
+                .foregroundStyle(isCurrent ? Color.neutral900 : Color.neutral800)
                 .padding(.leading, 20)
-                .frame(width: CueListColumn.scene, height: 30, alignment: .leading)
+                .frame(width: CueListColumn.scene, height: CueListColumn.cueHeight, alignment: .leading)
 
             Text(trigger.text)
-                .font(.callout)
+                .font(.body)
+                .foregroundStyle(Color.neutral700)
                 .lineLimit(1)
-                .padding(.leading, 14)
-                .frame(width: CueListColumn.trigger, height: 30, alignment: .leading)
+                .padding(.leading, 20)
+                .frame(width: CueListColumn.trigger, height: CueListColumn.cueHeight, alignment: .leading)
 
-            column(maxWidth: .infinity) { cue in
-                CueListCard(cue: cue)
-                    .padding(.horizontal, 12)
-            }
-
-            column(width: CueListColumn.position) { cue in
-                Text(cue.position.rawValue)
-                    .font(.caption)
-                    .foregroundStyle(Color.brandPrimaryText)
-                    .padding(.horizontal, 10)
-                    .frame(height: 19)
-                    .background(Color.brandPrimarySubtle, in: Capsule())
-                    .padding(.leading, 14)
-            }
-
-            column(width: CueListColumn.part) { cue in
-                HStack(spacing: 7) {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(cue.part?.color.accent ?? Color.secondary)
-                        .frame(width: 4, height: 14)
-                    Text(cue.part?.name ?? "")
-                        .font(.callout)
+            VStack(spacing: 0) {
+                ForEach(Array(cues.enumerated()), id: \.element.id) { index, cue in
+                    if index > 0 { Divider() }
+                    cueLine(cue)
                 }
-                .padding(.leading, 14)
             }
         }
-        .padding(.vertical, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(isCurrent ? Color.brandPrimarySubtle.opacity(0.5) : Color.clear)
+        .frame(maxWidth: .infinity, minHeight: CueListColumn.cueHeight, alignment: .topLeading)
+        .background(isCurrent ? Color.brandPrimarySubtle.opacity(0.2) : Color.neutral25)
         .overlay(alignment: .leading) {
             if isCurrent {
                 Rectangle()
@@ -238,45 +220,57 @@ struct CueListRow: View {
         .contentShape(Rectangle())   // 빈 곳을 눌러도 이 줄이 지금 큐가 되게
     }
 
-    // 큐마다 한 칸씩 (높이 30, 간격 6) 아래로 쌓는 열
-    private func column<Content: View>(
-        width: CGFloat? = nil,
-        maxWidth: CGFloat? = nil,
-        @ViewBuilder content: @escaping (Cue) -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ForEach(cues) { cue in
-                content(cue)
-                    .frame(height: 30, alignment: .leading)
-            }
-        }
-        .frame(width: width, alignment: .leading)
-        .frame(maxWidth: maxWidth, alignment: .leading)
-    }
-}
-
-// 표 안 큐 카드: 왼쪽 파트 색 막대 + 큐 제목
-struct CueListCard: View {
-    let cue: Cue
-
-    var body: some View {
-        HStack(spacing: 11) {
-            RoundedRectangle(cornerRadius: 2)
-                .fill(cue.part?.color.accent ?? Color.secondary)
-                .frame(width: 4)
+    // 큐 한 줄: 큐 제목 | 위치 태그(가운데) | 파트(가운데)
+    private func cueLine(_ cue: Cue) -> some View {
+        HStack(spacing: 0) {
             Text(cue.title)
-                .font(.callout.weight(.medium))
+                .font(.body.weight(.medium))
+                .foregroundStyle(Color.neutral800)
                 .lineLimit(1)
-            Spacer(minLength: 0)
+                .padding(.leading, 22)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            positionTag(cue)
+                .frame(width: CueListColumn.position)
+
+            Text(cue.part?.name ?? "")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color.neutral900)
+                .frame(width: CueListColumn.part)
         }
-        .frame(height: 30)
-        .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 4))
-        .overlay {
-            RoundedRectangle(cornerRadius: 4)
-                .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
+        .frame(height: CueListColumn.cueHeight)
+    }
+
+    // 위치 태그. 무대 큐는 눌러서 9구역 중 하나를 고른다 → 미니맵에서 그 구역으로 옮겨진다
+    @ViewBuilder
+    private func positionTag(_ cue: Cue) -> some View {
+        if cue.position == .stage {
+            Menu {
+                ForEach(0..<9, id: \.self) { cell in
+                    Button("\(cell + 1)구역") { cue.stageCell = cell }
+                }
+                Divider()
+                Button("구역 미정") { cue.stageCell = nil }
+            } label: {
+                tagLabel(cue.stageCell.map { "무대 \($0 + 1)" } ?? "무대")
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("무대 몇 구역인지 고르기")
+        } else {
+            tagLabel(cue.position.rawValue)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 4))
+    }
+
+    private func tagLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.body.weight(.semibold))
+            .foregroundStyle(Color.brandPrimaryText)
+            .padding(.horizontal, 10)
+            .frame(height: 22)
+            .background(Color.brandPrimarySubtle, in: Capsule())
     }
 }
 

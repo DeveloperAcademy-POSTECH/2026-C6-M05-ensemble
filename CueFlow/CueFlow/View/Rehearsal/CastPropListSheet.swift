@@ -2,15 +2,15 @@
 //  CastPropListSheet.swift
 //  CueFlow
 //
-//  "배역 · 소품 목록" 팝오버. 공연의 배역 · 소품 이름을 한 곳에서 보고 추가 · 삭제한다.
-//  이 이름으로 리허설 무대 배치도가 큐 제목에서 배역 · 소품을 찾는다.
-//  대본 입력에서 체크한 이름도 여기에 들어온다.
+//  "배우 · 소품 목록" (피그마 배우소품목록입력01). 공연의 배역 · 소품 이름을 한 곳에서 보고 추가 · 삭제한다.
+//  여기 이름이 무대 배치 창의 카드가 된다. 대본 입력에서 체크한 이름도 여기에 들어온다.
 //
 
 import SwiftUI
 
 struct CastPropListSheet: View {
     let production: Production
+    let onNext: () -> Void   // "다음으로" → 최초 상태 무대 배치
 
     var body: some View {
         VStack(alignment: .leading, spacing: 30) {
@@ -33,6 +33,12 @@ struct CastPropListSheet: View {
                     names: Binding(get: { production.propNames }, set: { production.propNames = $0 })
                 )
             }
+
+            Button("다음으로", action: onNext)
+                .buttonStyle(SheetPrimaryButtonStyle())
+                .frame(width: 99, height: 29)
+                .disabled(production.castNames.isEmpty && production.propNames.isEmpty)
+                .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding(.horizontal, 48)
         .padding(.top, 62)
@@ -155,5 +161,5 @@ private struct NameTile: View {
 }
 
 #Preview {
-    CastPropListSheet(production: RehearsalPreviewData.production)
+    CastPropListSheet(production: RehearsalPreviewData.production) { }
 }

@@ -32,17 +32,6 @@ struct RehearsalView: View {
         (currentScene?.triggers ?? []).sorted { $0.order < $1.order }
     }
 
-    // 지금 장면의 큐 (트리거 순서 → 트리거 안 큐 순서)
-    private var currentSceneCues: [Cue] {
-        currentTriggers.flatMap { ($0.cues ?? []).sorted { $0.order < $1.order } }
-    }
-
-    // 지금 큐(트리거)에 붙은 큐들 → 무대 배치도에서 진하게
-    private var currentCueIDs: Set<UUID> {
-        guard currentTriggers.indices.contains(triggerIndex) else { return [] }
-        return Set((currentTriggers[triggerIndex].cues ?? []).map(\.id))
-    }
-
     // 지금 큐에 해당하는 대본 줄 (트리거 글로 찾음)
     private var highlightedLineID: UUID? {
         guard currentTriggers.indices.contains(triggerIndex) else { return nil }
@@ -58,11 +47,6 @@ struct RehearsalView: View {
     }
 
     @State private var isEditingScript = false   // "대본 입력" 창
-
-    // 배역 · 소품 이름이 하나라도 있는지 (없으면 무대 배치 빈 화면)
-    private var hasNames: Bool {
-        !production.castNames.isEmpty || !production.propNames.isEmpty
-    }
 
     // 파트 필터 칩에 보여줄 파트 (화면 순서대로)
     private var parts: [Part] {
@@ -80,12 +64,15 @@ struct RehearsalView: View {
                 .frame(width: 360)
 
                 VStack(spacing: 23) {
-                    RehearsalStageMap(cues: currentSceneCues, currentCueIDs: currentCueIDs, production: production)
-                        .frame(height: 378)
+                    RehearsalStageMap(
+                        production: production,
+                        scene: currentScene,
+                        triggers: currentTriggers,
+                        currentTriggerIndex: triggerIndex
+                    )
+                        .frame(height: 384)
 
-                    // 무대 배치 빈 화면일 때는 큐 목록도 숨긴다 (피그마 리허설모드_무대배치01)
-                    if hasNames {
-                        RehearsalCueList(
+                    RehearsalCueList(
                             sceneCode: currentScene?.code(in: scenes) ?? "",
                             triggers: currentTriggers,
                             parts: parts,
@@ -95,9 +82,6 @@ struct RehearsalView: View {
                             onPrevious: goToPreviousCue,
                             onNext: goToNextCue
                         )
-                    } else {
-                        Spacer(minLength: 0)
-                    }
                 }
             }
         }
@@ -280,11 +264,10 @@ struct RehearsalCard<Content: View>: View {
         .frame(width: 1512, height: 932)
 }
 
-// 배역 · 소품 이름이 없을 때 → 무대 배치 빈 화면 + 큐 목록 숨김
+// 최초 상태 무대 배치가 없을 때 → 무대 배치 빈 화면
 #Preview("무대 배치 빈 화면") {
     let production = RehearsalPreviewData.production
-    production.castNames = []
-    production.propNames = []
+    production.initialPlacements = []
     return RehearsalView(production: production) { }
         .frame(width: 1512, height: 932)
 }

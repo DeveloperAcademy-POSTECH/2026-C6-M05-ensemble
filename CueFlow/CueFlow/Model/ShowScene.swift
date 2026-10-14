@@ -33,6 +33,11 @@ final class ShowScene {
     @Relationship(deleteRule: .cascade, inverse: \ScriptLine.scene)
     var scriptLines: [ScriptLine]? = []
 
+    // 이 장면의 무대 배치. "수정하기"로 한 번 고친 장면만 true (그 전엔 최초 상태 배치를 보여준다)
+    @Relationship(deleteRule: .cascade, inverse: \StagePlacement.scene)
+    var placements: [StagePlacement]? = []
+    var hasOwnPlacements: Bool = false
+
     init(title: String, kind: SceneKind, order: Int) {
         self.title = title
         self.kind = kind

@@ -22,6 +22,7 @@ struct CueFlowApp: App {
             Comment.self,
             CueCheck.self,
             ScriptLine.self,
+            StagePlacement.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -44,6 +45,7 @@ struct CueFlowApp: App {
                 Button("예시 공연 넣기 (레미제라블)") {
                     let production = RehearsalPreviewData.production
                     production.scenes?.forEach { $0.scriptLines = [] }   // 대본 입력을 시험해 볼 수 있게 대본은 비워 둔다
+                    production.initialPlacements = []                    // 첫 무대 배치도 처음부터 해 볼 수 있게 비워 둔다
                     sharedModelContainer.mainContext.insert(production)
                 }
             }
