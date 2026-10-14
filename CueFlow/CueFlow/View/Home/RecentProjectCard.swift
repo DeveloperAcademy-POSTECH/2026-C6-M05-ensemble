@@ -19,25 +19,40 @@ struct RecentProjectCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(lastWorked)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+            HStack(alignment: .top) {
+                Text(lastWorked)
+                    .font(.footnote)
+                    .foregroundStyle(Color.neutral500)
+
+                Spacer()
+
+                // TODO: "수정하기"로 바뀔 예정 (동작 미정)
+                Button {
+                } label: {
+                    Image(systemName: "square.and.pencil")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color.brandPrimaryText)
+                }
+                .buttonStyle(.plain)
+            }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.title2.bold())
+                    .foregroundStyle(Color.neutral700)
                 Text(summary)
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.neutral500)
             }
-            .padding(.top, 8)
+            .padding(.top, 2)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(members)
                     .font(.subheadline)
+                    .foregroundStyle(Color.neutral700)
                 Text(schedule)
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.neutral500)
             }
             .padding(.top, 8)
 
@@ -56,12 +71,10 @@ struct RecentProjectCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 208)
         .background {
-            // 디자인 시스템 Shadow/lg (#101828, 3% · 8% 두 겹)
-            // 그림자는 카드 바탕에만 (글자에 붙으면 글자가 번져 보임)
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color(nsColor: .textBackgroundColor))
-                .shadow(color: Color(red: 16 / 255, green: 24 / 255, blue: 40 / 255).opacity(0.03), radius: 3, y: 4)
-                .shadow(color: Color(red: 16 / 255, green: 24 / 255, blue: 40 / 255).opacity(0.08), radius: 8, y: 12)
+            // 피그마: 바탕 #FBFBFF, 그림자 2·2·1 #D1D1D6 → 색상 표에서 가장 가까운 neutral25 · neutral300
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.neutral25)
+                .shadow(color: Color.neutral300, radius: 0.5, x: 2, y: 2)
         }
     }
 }

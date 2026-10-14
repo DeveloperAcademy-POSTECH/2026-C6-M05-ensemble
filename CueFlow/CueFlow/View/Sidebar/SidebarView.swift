@@ -72,8 +72,8 @@ struct SidebarMenuRow: View {
             .background {
                 if isSelected {
                     RoundedRectangle(cornerRadius: 7)
-                        .fill(Color.brandPrimary)
-                        .shadow(color: Color.brandPrimary, radius: 0.5, x: 2, y: 2)
+                        .fill(Color.brandPrimaryHover)
+                        .shadow(color: Color.neutral300, radius: 0.5, x: 2, y: 2)   // 피그마 회색 20% 그림자 → neutral300
                 }
             }
             .contentShape(Rectangle())   // 글자 말고 빈 곳을 눌러도 선택되게

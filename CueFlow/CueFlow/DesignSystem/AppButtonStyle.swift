@@ -57,21 +57,20 @@ struct SoftPrimaryButtonStyle: ButtonStyle {
     }
 }
 
-// 흰 배경 + 회색 테두리 + 기본 글자 (예: 최근 프로젝트 카드의 이어서 작업하기)
-// TODO: 셀리나 색상 표에 Neutral 회색이 추가되면 테두리·눌림 색 교체
+// 흰 배경 + 연보라 테두리 + 진한 글자 (예: 최근 프로젝트 카드의 이어서 작업하기)
 struct TertiaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body)
-            .foregroundStyle(.primary)
+            .foregroundStyle(Color.neutral900)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
-                configuration.isPressed ? Color(nsColor: .quaternarySystemFill) : Color(nsColor: .windowBackgroundColor),
+                configuration.isPressed ? Color.neutral100 : Color(nsColor: .windowBackgroundColor),
                 in: RoundedRectangle(cornerRadius: 6)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 6)
-                    .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
+                    .strokeBorder(Color.brandPrimaryHover, lineWidth: 1)
             }
             .contentShape(RoundedRectangle(cornerRadius: 6))
     }
