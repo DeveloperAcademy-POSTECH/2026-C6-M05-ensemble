@@ -21,23 +21,25 @@ struct RecentProjectCard: View {
         VStack(alignment: .leading, spacing: 0) {
             Text(lastWorked)
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.neutral500)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.title2.bold())
+                    .foregroundStyle(Color.neutral700)
                 Text(summary)
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.neutral500)
             }
             .padding(.top, 8)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(members)
                     .font(.subheadline)
+                    .foregroundStyle(Color.neutral700)
                 Text(schedule)
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.neutral500)
             }
             .padding(.top, 8)
 
@@ -45,9 +47,9 @@ struct RecentProjectCard: View {
 
             HStack(spacing: 10) {
                 Button("리허설 모드", action: onRehearsal)
-                    .buttonStyle(.primary)
+                    .buttonStyle(.softPrimary)
                 Button("이어서 작업하기", action: onContinue)
-                    .buttonStyle(.secondary)
+                    .buttonStyle(.tertiary)
             }
             .frame(height: 33)
         }
@@ -55,8 +57,12 @@ struct RecentProjectCard: View {
         .padding(24)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 208)
-        .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
-        .shadow(color: .gray.opacity(0.35), radius: 0.5, x: 2, y: 2)
+        .background {
+            // 피그마: 바탕 #FBFBFF, 그림자 2·2·1 #D1D1D6 → 색상 표에서 가장 가까운 neutral25 · neutral300
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.neutral25)
+                .shadow(color: Color.neutral300, radius: 0.5, x: 2, y: 2)
+        }
     }
 }
 

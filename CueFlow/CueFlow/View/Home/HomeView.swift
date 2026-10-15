@@ -10,12 +10,15 @@ import SwiftUI
 // "최근 ⌄" 메뉴에서 고르는 목록 종류
 enum ProjectFilter: String, CaseIterable {
     case recent = "최근"
-    case shared = "공유됨"
     case favorite = "즐겨찾기"
 }
 
 struct HomeView: View {
     let productions: [Production]   // 최근에 수정한 순서로 들어온다
+
+    // 안 읽은 알림이 있을 때만 종 옆에 빨간 점
+    // TODO: 알림 기능이 생기면 실제 안 읽은 알림 여부로 바꾸기 (지금은 알림이 없어서 항상 false)
+    var hasUnreadNotification = false
 
     @State private var filter: ProjectFilter = .recent
 
@@ -29,8 +32,6 @@ struct HomeView: View {
         switch filter {
         case .recent:
             productions
-        case .shared:
-            productions   // TODO: 공유 기능이 생기면 공유받은 프로젝트만
         case .favorite:
             productions.filter { $0.isFavorite }
         }
@@ -42,10 +43,10 @@ struct HomeView: View {
                 header
 
                 recentProjects
-                    .padding(.top, 117)
+                    .padding(.top, 45)
 
                 projectList
-                    .padding(.top, 92)
+                    .padding(.top, 78)
             }
             .padding(.horizontal, 40)
             .padding(.top, 37)
@@ -62,10 +63,23 @@ struct HomeView: View {
 
             Spacer()
 
-            HStack(spacing: 10) {
-                NotificationBellButton(hasUnread: true) {
+            // 아이콘 버튼은 40pt 틀 안에 있어서 간격 0이어도 그림 사이가 피그마 22pt
+            HStack(spacing: 0) {
+                NotificationBellButton(hasUnread: hasUnreadNotification) {
                     // TODO: 알림 목록 열기
                 }
+
+                Button {
+                    // TODO: 설정 화면 (동작 미정)
+                } label: {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 18))
+                        .foregroundStyle(Color.brandPrimary)
+                        .frame(width: 40, height: 40)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("설정")
 
                 Button {
                     // TODO: 프로젝트 생성 화면으로 이동 (다른 팀원 담당 화면)
@@ -74,8 +88,9 @@ struct HomeView: View {
                 }
                 .buttonStyle(.primary)
                 .frame(width: 125, height: 40)
+                .padding(.leading, 11)
             }
-            .padding(.top, 5)
+            .padding(.top, 3)
         }
     }
 
@@ -83,6 +98,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("최근에 열어본 프로젝트")
                 .font(.system(size: 20, weight: .semibold))   // 피그마 20pt (macOS 기본 스타일에 없음)
+                .foregroundStyle(Color.neutral900)
 
             HStack(spacing: 21) {
                 ForEach(recentlyOpened) { production in
@@ -116,6 +132,7 @@ struct HomeView: View {
             HStack {
                 Text("생성한 프로젝트")
                     .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(Color.neutral900)
                 Spacer()
                 filterMenu
             }
@@ -126,21 +143,23 @@ struct HomeView: View {
                 Text("수정한 날짜")
                     .frame(width: ProjectListColumn.dateWidth, alignment: .leading)
                 Text("소유자")
-                    .frame(width: ProjectListColumn.ownerWidth, alignment: .trailing)
+                    .frame(width: ProjectListColumn.ownerWidth)
             }
             .font(.body)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.neutral500)
             .padding(.trailing, ProjectListColumn.trailingPadding)
-            .padding(.top, 20)
+            .padding(.top, 21)
 
             ForEach(filteredProductions) { production in
                 ProjectListRow(
                     name: production.listName,
                     modifiedDate: production.updatedDateText,
-                    owner: ""   // TODO: 소유자 (모델에 아직 없음)
+                    owner: "",   // TODO: 소유자 (CloudKit 공유 후)
+                    isFavorite: production.isFavorite,
+                    onToggleFavorite: { production.isFavorite.toggle() }
                 )
-                    .padding(.top, 18)
-                    .padding(.bottom, 21)
+                    .padding(.top, 19)
+                    .padding(.bottom, 17)
                 Divider()
             }
         }
@@ -160,11 +179,11 @@ struct HomeView: View {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 12))
             }
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.neutral500)
             .padding(.leading, 20)
             .padding(.trailing, 15)
             .frame(height: 36)
-            .background(Color(nsColor: .quaternarySystemFill), in: Capsule())
+            .background(Color.neutral50, in: Capsule())   // 피그마 #F6F6F6 → 색상 표에서 가장 가까운 neutral50
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
@@ -184,15 +203,15 @@ struct NotificationBellButton: View {
                 .font(.system(size: 18))
                 .foregroundStyle(Color.brandPrimary)
                 .frame(width: 40, height: 40)
-                .background(Color.brandPrimarySubtle, in: Circle())
                 .overlay {
                     if hasUnread {
                         Circle()
                             .fill(.red)
-                            .frame(width: 4, height: 4)
-                            .offset(x: 5, y: -3)
+                            .frame(width: 6, height: 6)
+                            .offset(x: 6, y: -6)
                     }
                 }
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
