@@ -19,22 +19,9 @@ struct RecentProjectCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top) {
-                Text(lastWorked)
-                    .font(.footnote)
-                    .foregroundStyle(Color.neutral500)
-
-                Spacer()
-
-                // TODO: "수정하기"로 바뀔 예정 (동작 미정)
-                Button {
-                } label: {
-                    Image(systemName: "square.and.pencil")
-                        .font(.system(size: 16))
-                        .foregroundStyle(Color.brandPrimaryText)
-                }
-                .buttonStyle(.plain)
-            }
+            Text(lastWorked)
+                .font(.footnote)
+                .foregroundStyle(Color.neutral500)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
@@ -44,7 +31,7 @@ struct RecentProjectCard: View {
                     .font(.callout)
                     .foregroundStyle(Color.neutral500)
             }
-            .padding(.top, 2)
+            .padding(.top, 8)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(members)

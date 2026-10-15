@@ -43,10 +43,10 @@ struct HomeView: View {
                 header
 
                 recentProjects
-                    .padding(.top, 117)
+                    .padding(.top, 45)
 
                 projectList
-                    .padding(.top, 92)
+                    .padding(.top, 78)
             }
             .padding(.horizontal, 40)
             .padding(.top, 37)
@@ -63,7 +63,8 @@ struct HomeView: View {
 
             Spacer()
 
-            HStack(spacing: 10) {
+            // 아이콘 버튼은 40pt 틀 안에 있어서 간격 0이어도 그림 사이가 피그마 22pt
+            HStack(spacing: 0) {
                 NotificationBellButton(hasUnread: hasUnreadNotification) {
                     // TODO: 알림 목록 열기
                 }
@@ -87,8 +88,9 @@ struct HomeView: View {
                 }
                 .buttonStyle(.primary)
                 .frame(width: 125, height: 40)
+                .padding(.leading, 11)
             }
-            .padding(.top, 5)
+            .padding(.top, 3)
         }
     }
 
@@ -141,12 +143,12 @@ struct HomeView: View {
                 Text("수정한 날짜")
                     .frame(width: ProjectListColumn.dateWidth, alignment: .leading)
                 Text("소유자")
-                    .frame(width: ProjectListColumn.ownerWidth, alignment: .trailing)
+                    .frame(width: ProjectListColumn.ownerWidth)
             }
             .font(.body)
             .foregroundStyle(Color.neutral500)
             .padding(.trailing, ProjectListColumn.trailingPadding)
-            .padding(.top, 20)
+            .padding(.top, 21)
 
             ForEach(filteredProductions) { production in
                 ProjectListRow(
@@ -156,8 +158,8 @@ struct HomeView: View {
                     isFavorite: production.isFavorite,
                     onToggleFavorite: { production.isFavorite.toggle() }
                 )
-                    .padding(.top, 18)
-                    .padding(.bottom, 21)
+                    .padding(.top, 19)
+                    .padding(.bottom, 17)
                 Divider()
             }
         }

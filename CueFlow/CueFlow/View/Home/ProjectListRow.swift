@@ -35,7 +35,7 @@ struct ProjectListRow: View {
                 Text(modifiedDate)
                     .frame(width: ProjectListColumn.dateWidth, alignment: .leading)
                 Text(owner)
-                    .frame(width: ProjectListColumn.ownerWidth, alignment: .trailing)
+                    .frame(width: ProjectListColumn.ownerWidth)
             }
             .font(.body.weight(.semibold))
             .foregroundStyle(Color.neutral700)
@@ -61,10 +61,10 @@ struct ProjectListRow: View {
 
 // 열 제목과 각 줄의 날짜·소유자 위치를 맞추기 위한 값
 enum ProjectListColumn {
-    static let starWidth: CGFloat = 80
-    static let dateWidth: CGFloat = 140
-    static let ownerWidth: CGFloat = 60
-    static let trailingPadding: CGFloat = 50
+    static let starWidth: CGFloat = 78
+    static let dateWidth: CGFloat = 108
+    static let ownerWidth: CGFloat = 50   // 소유자는 열 제목 가운데에 맞춘다
+    static let trailingPadding: CGFloat = 18
 }
 
 #Preview {
