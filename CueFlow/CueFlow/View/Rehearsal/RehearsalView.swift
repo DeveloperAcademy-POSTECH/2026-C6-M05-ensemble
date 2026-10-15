@@ -54,23 +54,23 @@ struct RehearsalView: View {
     }
 
     var body: some View {
-        VStack(spacing: 33) {
+        VStack(spacing: 20) {
             header
 
-            HStack(alignment: .top, spacing: 21) {
+            HStack(alignment: .top, spacing: 20) {
                 RehearsalScriptPanel(lines: currentScriptLines, highlightedLineID: highlightedLineID) {
                     isEditingScript = true
                 }
-                .frame(width: 360)
+                .frame(width: 372)
 
-                VStack(spacing: 32) {
+                VStack(spacing: 40) {
                     RehearsalStageMap(
                         production: production,
                         scene: currentScene,
                         triggers: currentTriggers,
                         currentTriggerIndex: triggerIndex
                     )
-                        .frame(height: 384)
+                        .frame(height: 378)
 
                     RehearsalCueList(
                             sceneCode: currentScene?.code(in: scenes) ?? "",
@@ -93,8 +93,8 @@ struct RehearsalView: View {
             if !isMovingByCue { triggerIndex = 0 }
             isMovingByCue = false
         }
-        .padding(.leading, 52)
-        .padding(.trailing, 70)
+        .padding(.leading, 51)
+        .padding(.trailing, 61)
         .padding(.top, 46)
         .padding(.bottom, 45)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -130,11 +130,12 @@ struct RehearsalView: View {
     private var header: some View {
         HStack(spacing: 0) {
             Text(production.title)
-                .font(.title3.weight(.bold))
+                .font(.system(size: 22, weight: .semibold))   // 피그마 22pt (macOS 기본 스타일에 없음)
+                .foregroundStyle(Color.neutral900)
 
             Spacer()
 
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 sceneStepper
                 scenePicker
             }
@@ -144,17 +145,18 @@ struct RehearsalView: View {
             }
             .buttonStyle(.primary)
             .frame(width: 90, height: 36)
-            .padding(.leading, 10)
-            .padding(.trailing, 24)
+            .padding(.horizontal, 8)
 
             // TODO: #41 머지 후 .buttonStyle(.tertiary)로 교체
             Button("리허설 모드 종료", action: onExit)
                 .buttonStyle(.plain)
                 .frame(width: 115, height: 36)
+                .foregroundStyle(Color.brandPrimaryText)
                 .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
                 .overlay {
+                    // 피그마 #2B2476 → 색상 표에서 가장 가까운 brandPrimaryText
                     RoundedRectangle(cornerRadius: 6)
-                        .strokeBorder(.primary, lineWidth: 1)
+                        .strokeBorder(Color.brandPrimaryText, lineWidth: 1)
                 }
         }
     }
@@ -171,10 +173,10 @@ struct RehearsalView: View {
             }
         }
         .frame(height: 36)
-        .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+        .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
         .overlay {
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 6)
+                .strokeBorder(Color.neutral300, lineWidth: 1)
         }
     }
 
@@ -202,21 +204,24 @@ struct RehearsalView: View {
         } label: {
             HStack(spacing: 10) {
                 Text("장면")
-                    .foregroundStyle(.secondary)
+                    .font(.callout)
+                    .foregroundStyle(Color.neutral400)
                 Text(currentScene?.displayName(in: scenes) ?? "장면 없음")
-                    .font(.body.weight(.semibold))
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color.neutral900)
                     .lineLimit(1)
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 15)
+            .padding(.leading, 14)
+            .padding(.trailing, 10)
             .frame(width: 170, height: 36)
-            .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+            .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
             .overlay {
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(Color.neutral300, lineWidth: 1)
             }
             .contentShape(Rectangle())
         }
@@ -230,10 +235,12 @@ struct RehearsalView: View {
 // 흰 바탕 카드 (대본 · 무대 배치 · 큐 목록 공용 틀). 제목이 없으면 위 제목 줄 없이 내용만.
 struct RehearsalCard<Content: View>: View {
     var title: String?
+    var cornerRadius: CGFloat = 8   // 피그마: 대본 카드 10, 무대 배치 · 큐 목록 8
     @ViewBuilder var content: Content
 
-    init(title: String? = nil, @ViewBuilder content: () -> Content = { EmptyView() }) {
+    init(title: String? = nil, cornerRadius: CGFloat = 8, @ViewBuilder content: () -> Content = { EmptyView() }) {
         self.title = title
+        self.cornerRadius = cornerRadius
         self.content = content()
     }
 
@@ -251,10 +258,10 @@ struct RehearsalCard<Content: View>: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
+        .background(Color.neutral25, in: RoundedRectangle(cornerRadius: cornerRadius))
         .overlay {
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .strokeBorder(Color.neutral300, lineWidth: 1)
         }
     }
 }

@@ -29,17 +29,18 @@ struct StageSetupSheet: View {
     var body: some View {
         switch step {
         case .names:
-            CastPropListSheet(production: production) {
+            CastPropListSheet(production: production, onBack: { dismiss() }) {
                 step = .placement
             }
         case .placement:
             StagePlacementEditor(
-                title: scene == nil ? "최초 상태 무대 배치" : "\(sceneName) 무대 배치",
+                title: scene == nil ? "최초 무대 상태 배치" : "\(sceneName) 무대 배치",
                 subtitle: scene == nil
-                    ? "배역과 소품의 최초 상태 무대 배치를 해주세요.\n모든 배역과 소품의 최초 위치를 해당 영역에 카드를 드래그해 배치해주세요."
+                    ? "배역과 소품의 최초 무대 상태 배치를 해주세요.\n모든 배역과 소품의 최초 위치를 해당 영역에 카드를 드래그해 배치해주세요."
                     : "이 장면에서 배역과 소품이 있는 자리로 옮겨주세요.\n미니맵 밖으로 끌면 이 장면에서 빠져요.",
                 production: production,
                 startMarks: startMarks,
+                onBack: { step = .names },
                 onDone: save
             )
         }
@@ -88,6 +89,7 @@ private struct StagePlacementEditor: View {
     let title: String
     let subtitle: String
     let production: Production
+    let onBack: () -> Void   // "<" → 배우 · 소품 목록으로
     let onDone: ([StageMark]) -> Void
 
     @State private var marks: [StageMark]
@@ -96,20 +98,25 @@ private struct StagePlacementEditor: View {
 
     init(
         title: String, subtitle: String, production: Production,
-        startMarks: [StageMark], onDone: @escaping ([StageMark]) -> Void
+        startMarks: [StageMark], onBack: @escaping () -> Void, onDone: @escaping ([StageMark]) -> Void
     ) {
         self.title = title
         self.subtitle = subtitle
         self.production = production
+        self.onBack = onBack
         self.onDone = onDone
         _marks = State(initialValue: startMarks)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 36) {
-            SheetHeader(title: title, subtitle: subtitle) { EmptyView() }
+            VStack(alignment: .leading, spacing: 30) {
+                SheetBackButton(action: onBack)
+                    .padding(.leading, -2)
+                SheetHeader(title: title, subtitle: subtitle) { EmptyView() }
+            }
 
-            VStack(alignment: .trailing, spacing: 28) {
+            VStack(alignment: .trailing, spacing: 40) {
                 VStack(alignment: .leading, spacing: 36) {
                     HStack(alignment: .top, spacing: 50) {
                         cardColumn(title: "배역", systemImage: "person", names: production.castNames, kind: .cast)
@@ -130,14 +137,17 @@ private struct StagePlacementEditor: View {
                 }
 
                 Button("배치 완료") { onDone(marks) }
-                    .buttonStyle(SheetPrimaryButtonStyle())
+                    .buttonStyle(SheetSoftButtonStyle())
                     .frame(width: 101, height: 30)
                     .disabled(marks.isEmpty)   // 하나라도 놓으면 누를 수 있다
+                    .opacity(marks.isEmpty ? 0.5 : 1)
                     .help(marks.isEmpty ? "배역이나 소품을 미니맵에 하나 이상 놓아주세요" : "")
             }
         }
-        .padding(50)
-        .frame(width: 1049)
+        .padding(.horizontal, 50)
+        .padding(.top, 47)
+        .padding(.bottom, 47)
+        .frame(width: 1049, height: 800, alignment: .top)
         .background(Color.neutral25)
         .coordinateSpace(.named(StageDrag.space))
         .onPreferenceChange(StageZoneFramesKey.self) { zoneFrames = $0 }

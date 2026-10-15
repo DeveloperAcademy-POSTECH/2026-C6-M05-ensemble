@@ -10,16 +10,21 @@ import SwiftUI
 
 struct CastPropListSheet: View {
     let production: Production
+    var onBack: () -> Void = {}   // "<" → 창 닫기
     let onNext: () -> Void   // "다음으로" → 최초 상태 무대 배치
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 30) {
+        VStack(alignment: .leading, spacing: 0) {
+            SheetBackButton(action: onBack)
+                .padding(.leading, -2)
+
             SheetHeader(
                 title: "배우 · 소품 목록",
                 subtitle: "큐 제목에 이 이름이 들어 있으면 무대 배치도에 그 큐의 위치로 나와요."
             ) {
                 EmptyView()
             }
+            .padding(.top, 36)
 
             HStack(alignment: .top, spacing: 41) {
                 NameListColumn(
@@ -33,17 +38,21 @@ struct CastPropListSheet: View {
                     names: Binding(get: { production.propNames }, set: { production.propNames = $0 })
                 )
             }
+            .padding(.top, 37)
+
+            Spacer(minLength: 20)
 
             Button("다음으로", action: onNext)
-                .buttonStyle(SheetPrimaryButtonStyle())
-                .frame(width: 99, height: 29)
+                .buttonStyle(SheetSoftButtonStyle())
+                .frame(width: 101, height: 31)
                 .disabled(production.castNames.isEmpty && production.propNames.isEmpty)
+                .opacity(production.castNames.isEmpty && production.propNames.isEmpty ? 0.5 : 1)
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .padding(.horizontal, 48)
-        .padding(.top, 62)
-        .padding(.bottom, 52)
-        .frame(width: 1009)
+        .padding(.horizontal, 69)
+        .padding(.top, 52)
+        .padding(.bottom, 50)
+        .frame(width: 1049, height: 800)
         .background(Color.neutral25)
     }
 }
@@ -60,18 +69,17 @@ private struct NameListColumn: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
+            HStack(spacing: 4) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 16))
                 Text(title)
                     .font(.system(size: 15, weight: .semibold))
                 Text("\(names.count)개")
                     .font(.body)
                     .foregroundStyle(Color.neutral500)
-                    .padding(.leading, 4)
+                    .padding(.leading, 6)
             }
             .foregroundStyle(Color.neutral900)
-            .padding(.leading, 6)
 
             HStack(spacing: 12) {
                 HStack {
@@ -104,7 +112,7 @@ private struct NameListColumn: View {
                 Text("아직 없어요")
                     .font(.caption)
                     .foregroundStyle(Color.neutral400)
-                    .padding(.top, 28)
+                    .padding(.top, 27)
             } else {
                 LazyVGrid(columns: columns, spacing: 10) {
                     ForEach(names, id: \.self) { name in
@@ -113,7 +121,7 @@ private struct NameListColumn: View {
                         }
                     }
                 }
-                .padding(.top, 28)
+                .padding(.top, 27)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -141,7 +149,7 @@ private struct NameTile: View {
             Spacer(minLength: 4)
             Button(action: onDelete) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 8))
+                    .font(.system(size: 7))
                     .foregroundStyle(Color.brandPrimaryDisabled)
                     .frame(width: 16, height: 16)
                     .contentShape(Rectangle())

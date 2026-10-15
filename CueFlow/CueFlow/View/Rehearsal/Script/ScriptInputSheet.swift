@@ -336,6 +336,36 @@ extension View {
     }
 }
 
+// 무대 배치 창의 "다음으로" · "배치 완료": 연보라 바탕 + 보라 글자 (피그마 무대배치02 · 03)
+struct SheetSoftButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body)
+            .foregroundStyle(Color.brandPrimaryText)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.brandPrimarySubtle, in: RoundedRectangle(cornerRadius: 6))
+            .contentShape(RoundedRectangle(cornerRadius: 6))
+            .opacity(configuration.isPressed ? 0.7 : 1)
+    }
+}
+
+// 창 왼쪽 위 "<" 뒤로 버튼 (피그마 무대배치02 · 03)
+struct SheetBackButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 22))
+                .foregroundStyle(Color.black)
+                .frame(width: 24, height: 24)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("뒤로")
+    }
+}
+
 // 대본 입력 창의 "다음" · "적용하기". 못 누를 때는 연보라 바탕 + 보라 글자 (피그마)
 // TODO: 다른 화면에도 쓰이면 AppButtonStyle의 primary에 합치기 (#39 머지 후, 충돌 피하려고 지금은 따로)
 struct SheetPrimaryButtonStyle: ButtonStyle {
