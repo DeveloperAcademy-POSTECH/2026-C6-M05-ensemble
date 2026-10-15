@@ -140,12 +140,16 @@ struct RehearsalView: View {
                 scenePicker
             }
 
-            Button("동기화 모드") {
-                // TODO: 누르면 모두가 같은 화면(같은 장면 · 같은 큐)을 보게 — 실제 공유(iCloud) 생긴 뒤
+            if UserTest.hidesUnfinished {
+                Spacer().frame(width: 8)
+            } else {
+                Button("동기화 모드") {
+                    // TODO: 누르면 모두가 같은 화면(같은 장면 · 같은 큐)을 보게 — 실제 공유(iCloud) 생긴 뒤
+                }
+                .buttonStyle(.primary)
+                .frame(width: 90, height: 36)
+                .padding(.horizontal, 8)
             }
-            .buttonStyle(.primary)
-            .frame(width: 90, height: 36)
-            .padding(.horizontal, 8)
 
             // TODO: #41 머지 후 .buttonStyle(.tertiary)로 교체
             Button("리허설 모드 종료", action: onExit)

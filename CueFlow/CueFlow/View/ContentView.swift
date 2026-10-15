@@ -15,6 +15,11 @@ struct ContentView: View {
     // 리허설 중인 공연. 있으면 사이드바 없이 리허설 모드 화면만 보인다.
     @State private var rehearsingProduction: Production?
 
+    // 큐시트를 열어 둔 공연. 있으면 홈 대신 메인 큐시트가 보인다. 사이드바 메뉴를 누르면 홈으로.
+    @State private var openedProduction: Production?
+
+    @Environment(\.modelContext) private var modelContext
+
     // 저장된 공연 전부. 최근에 수정한 순서.
     @Query(sort: \Production.updatedAt, order: .reverse)
     private var productions: [Production]
@@ -22,29 +27,49 @@ struct ContentView: View {
     var body: some View {
         if let rehearsingProduction {
             RehearsalView(production: rehearsingProduction) {
-                self.rehearsingProduction = nil   // 종료하면 홈으로
+                self.rehearsingProduction = nil   // 종료하면 들어오기 전 화면(홈 또는 큐시트)으로
             }
         } else {
             mainView
+                .task {
+                    UserTest.insertSampleIfNeeded(into: modelContext, isEmpty: productions.isEmpty)
+                }
         }
+    }
+
+    // 사이드바에서 메뉴를 누르면(같은 메뉴여도) 열어 둔 큐시트를 닫는다
+    private var menuSelection: Binding<SidebarMenu> {
+        Binding(
+            get: { selectedMenu },
+            set: {
+                selectedMenu = $0
+                openedProduction = nil
+            }
+        )
     }
 
     // 사이드바 + 내용 영역
     private var mainView: some View {
         NavigationSplitView {
             // 왼쪽: 사이드바
-            SidebarView(selectedMenu: $selectedMenu)
+            SidebarView(selectedMenu: menuSelection)
                 .navigationSplitViewColumnWidth(220)
         } detail: {
             // 오른쪽: 선택된 메뉴에 따라 다른 화면
             switch selectedMenu {
             case .project:
-                if productions.isEmpty {
+                if let openedProduction {
+                    MainCueSheetView(production: openedProduction) {
+                        rehearsingProduction = openedProduction
+                    }
+                } else if productions.isEmpty {
                     HomeEmptyView()
                 } else {
-                    HomeView(productions: productions) { production in
-                        rehearsingProduction = production
-                    }
+                    HomeView(
+                        productions: productions,
+                        onRehearsal: { rehearsingProduction = $0 },
+                        onOpen: { openedProduction = $0 }
+                    )
                 }
             case .notice:
                 Text("공지사항 화면")

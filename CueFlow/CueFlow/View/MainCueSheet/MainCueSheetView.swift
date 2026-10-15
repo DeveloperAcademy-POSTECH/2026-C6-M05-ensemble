@@ -10,6 +10,7 @@ import SwiftData
 
 struct MainCueSheetView: View {
     let production: Production                 // 어느 공연의 큐시트인지
+    var onRehearsal: () -> Void = {}           // "리허설 모드" 버튼
     @State private var selectedPart: Part?     // 파트 칩에서 고른 파트 (nil = 전체)
     
     var body: some View {
@@ -42,7 +43,9 @@ extension MainCueSheetView {
             PartFilterTabBar(selectedPart: $selectedPart)
             Spacer()
             HStack(spacing: 7) {
-                sceneViewButton
+                if !UserTest.hidesUnfinished {
+                    sceneViewButton
+                }
                 rehearsalModeButton
             }
         }
@@ -62,9 +65,7 @@ extension MainCueSheetView {
         .frame(width: 90, height: 30)
     }
     private var rehearsalModeButton: some View {
-        Button("리허설 모드") {
-            // TODO: 리허설 모드로 이동
-        }
+        Button("리허설 모드", action: onRehearsal)
         .buttonStyle(.primary)
         .frame(width: 90, height: 30)
     }

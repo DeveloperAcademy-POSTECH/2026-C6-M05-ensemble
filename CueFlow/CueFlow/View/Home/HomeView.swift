@@ -16,6 +16,7 @@ enum ProjectFilter: String, CaseIterable {
 struct HomeView: View {
     let productions: [Production]   // 최근에 수정한 순서로 들어온다
     var onRehearsal: (Production) -> Void = { _ in }   // 카드의 "리허설 모드"
+    var onOpen: (Production) -> Void = { _ in }        // 카드의 "이어서 작업하기" · 목록 줄 → 메인 큐시트
 
     // 안 읽은 알림이 있을 때만 종 옆에 빨간 점
     // TODO: 알림 기능이 생기면 실제 안 읽은 알림 여부로 바꾸기 (지금은 알림이 없어서 항상 false)
@@ -66,21 +67,23 @@ struct HomeView: View {
 
             // 아이콘 버튼은 40pt 틀 안에 있어서 간격 0이어도 그림 사이가 피그마 22pt
             HStack(spacing: 0) {
-                NotificationBellButton(hasUnread: hasUnreadNotification) {
-                    // TODO: 알림 목록 열기
-                }
+                if !UserTest.hidesUnfinished {
+                    NotificationBellButton(hasUnread: hasUnreadNotification) {
+                        // TODO: 알림 목록 열기
+                    }
 
-                Button {
-                    // TODO: 설정 화면 (동작 미정)
-                } label: {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 18))
-                        .foregroundStyle(Color.brandPrimary)
-                        .frame(width: 40, height: 40)
-                        .contentShape(Rectangle())
+                    Button {
+                        // TODO: 설정 화면 (동작 미정)
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 18))
+                            .foregroundStyle(Color.brandPrimary)
+                            .frame(width: 40, height: 40)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("설정")
                 }
-                .buttonStyle(.plain)
-                .help("설정")
 
                 Button {
                     // TODO: 프로젝트 생성 화면으로 이동 (다른 팀원 담당 화면)
@@ -115,7 +118,7 @@ struct HomeView: View {
                         },
                         onContinue: {
                             production.lastOpenedAt = .now
-                            // TODO: 큐시트 화면으로 이동 (다른 팀원 담당 화면)
+                            onOpen(production)
                         }
                     )
                 }
@@ -161,6 +164,11 @@ struct HomeView: View {
                 )
                     .padding(.top, 19)
                     .padding(.bottom, 17)
+                    .contentShape(Rectangle())
+                    .onTapGesture {   // 줄을 누르면 그 공연의 큐시트 (별표 버튼은 따로 눌림)
+                        production.lastOpenedAt = .now
+                        onOpen(production)
+                    }
                 Divider()
             }
         }

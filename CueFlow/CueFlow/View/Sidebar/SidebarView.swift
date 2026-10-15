@@ -19,7 +19,7 @@ struct SidebarView: View {
                 .padding(.top, 23)
 
             VStack(spacing: 10) {
-                ForEach(SidebarMenu.allCases, id: \.self) { menu in
+                ForEach(SidebarMenu.visibleCases, id: \.self) { menu in
                     SidebarMenuRow(
                         menu: menu,
                         isSelected: selectedMenu == menu,

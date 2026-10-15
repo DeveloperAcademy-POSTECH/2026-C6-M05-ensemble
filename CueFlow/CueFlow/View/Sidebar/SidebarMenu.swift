@@ -12,6 +12,11 @@ enum SidebarMenu: CaseIterable {
     case notice
     case help
 
+    // 사이드바에 보여줄 메뉴 (유저테스트 때는 프로젝트만)
+    static var visibleCases: [SidebarMenu] {
+        UserTest.hidesUnfinished ? [.project] : allCases
+    }
+
     var title: String {
         switch self {
         case .project: "프로젝트"
