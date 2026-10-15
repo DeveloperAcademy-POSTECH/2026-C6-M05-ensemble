@@ -24,6 +24,8 @@ struct CueFlowApp: App {
             Member.self,
             Comment.self,
             CueCheck.self,
+            ScriptLine.self,
+            StagePlacement.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -40,5 +42,18 @@ struct CueFlowApp: App {
                 .preferredColorScheme(isDarkMode ? .dark : .light)
         }
         .modelContainer(sharedModelContainer)
+        #if DEBUG
+        .commands {
+            // 개발할 때만 보이는 메뉴 (TestFlight · 출시 앱에는 없음)
+            CommandMenu("개발용") {
+                Button("예시 공연 넣기 (레미제라블)") {
+                    let production = RehearsalPreviewData.production
+                    production.scenes?.forEach { $0.scriptLines = [] }   // 대본 입력을 시험해 볼 수 있게 대본은 비워 둔다
+                    production.initialPlacements = []                    // 첫 무대 배치도 처음부터 해 볼 수 있게 비워 둔다
+                    sharedModelContainer.mainContext.insert(production)
+                }
+            }
+        }
+        #endif
     }
 }

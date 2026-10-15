@@ -15,6 +15,7 @@ enum ProjectFilter: String, CaseIterable {
 
 struct HomeView: View {
     let productions: [Production]   // 최근에 수정한 순서로 들어온다
+    var onRehearsal: (Production) -> Void = { _ in }   // 카드의 "리허설 모드"
 
     // 안 읽은 알림이 있을 때만 종 옆에 빨간 점
     // TODO: 알림 기능이 생기면 실제 안 읽은 알림 여부로 바꾸기 (지금은 알림이 없어서 항상 false)
@@ -110,7 +111,7 @@ struct HomeView: View {
                         schedule: production.scheduleText,
                         onRehearsal: {
                             production.lastOpenedAt = .now
-                            // TODO: 리허설 모드로 이동
+                            onRehearsal(production)
                         },
                         onContinue: {
                             production.lastOpenedAt = .now
