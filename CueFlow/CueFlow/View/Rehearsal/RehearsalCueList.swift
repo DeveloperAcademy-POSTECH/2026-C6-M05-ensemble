@@ -90,7 +90,9 @@ struct RehearsalCueList: View {
                             }
                         }
                     }
+                    .frame(maxWidth: .infinity)   // 큐가 0개여도 표 폭을 꽉 채워서 세로선이 열 제목과 맞게
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .scrollIndicators(.never)   // 스크롤바 자리만큼 줄이 좁아져 열 제목과 어긋나지 않게
                 // 지금 큐가 바뀌면 그 줄이 보이게
                 .onChange(of: currentIndex) {

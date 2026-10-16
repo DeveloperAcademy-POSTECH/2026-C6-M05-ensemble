@@ -52,6 +52,17 @@ struct CueFlowApp: App {
                     production.initialPlacements = []                    // 첫 무대 배치도 처음부터 해 볼 수 있게 비워 둔다
                     sharedModelContainer.mainContext.insert(production)
                 }
+
+                Divider()
+
+                // 저장된 공연을 전부 지우고, 다음 실행 때 테스터처럼 예시 공연이 한 번 들어오게 되돌린다
+                Button("처음 실행 상태로 되돌리기 (공연 전부 삭제)") {
+                    let context = sharedModelContainer.mainContext
+                    let productions = (try? context.fetch(FetchDescriptor<Production>())) ?? []
+                    productions.forEach(context.delete)
+                    try? context.save()
+                    UserDefaults.standard.removeObject(forKey: "didInsertSampleProduction")
+                }
             }
         }
         #endif
