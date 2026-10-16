@@ -31,29 +31,25 @@ struct PerformInfo: View {
     private static let currentStep = 1
     
     var body: some View {
-        GeometryReader { window in
-            ScrollView {
-                VStack(spacing: 0) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        pageHeader
-                        stepBar
-                            .padding(.top, 20)
-                        formFields
-                            .padding(.top, 50)
-                    }
-                    .frame(width: 799)
-                    .padding(.top, 163)
-
-                    Spacer(minLength: 40)   // 창이 낮아져도 입력칸과 버튼이 겹치지 않게
-
-                    footerButtons
-                        .background(Color.neutral25)
-                        .frame(maxWidth: 1214, alignment: .trailing)   // 1512 창에서 오른쪽 여백 149 (피그마와 같음)
-                        .padding(.bottom, 124)
-                }
-                .padding(.horizontal, 24)
-                .frame(maxWidth: .infinity, minHeight: window.size.height)   // 창이 클 땐 창 높이만큼 채워서 버튼을 아래로
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                pageHeader
+                stepBar
+                    .padding(.top, 20)
+                formFields
+                    .padding(.top, 50)
             }
+            .frame(width: 799)
+            .padding(.top, 163)
+            .padding(.bottom, 209)   // 버튼(45) + 아래 여백(124) + 간격(40): 내용이 버튼에 가리지 않게
+            .frame(maxWidth: .infinity)
+        }
+        .overlay(alignment: .bottom) {
+            footerButtons
+                .background(Color.neutral25)
+                .frame(maxWidth: 1214, alignment: .trailing)   // 1512 창에서 오른쪽 여백 149 (피그마와 같음)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 124)
         }
         .frame(minWidth: 850)
         .background(.white)
