@@ -41,10 +41,7 @@ extension MainCueSheetView {
         HStack {
             PartFilterTabBar(production: production, selectedPart: $selectedPart)
             Spacer()
-            HStack(spacing: 7) {
-                sceneViewButton
                 rehearsalModeButton
-            }
         }
         .padding(.top, 18)
         .padding(.bottom, 15)
@@ -54,13 +51,6 @@ extension MainCueSheetView {
 // 버튼 · 멤버
 
 extension MainCueSheetView {
-    private var sceneViewButton: some View {
-        Button("씬 단위 화면") {
-            // TODO: 씬 단위 화면으로 이동
-        }
-        .buttonStyle(.secondary)
-        .frame(width: 90, height: 30)
-    }
     private var rehearsalModeButton: some View {
         Button("리허설 모드") {
             // TODO: 리허설 모드로 이동
