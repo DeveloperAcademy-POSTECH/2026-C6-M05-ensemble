@@ -27,76 +27,18 @@ struct PerformInfo: View {
     @State private var isPickingDate = false   // 공연일 달력이 열려 있는지
     
     private static let genres = ["뮤지컬", "연극", "무용", "콘서트", "기타"]
-    private static let steps = ["기본 정보", "파트 구성", "씬 구성", "생성 확인"]
-    private static let currentStep = 1
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                pageHeader
-                stepBar
-                    .padding(.top, 20)
-                formFields
-                    .padding(.top, 50)
-            }
-            .frame(width: 799)
-            .padding(.top, 163)
-            .padding(.bottom, 209)   // 버튼(45) + 아래 여백(124) + 간격(40): 내용이 버튼에 가리지 않게
-            .frame(maxWidth: .infinity)
+        CreateStepLayout(
+            title: "공연 기본 정보를 입력해주세요",
+            subtitle: "큐시트 생성에 필요한 핵심 정보만 먼저 입력하고, 세부 항목은 나중에 보완합니다.",
+            currentStep: 1,
+            onPrevious: onPrevious,
+            onNext: onNext
+        ) {
+            formFields
+                .padding(.top, 50)
         }
-        .overlay(alignment: .bottom) {
-            footerButtons
-                .background(Color.neutral25)
-                .frame(maxWidth: 1214, alignment: .trailing)   // 1512 창에서 오른쪽 여백 149 (피그마와 같음)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 124)
-        }
-        .frame(minWidth: 850)
-        .background(.white)
-    }
-}
-
-// 위쪽: 제목 · 단계
-
-extension PerformInfo {
-    private var pageHeader: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            Text("공연 기본 정보를 입력해주세요")
-                .font(.system(size: 26, weight: .bold))
-                .foregroundStyle(Color.neutral900)
-            Text("큐시트 생성에 필요한 핵심 정보만 먼저 입력하고, 세부 항목은 나중에 보완합니다.")
-                .font(.system(size: 17))
-                .foregroundStyle(Color.neutral500)
-        }
-    }
-    
-    // ① 기본 정보 ── ② 파트 구성 ── ③ 씬 구성 ── ④ 생성 확인
-    private var stepBar: some View {
-        HStack(spacing: 8) {
-            ForEach(Self.steps.indices, id: \.self) { index in
-                stepItem(number: index + 1, title: Self.steps[index])
-                if index < Self.steps.count - 1 { stepLine }
-            }
-        }
-    }
-    
-    private func stepItem(number: Int, title: String) -> some View {
-        let isCurrent = number == Self.currentStep
-        return HStack(spacing: 10) {
-            Text("\(number)")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(isCurrent ? Color.neutral25 : Color.neutral500)
-                .frame(width: 24, height: 24)
-                .background(isCurrent ? Color.neutral400 : Color.neutral200, in: .circle)
-            Text(title)
-                .font(.system(size: 11, weight: isCurrent ? .semibold : .regular))
-                .foregroundStyle(isCurrent ? Color.neutral900 : Color.neutral400)
-        }
-    }
-    
-    private var stepLine: some View {
-        Color.neutral300
-            .frame(width: 50, height: 1)
     }
 }
 
@@ -224,21 +166,6 @@ extension PerformInfo {
         formatter.dateFormat = "yyyy.MM.dd"
         return formatter
     }()
-}
-
-// 아래 버튼
-
-extension PerformInfo {
-    private var footerButtons: some View {
-        HStack(spacing: 15) {
-            Button("이전으로", action: onPrevious)
-                .buttonStyle(.secondary)
-                .frame(width: 175, height: 45)
-            Button("다음으로", action: onNext)
-                .buttonStyle(.primary)
-                .frame(width: 175, height: 45)
-        }
-    }
 }
 
 // 입력칸 공통 모양: 흰 배경 + 연한 테두리

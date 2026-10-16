@@ -13,79 +13,21 @@ struct PerformPart: View {
     var onPrevious: () -> Void = {}
     var onNext: () -> Void = {}
 
-    private static let steps = ["기본 정보", "파트 구성", "씬 구성", "생성 확인"]
-    private static let currentStep = 2
     @State private var isAddingPart = false   // 추가하기 팝오버가 열려 있는지
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                pageHeader
-                stepBar
-                    .padding(.top, 20)
-                partSectionHeader
-                    .padding(.top, 41)
-                partGrid
-                    .padding(.top, 13)
-            }
-            .frame(width: 799)
-            .padding(.top, 163)
-            .padding(.bottom, 209)   // 버튼(45) + 아래 여백(124) + 간격(40): 내용이 버튼에 가리지 않게
-            .frame(maxWidth: .infinity)
+        CreateStepLayout(
+            title: "사용할 파트를 선택해주세요",
+            subtitle: "한 파트에 여러 명을 배정하고 파트장·담당 역할을 설정합니다.",
+            currentStep: 2,
+            onPrevious: onPrevious,
+            onNext: onNext
+        ) {
+            partSectionHeader
+                .padding(.top, 41)
+            partGrid
+                .padding(.top, 13)
         }
-        .overlay(alignment: .bottom) {
-            footerButtons
-                .background(Color.neutral25)
-                .frame(maxWidth: 1214, alignment: .trailing)   // 1512 창에서 오른쪽 여백 149
-                .padding(.horizontal, 24)
-                .padding(.bottom, 124)
-        }
-        .frame(minWidth: 850)
-        .background(.white)
-    }
-}
-
-// 위쪽: 제목 · 단계
-
-extension PerformPart {
-    private var pageHeader: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            Text("사용할 파트를 선택해주세요")
-                .font(.system(size: 26, weight: .bold))
-                .foregroundStyle(Color.neutral900)
-            Text("한 파트에 여러 명을 배정하고 파트장·담당 역할을 설정합니다.")
-                .font(.system(size: 17))
-                .foregroundStyle(Color.neutral500)
-        }
-    }
-
-    // ① 기본 정보 ── ② 파트 구성 ── ③ 씬 구성 ── ④ 생성 확인
-    private var stepBar: some View {
-        HStack(spacing: 8) {
-            ForEach(Self.steps.indices, id: \.self) { index in
-                stepItem(number: index + 1, title: Self.steps[index])
-                if index < Self.steps.count - 1 { stepLine }
-            }
-        }
-    }
-
-    private func stepItem(number: Int, title: String) -> some View {
-        let isCurrent = number == Self.currentStep
-        return HStack(spacing: 10) {
-            Text("\(number)")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(isCurrent ? Color.neutral25 : Color.neutral500)
-                .frame(width: 24, height: 24)
-                .background(isCurrent ? Color.neutral400 : Color.neutral200, in: .circle)
-            Text(title)
-                .font(.system(size: 11, weight: isCurrent ? .semibold : .regular))
-                .foregroundStyle(isCurrent ? Color.neutral900 : Color.neutral400)
-        }
-    }
-
-    private var stepLine: some View {
-        Color.neutral300
-            .frame(width: 50, height: 1)
     }
 }
 
@@ -179,21 +121,6 @@ extension PerformPart {
         guard !allOptions.contains(where: { $0.name == name }) else { return }   // 이미 있는 이름이면 무시
         customParts.append(name)
         selectedParts.insert(name)
-    }
-}
-
-// 아래 버튼
-
-extension PerformPart {
-    private var footerButtons: some View {
-        HStack(spacing: 15) {
-            Button("이전으로", action: onPrevious)
-                .buttonStyle(.secondary)
-                .frame(width: 175, height: 45)
-            Button("다음으로", action: onNext)
-                .buttonStyle(.primary)
-                .frame(width: 175, height: 45)
-        }
     }
 }
 

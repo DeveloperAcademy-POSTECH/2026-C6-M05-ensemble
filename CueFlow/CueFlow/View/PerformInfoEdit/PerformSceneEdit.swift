@@ -15,81 +15,17 @@ struct PerformSceneEdit: View {
 
     @State private var dropTargetID: UUID?   // 드래그 중 놓일 줄
 
-    private static let steps = ["기본 정보", "파트 구성", "씬 구성", "생성 확인"]
-    private static let currentStep = 3
-
     var body: some View {
-        ScrollView {
-            content
-        }
-        .overlay(alignment: .bottom) { footer }
-        .frame(minWidth: 850)
-        .background(.white)
-    }
-
-    private var content: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            pageHeader
-            stepBar
-                .padding(.top, 20)
+        CreateStepLayout(
+            title: "씬/넘버 구성해주세요",
+            subtitle: "공연의 흐름을 워드처럼 입력하되, 각 줄을 씬 넘버 및 전환으로 구분합니다.",
+            currentStep: 3,
+            onPrevious: onPrevious,
+            onNext: onNext
+        ) {
             sceneCard
                 .padding(.top, 43)
         }
-        .frame(width: 799)
-        .padding(.top, 163)
-        .padding(.bottom, 209)
-        .frame(maxWidth: .infinity)
-    }
-
-    private var footer: some View {
-        footerButtons
-            .background(Color.neutral25)
-            .frame(maxWidth: 1214, alignment: .trailing)
-            .padding(.horizontal, 24)
-            .padding(.bottom, 124)
-    }
-}
-
-// 위쪽(제목 · 단계)
-
-extension PerformSceneEdit {
-    private var pageHeader: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            Text("씬/넘버 구성해주세요")
-                .font(.system(size: 26, weight: .bold))
-                .foregroundStyle(Color.neutral900)
-            Text("공연의 흐름을 워드처럼 입력하되, 각 줄을 씬 넘버 및 전환으로 구분합니다.")
-                .font(.system(size: 17))
-                .foregroundStyle(Color.neutral500)
-        }
-    }
-
-    private var stepBar: some View {
-        HStack(spacing: 8) {
-            ForEach(Self.steps.indices, id: \.self) { index in
-                stepItem(number: index + 1, title: Self.steps[index])
-                if index < Self.steps.count - 1 { stepLine }
-            }
-        }
-    }
-
-    private func stepItem(number: Int, title: String) -> some View {
-        let isCurrent = number == Self.currentStep
-        return HStack(spacing: 10) {
-            Text("\(number)")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(isCurrent ? Color.neutral25 : Color.neutral500)
-                .frame(width: 24, height: 24)
-                .background(isCurrent ? Color.neutral400 : Color.neutral200, in: .circle)
-            Text(title)
-                .font(.system(size: 11, weight: isCurrent ? .semibold : .regular))
-                .foregroundStyle(isCurrent ? Color.neutral900 : Color.neutral400)
-        }
-    }
-
-    private var stepLine: some View {
-        Color.neutral300
-            .frame(width: 50, height: 1)
     }
 }
 
@@ -196,21 +132,6 @@ extension PerformSceneEdit {
     private func renumberOrder() {
         for (index, scene) in scenes.enumerated() {
             scene.order = index
-        }
-    }
-}
-
-// 아래 버튼
-
-extension PerformSceneEdit {
-    private var footerButtons: some View {
-        HStack(spacing: 15) {
-            Button("이전으로", action: onPrevious)
-                .buttonStyle(.secondary)
-                .frame(width: 175, height: 45)
-            Button("다음으로", action: onNext)
-                .buttonStyle(.primary)
-                .frame(width: 175, height: 45)
         }
     }
 }
