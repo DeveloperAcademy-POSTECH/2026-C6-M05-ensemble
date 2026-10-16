@@ -12,14 +12,14 @@ struct SidebarView: View {
     @Binding var selectedMenu: SidebarMenu
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Q-Sheet")
+            Text("Cuedit")
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(Color.brandPrimaryText)
                 .padding(.leading, 24)
                 .padding(.top, 23)
 
             VStack(spacing: 10) {
-                ForEach(SidebarMenu.allCases, id: \.self) { menu in
+                ForEach(SidebarMenu.visibleCases, id: \.self) { menu in
                     SidebarMenuRow(
                         menu: menu,
                         isSelected: selectedMenu == menu,

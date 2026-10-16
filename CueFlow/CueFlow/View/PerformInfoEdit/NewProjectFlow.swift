@@ -11,7 +11,9 @@ import SwiftData
 // 새 공연 만들기 흐름: 기본정보 → 파트구성 → 씬구성 → 생성확인 → 완료 → 통합 큐시트
 // 화면끼리 주고받는 값을 여기서 들고 있다가, 생성확인에서 "다음으로"를 누르면 공연을 저장한다
 struct NewProjectFlow: View {
-    var onGoHome: () -> Void = {}   // 홈으로 돌아가기 (홈 연결은 나중에)
+    var onGoHome: () -> Void = {}   // 홈으로 돌아가기
+    // "큐시트 편집 시작하기": 있으면 바깥(ContentView)의 큐시트로 연다 → 리허설 버튼도 동작. 없으면 이 흐름 안에서 연다
+    var onOpenCueSheet: ((Production) -> Void)?
 
     @Environment(\.modelContext) private var modelContext
 
@@ -56,7 +58,13 @@ struct NewProjectFlow: View {
         case .complete:
             InfoComplete(
                 onGoHome: onGoHome,
-                onStartEditing: { step = .cueSheet }
+                onStartEditing: {
+                    if let onOpenCueSheet, let createdProduction {
+                        onOpenCueSheet(createdProduction)
+                    } else {
+                        step = .cueSheet
+                    }
+                }
             )
         case .cueSheet:
             cueSheet
