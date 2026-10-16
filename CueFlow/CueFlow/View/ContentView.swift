@@ -18,6 +18,9 @@ struct ContentView: View {
     // 큐시트를 열어 둔 공연. 있으면 홈 대신 메인 큐시트가 보인다. 사이드바 메뉴를 누르면 홈으로.
     @State private var openedProduction: Production?
 
+    // 새 공연 만들기 중이면 홈 대신 셀리나의 생성 흐름(기본정보 → 파트 → 씬 → 확인 → 완료)이 보인다
+    @State private var isCreatingProduction = false
+
     @Environment(\.modelContext) private var modelContext
 
     // 저장된 공연 전부. 최근에 수정한 순서.
@@ -44,6 +47,7 @@ struct ContentView: View {
             set: {
                 selectedMenu = $0
                 openedProduction = nil
+                isCreatingProduction = false
             }
         )
     }
@@ -58,17 +62,26 @@ struct ContentView: View {
             // 오른쪽: 선택된 메뉴에 따라 다른 화면
             switch selectedMenu {
             case .project:
-                if let openedProduction {
+                if isCreatingProduction {
+                    NewProjectFlow(
+                        onGoHome: { isCreatingProduction = false },
+                        onOpenCueSheet: {
+                            isCreatingProduction = false
+                            openedProduction = $0
+                        }
+                    )
+                } else if let openedProduction {
                     MainCueSheetView(production: openedProduction) {
                         rehearsingProduction = openedProduction
                     }
                 } else if productions.isEmpty {
-                    HomeEmptyView()
+                    HomeEmptyView(onNewProject: { isCreatingProduction = true })
                 } else {
                     HomeView(
                         productions: productions,
                         onRehearsal: { rehearsingProduction = $0 },
-                        onOpen: { openedProduction = $0 }
+                        onOpen: { openedProduction = $0 },
+                        onNewProject: { isCreatingProduction = true }
                     )
                 }
             case .notice:
