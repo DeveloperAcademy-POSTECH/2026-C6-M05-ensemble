@@ -40,7 +40,7 @@ extension MainCueSheetView {
     // 파트 칩 + 오른쪽 "씬 단위 화면" 버튼
     private var filterRow: some View {
         HStack {
-            PartFilterTabBar(selectedPart: $selectedPart)
+            PartFilterTabBar(production: production, selectedPart: $selectedPart)
             Spacer()
             HStack(spacing: 7) {
                 if !UserTest.hidesUnfinished {

@@ -9,8 +9,14 @@ import SwiftUI
 import SwiftData
 
 struct PartFilterTabBar: View {
-    @Query(sort: \Part.order) private var parts: [Part]
+    let production: Production
     @Binding var selectedPart: Part?
+    
+    // 이 공연의 파트만, 위에서부터 순서대로
+    private var parts: [Part] {
+        (production.parts ?? []).sorted { $0.order < $1.order }
+    }
+    
     @State private var hoveredChipTitle: String?
     
     var body: some View {
