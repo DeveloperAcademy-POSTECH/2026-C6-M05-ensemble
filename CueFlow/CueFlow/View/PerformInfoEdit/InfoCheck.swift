@@ -13,72 +13,17 @@ struct InfoCheck: View {
     var onPrevious: () -> Void = {}
     var onNext: () -> Void = {}
 
-    private let steps = ["기본 정보", "파트 구성", "씬 구성", "생성 확인"]
-    private let currentStep = 4
-
     var body: some View {
-        ScrollView {
-            page
-        }
-        .overlay(alignment: .bottom) { footer }
-        .frame(minWidth: 850)
-        .background(.white)
-    }
-
-    // 가운데 (폭 799): 제목 → 단계 → 프로젝트 카드
-    private var page: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-            stepBar
-                .padding(.top, 20)
+        CreateStepLayout(
+            title: "생성 전 마지막으로 확인하세요",
+            subtitle: "큐시트가 만들어지기 전에 공연 정보, 파트 구성, 초대 상태를 한 번에 확인합니다.",
+            currentStep: 4,
+            onPrevious: onPrevious,
+            onNext: onNext
+        ) {
             summaryCard
                 .padding(.top, 44)
         }
-        .frame(width: 799)
-        .padding(.top, 163)
-        .padding(.bottom, 209)   // 버튼(45) + 아래 여백(124) + 간격(40): 내용이 버튼에 가리지 않게
-        .frame(maxWidth: .infinity)
-    }
-}
-
-extension InfoCheck {
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            Text("생성 전 마지막으로 확인하세요")
-                .font(.system(size: 26, weight: .bold))
-                .foregroundStyle(Color.neutral900)
-            Text("큐시트가 만들어지기 전에 공연 정보, 파트 구성, 초대 상태를 한 번에 확인합니다.")
-                .font(.system(size: 17))
-                .foregroundStyle(Color.neutral500)
-        }
-    }
-
-    private var stepBar: some View {
-        HStack(spacing: 8) {
-            ForEach(steps.indices, id: \.self) { index in
-                stepItem(number: index + 1, title: steps[index])
-                if index < steps.count - 1 { stepLine }
-            }
-        }
-    }
-
-    private func stepItem(number: Int, title: String) -> some View {
-        let isCurrent = number == currentStep
-        return HStack(spacing: 10) {
-            Text("\(number)")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(isCurrent ? Color.neutral25 : Color.neutral500)
-                .frame(width: 24, height: 24)
-                .background(isCurrent ? Color.neutral400 : Color.neutral200, in: .circle)
-            Text(title)
-                .font(.system(size: 11, weight: isCurrent ? .semibold : .regular))
-                .foregroundStyle(isCurrent ? Color.neutral900 : Color.neutral400)
-        }
-    }
-
-    private var stepLine: some View {
-        Color.neutral300
-            .frame(width: 50, height: 1)
     }
 }
 
@@ -128,27 +73,6 @@ extension InfoCheck {
         .padding(.leading, 50)
         .padding(.top, 39)
         .padding(.bottom, 50)
-    }
-}
-
-extension InfoCheck {
-    private var footer: some View {
-        footerButtons
-            .background(Color.neutral25)
-            .frame(maxWidth: 1214, alignment: .trailing)
-            .padding(.horizontal, 24)
-            .padding(.bottom, 124)
-    }
-
-    private var footerButtons: some View {
-        HStack(spacing: 15) {
-            Button("이전으로", action: onPrevious)
-                .buttonStyle(.secondary)
-                .frame(width: 175, height: 45)
-            Button("다음으로", action: onNext)
-                .buttonStyle(.primary)
-                .frame(width: 175, height: 45)
-        }
     }
 }
 
