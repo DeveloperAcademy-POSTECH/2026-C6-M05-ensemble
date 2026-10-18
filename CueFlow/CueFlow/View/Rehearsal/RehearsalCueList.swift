@@ -4,7 +4,7 @@
 //
 //  리허설 모드 큐 목록 (피그마 리허설모드_무대배치01 · ver1). 제목 · 필터 · 버튼은 표 상자 밖 위에.
 //  메인 큐시트와 같은 데이터(장면 → 트리거 → 큐)를 표로 읽어서 보여준다. 한 줄 = 트리거 하나.
-//  지금 큐(트리거) 줄은 연보라 + 왼쪽 막대, 이전 큐 / 다음 큐로 이동.
+//  지금 큐(트리거) 줄은 연보라 + 왼쪽 막대, 지난 큐는 흐리게. 이전 큐 / 다음 큐로 이동.
 //
 
 import SwiftUI
@@ -82,7 +82,8 @@ struct RehearsalCueList: View {
                                     code: "\(sceneCode) - \(index + 1)",
                                     trigger: trigger,
                                     cues: rowCues,
-                                    isCurrent: index == currentIndex
+                                    isCurrent: index == currentIndex,
+                                    isPast: index < currentIndex
                                 )
                                 .id(index)
                                 .onTapGesture { currentIndex = index }
@@ -221,6 +222,7 @@ struct CueListRow: View {
     let trigger: Trigger
     let cues: [Cue]
     let isCurrent: Bool
+    var isPast = false     // 이미 지나간 큐 → 흐리게
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
@@ -244,6 +246,7 @@ struct CueListRow: View {
                 }
             }
         }
+        .opacity(isPast ? 0.4 : 1)   // 글자 · 태그만 흐리게 (줄 바탕 · 가로선은 그대로)
         .frame(maxWidth: .infinity, minHeight: CueListColumn.cueHeight, alignment: .topLeading)
         .background(isCurrent ? Color.brandPrimarySubtle.opacity(0.2) : Color.neutral25)
         .overlay(alignment: .leading) {

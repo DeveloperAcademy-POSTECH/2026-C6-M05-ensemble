@@ -42,29 +42,22 @@ struct CueFlowApp: App {
                 .preferredColorScheme(isDarkMode ? .dark : .light)
         }
         .modelContainer(sharedModelContainer)
-        #if DEBUG
         .commands {
-            // 개발할 때만 보이는 메뉴 (TestFlight · 출시 앱에는 없음)
-            CommandMenu("개발용") {
-                Button("예시 공연 넣기 (레미제라블)") {
-                    let production = RehearsalPreviewData.production
-                    production.scenes?.forEach { $0.scriptLines = [] }   // 대본 입력을 시험해 볼 수 있게 대본은 비워 둔다
-                    production.initialPlacements = []                    // 첫 무대 배치도 처음부터 해 볼 수 있게 비워 둔다
-                    sharedModelContainer.mainContext.insert(production)
-                }
+            // UT 진행자용 메뉴 (TestFlight에도 보임). UserTest.hidesUnfinished를 false로 바꾸면 사라진다
+            if UserTest.hidesUnfinished {
+                CommandMenu("UT 진행") {
+                    Button("예시 공연 넣기 (레미제라블)") {
+                        UserTest.insertSample(into: sharedModelContainer.mainContext)
+                    }
 
-                Divider()
+                    Divider()
 
-                // 저장된 공연을 전부 지우고, 다음 실행 때 테스터처럼 예시 공연이 한 번 들어오게 되돌린다
-                Button("처음 실행 상태로 되돌리기 (공연 전부 삭제)") {
-                    let context = sharedModelContainer.mainContext
-                    let productions = (try? context.fetch(FetchDescriptor<Production>())) ?? []
-                    productions.forEach(context.delete)
-                    try? context.save()
-                    UserDefaults.standard.removeObject(forKey: "didInsertSampleProduction")
+                    // 참가자가 바뀔 때: 저장된 공연을 전부 지우고 빈 홈 화면으로
+                    Button("모든 데이터 지우기") {
+                        UserTest.deleteAll(in: sharedModelContainer.mainContext)
+                    }
                 }
             }
         }
-        #endif
     }
 }
