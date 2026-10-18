@@ -28,15 +28,24 @@ struct ContentView: View {
     private var productions: [Production]
 
     var body: some View {
-        if let rehearsingProduction {
-            RehearsalView(production: rehearsingProduction) {
-                self.rehearsingProduction = nil   // 종료하면 들어오기 전 화면(홈 또는 큐시트)으로
-            }
-        } else {
-            mainView
-                .task {
-                    UserTest.insertSampleIfNeeded(into: modelContext, isEmpty: productions.isEmpty)
+        Group {
+            if let rehearsingProduction {
+                RehearsalView(production: rehearsingProduction) {
+                    self.rehearsingProduction = nil   // 종료하면 들어오기 전 화면(홈 또는 큐시트)으로
                 }
+            } else {
+                mainView
+                    .task {
+                        UserTest.insertSampleIfNeeded(into: modelContext, isEmpty: productions.isEmpty)
+                    }
+            }
+        }
+        // UT 진행자 메뉴로 예시 공연을 넣거나 전부 지우면 → 열린 화면을 닫고 홈으로
+        .onReceive(NotificationCenter.default.publisher(for: UserTest.didResetNotification)) { _ in
+            rehearsingProduction = nil
+            openedProduction = nil
+            isCreatingProduction = false
+            selectedMenu = .project
         }
     }
 
