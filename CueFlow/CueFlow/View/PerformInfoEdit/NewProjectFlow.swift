@@ -80,6 +80,11 @@ extension NewProjectFlow {
             genre: draft.genre,
             firstShowDate: draft.firstShowDate
         )
+        production.lastShowDate = draft.lastShowDate
+        production.venue = draft.venue
+        production.seatCount = draft.seatCount
+        production.organizer = draft.organizer
+        production.runningTime = draft.runningTime
         production.parts = Part.makeParts(named: selectedParts, customNames: customParts)
         production.scenes = scenes
         modelContext.insert(production)
