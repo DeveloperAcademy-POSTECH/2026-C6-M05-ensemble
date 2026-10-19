@@ -14,6 +14,7 @@ struct CueCard: View {
     @Bindable var cue: Cue   // 카드 안에서 cue의 값을 바꿀 수 있게 (위치 선택용)
     @State private var isEditingNumber = false   // 번호 수정 창이 열려 있는지
     @State private var isEditingCue = false      // 큐 수정 팝오버가 열려 있는지
+    @Environment(\.modelContext) private var modelContext   // 큐를 지울 곳
     
     var body: some View {
         VStack(alignment: .leading, spacing: 13) {
@@ -27,6 +28,9 @@ struct CueCard: View {
         .contentShape(.rect)
         .onTapGesture(count: 2) { isEditingCue = true }   // 더블클릭하면 수정 팝오버
         .popover(isPresented: $isEditingCue, arrowEdge: .trailing) { cueEditor }
+        .contextMenu {   // 우클릭 메뉴
+            Button("삭제", role: .destructive) { modelContext.deleteCue(cue) }
+        }
     }
 }
 
@@ -154,6 +158,17 @@ extension CueCard {
     // 사용자가 입력한 번호를 두 자리로 (1 → "01")
     private var cueNumberText: String {
         String(format: "%02d", cue.order)
+    }
+}
+
+// 큐 지우기: 트리거에 이 큐 하나만 있었으면 트리거도 같이 지움 (리허설 목록에 빈 트리거가 남지 않게)
+extension ModelContext {
+    func deleteCue(_ cue: Cue) {
+        guard let trigger = cue.trigger, trigger.cues?.count == 1 else {
+            delete(cue)
+            return
+        }
+        delete(trigger)   // 트리거를 지우면 큐도 같이 지워짐
     }
 }
 
