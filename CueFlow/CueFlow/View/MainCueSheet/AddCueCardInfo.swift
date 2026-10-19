@@ -102,7 +102,7 @@ extension AddCueCardInfo {
     // 트리거 칸에서 Enter → 큐 칸으로 이동, 큐 칸에서 Enter → 큐 추가
     private func handleReturn(in field: InputField) {
         if field == .trigger {
-            focusedField = .cue
+            moveToCueField()
             return
         }
         addCue()
@@ -114,6 +114,13 @@ extension AddCueCardInfo {
         guard !title.isEmpty else { return }
         onSave(triggerText, title, position)
         dismiss()
+    }
+    
+    // 한글 입력이 끝난 다음에 칸을 옮겨야 트리거 칸 글자가 남는다
+    private func moveToCueField() {
+        DispatchQueue.main.async {
+            focusedField = .cue
+        }
     }
 }
 

@@ -96,6 +96,9 @@ extension CueGrid {
         .popover(isPresented: isEditing(scene), arrowEdge: .bottom) {
             AddScene(title: scene.title, kind: scene.kind) { scene.title = $0; scene.kind = $1 }
         }
+        .contextMenu {   // 우클릭 메뉴
+            Button("삭제", role: .destructive) { deleteScene(scene) }
+        }
     }
     
     // + 씬 추가 칸
@@ -125,6 +128,9 @@ extension CueGrid {
             .onTapGesture(count: 2) { editingPart = part }   // 더블클릭하면 수정 팝오버
             .popover(isPresented: isEditing(part), arrowEdge: .trailing) {
                 AddPart(name: part.name) { part.name = $0 }
+            }
+            .contextMenu {   // 우클릭 메뉴
+                Button("삭제", role: .destructive) { deletePart(part) }
             }
     }
     
@@ -157,7 +163,7 @@ extension CueGrid {
             .gridCellBorder()
     }
     
-    // 아무것도 없는 흰 칸 (줄 높이에 맞춰 늘어남)
+    // 아무것도 없는 흰 칸
     private func emptyCell(width: CGFloat) -> some View {
         Color.white
             .frame(width: width)
@@ -192,12 +198,12 @@ extension CueGrid {
         scene.triggers = (scene.triggers ?? []) + [trigger]
     }
     
-    // 이 파트의 큐 번호 중 가장 큰 번호 + 1 (처음이면 1)
+    // 이 파트의 큐 번호 중 가장 큰 번호 + 1
     private func nextCueNumber(in part: Part) -> Int {
         ((part.cues ?? []).map(\.order).max() ?? 0) + 1
     }
     
-    // 이 씬의 수정 팝오버를 열고 닫는 스위치 (닫히면 수정 중인 씬을 비움)
+    // 이 씬의 수정 팝오버를 열고 닫는 스위치
     private func isEditing(_ scene: ShowScene) -> Binding<Bool> {
         Binding(get: { editingScene == scene }, set: { if !$0 { editingScene = nil } })
     }
@@ -205,6 +211,30 @@ extension CueGrid {
     // 이 파트의 수정 팝오버를 열고 닫는 스위치
     private func isEditing(_ part: Part) -> Binding<Bool> {
         Binding(get: { editingPart == part }, set: { if !$0 { editingPart = nil } })
+    }
+    
+    // 씬 삭제: 이 씬의 트리거와 큐도 같이 지워짐
+    private func deleteScene(_ scene: ShowScene) {
+        production.scenes?.removeAll { $0 == scene }
+        modelContext.delete(scene)
+        renumberScenes()
+    }
+    
+    // 파트 삭제: 이 파트의 큐(와 그 트리거)도 같이 지움
+    private func deletePart(_ part: Part) {
+        (part.cues ?? []).forEach(modelContext.deleteCue)
+        production.parts?.removeAll { $0 == part }
+        modelContext.delete(part)
+        renumberParts()
+    }
+    
+    // 지운 뒤 빈 번호가 없게 0, 1, 2 …로 다시 매김
+    private func renumberScenes() {
+        for (index, scene) in sortedScenes.enumerated() { scene.order = index }
+    }
+    
+    private func renumberParts() {
+        for (index, part) in sortedParts.enumerated() { part.order = index }
     }
 }
 
@@ -242,7 +272,7 @@ extension CueGrid {
         }
     }
     
-    // 같은 종류끼리 왼쪽부터 몇 번째인지 (씬은 씬끼리, 넘버는 넘버끼리 1, 2, 3 …)
+    // 같은 종류끼리 왼쪽부터 몇 번째인지
     private func kindNumber(of scene: ShowScene) -> Int {
         sortedScenes.filter { $0.kind == scene.kind && $0.order <= scene.order }.count
     }
