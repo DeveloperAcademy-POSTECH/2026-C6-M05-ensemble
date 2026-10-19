@@ -12,7 +12,7 @@ import SwiftUI
 struct CreateStepLayout<Content: View>: View {
     let title: String
     let subtitle: String
-    let currentStep: Int   // 1 기본 정보 · 2 파트 구성 · 3 씬 구성 · 4 생성 확인
+    let currentStep: Int
     var onPrevious: () -> Void = {}
     var onNext: () -> Void = {}
     @ViewBuilder var content: Content
@@ -38,7 +38,7 @@ struct CreateStepLayout<Content: View>: View {
         }
         .frame(width: 799)
         .padding(.top, 163)
-        .padding(.bottom, 209)   // 버튼(45) + 아래 여백(124) + 간격(40): 내용이 버튼에 가리지 않게
+        .padding(.bottom, 209)
         .frame(maxWidth: .infinity)
     }
 }
@@ -93,8 +93,7 @@ extension CreateStepLayout {
     private var footer: some View {
         footerButtons
             .background(Color.neutral25)
-            .frame(maxWidth: 1214, alignment: .trailing)
-            .padding(.horizontal, 24)
+            .frame(width: 799, alignment: .trailing)
             .padding(.bottom, 124)
     }
 
