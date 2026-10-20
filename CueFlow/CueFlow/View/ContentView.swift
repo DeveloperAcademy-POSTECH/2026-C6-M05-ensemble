@@ -22,6 +22,7 @@ struct ContentView: View {
     @State private var isCreatingProduction = false
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(ICloudAccount.self) private var iCloudAccount
 
     // 저장된 공연 전부. 최근에 수정한 순서.
     @Query(sort: \Production.updatedAt, order: .reverse)
@@ -35,6 +36,10 @@ struct ContentView: View {
                 }
             } else {
                 mainView
+                    // iCloud 로그인 안 된 맥이면 화면 맨 위에 안내 띠
+                    .safeAreaInset(edge: .top, spacing: 0) {
+                        ICloudStatusBanner(status: iCloudAccount.status)
+                    }
                     .task {
                         UserTest.insertSampleIfNeeded(into: modelContext, isEmpty: productions.isEmpty)
                     }
@@ -105,9 +110,11 @@ struct ContentView: View {
 #Preview("프로젝트 없음") {
     ContentView()
         .modelContainer(for: Production.self, inMemory: true)
+        .environment(ICloudAccount())
 }
 
 #Preview("프로젝트 있음") {
     ContentView()
         .modelContainer(HomePreviewData.container)
+        .environment(ICloudAccount())
 }

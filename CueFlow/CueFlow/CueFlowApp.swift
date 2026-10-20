@@ -13,6 +13,9 @@ struct CueFlowApp: App {
     // 사이드바 다크모드 스위치가 바꾸는 값
     @AppStorage("isDarkMode") private var isDarkMode = false
 
+    // 이 맥의 iCloud 로그인 상태 (앱 전체에서 같이 씀)
+    @State private var iCloudAccount = ICloudAccount()
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -27,7 +30,9 @@ struct CueFlowApp: App {
             ScriptLine.self,
             StagePlacement.self,
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        // cloudKitDatabase: .none — iCloud를 켜면 SwiftData가 자동으로 내 iCloud에 동기화하려 하는데,
+        // 그 방식은 다른 사람과 공유가 안 돼서 끈다. 공유·동기화는 CKSyncEngine으로 따로 한다 (#67)
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, cloudKitDatabase: .none)
 
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
@@ -40,6 +45,8 @@ struct CueFlowApp: App {
         WindowGroup {
             ContentView()
                 .preferredColorScheme(isDarkMode ? .dark : .light)
+                .environment(iCloudAccount)
+                .task { await iCloudAccount.refresh() }
         }
         .modelContainer(sharedModelContainer)
         .commands {
