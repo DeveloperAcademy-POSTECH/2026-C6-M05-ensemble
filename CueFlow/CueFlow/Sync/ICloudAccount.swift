@@ -43,7 +43,7 @@ final class ICloudAccount {
     }
 
     // Xcode 캔버스(미리보기)에서 실행 중인지. 미리보기는 iCloud 권한 없이 돌아서 CloudKit을 부르면 멈춘다
-    private static let isRunningForPreviews =
+    static let isRunningForPreviews =
         ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
 
     func refresh() async {

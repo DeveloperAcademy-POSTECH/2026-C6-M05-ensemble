@@ -16,7 +16,7 @@ import SwiftData
 // iCloud에 올릴 수 있는 모델
 protocol CloudRecordConvertible: PersistentModel {
     static var recordType: String { get }
-    var id: UUID { get }
+    var id: UUID { get set }
 
     // 이 모델이 들어갈 공연 (= iCloud 폴더). 아직 공연에 안 붙었으면 nil → 올리지 않는다
     var cloudProduction: Production? { get }
@@ -74,6 +74,11 @@ enum CloudKey {
     static let partIDs = "partIDs"     // 멤버가 맡은 파트들 (여러 개)
 }
 
+extension Array where Element == String {
+    // iCloud는 처음 보는 칸에 빈 목록을 넣으면 "무슨 목록인지 모른다"며 거절한다 → 비었으면 칸을 비운다(nil)
+    var cloudList: [String]? { isEmpty ? nil : self }
+}
+
 extension CKRecord {
     // 부모 id 읽기 (받는 단계에서 관계 잇기에 씀)
     func uuid(_ key: String) -> UUID? {
@@ -100,8 +105,8 @@ extension Production: CloudRecordConvertible {
         record[CloudKey.firstShowDate] = firstShowDate
         record[CloudKey.createdAt] = createdAt
         record[CloudKey.updatedAt] = updatedAt
-        record[CloudKey.castNames] = castNames
-        record[CloudKey.propNames] = propNames
+        record[CloudKey.castNames] = castNames.cloudList
+        record[CloudKey.propNames] = propNames.cloudList
     }
 
     func applyFields(from record: CKRecord) {
@@ -207,7 +212,7 @@ extension Member: CloudRecordConvertible {
         record[CloudKey.role] = role
         record[CloudKey.iCloudUserID] = iCloudUserID
         record[CloudKey.productionID] = production?.id.uuidString
-        record[CloudKey.partIDs] = (parts ?? []).map(\.id.uuidString)
+        record[CloudKey.partIDs] = (parts ?? []).map(\.id.uuidString).cloudList
     }
 
     func applyFields(from record: CKRecord) {
