@@ -24,13 +24,31 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(ICloudAccount.self) private var iCloudAccount
 
+    // 받은 초대. 있으면 사이드바 없이 초대 수락 화면만 보인다.
+    // TODO: 초대 링크로 앱을 열었을 때 여기에 넣기 (#68 공유 연결 후)
+    @State private var pendingInvite: PendingInvite?
+
     // 저장된 공연 전부. 최근에 수정한 순서.
     @Query(sort: \Production.updatedAt, order: .reverse)
     private var productions: [Production]
 
+    init(pendingInvite: PendingInvite? = nil) {
+        _pendingInvite = State(initialValue: pendingInvite)
+    }
+
     var body: some View {
         Group {
-            if let rehearsingProduction {
+            if let pendingInvite {
+                InviteAcceptView(invite: pendingInvite) {
+                    // TODO: 실제로 공연에 참여시키기 (#68)
+                    self.pendingInvite = nil
+                    // 수락하면 열려 있던 화면을 닫고 홈으로
+                    rehearsingProduction = nil
+                    openedProduction = nil
+                    isCreatingProduction = false
+                    selectedMenu = .project
+                }
+            } else if let rehearsingProduction {
                 RehearsalView(production: rehearsingProduction) {
                     self.rehearsingProduction = nil   // 종료하면 들어오기 전 화면(홈 또는 큐시트)으로
                 }
@@ -115,6 +133,12 @@ struct ContentView: View {
 
 #Preview("프로젝트 있음") {
     ContentView()
+        .modelContainer(HomePreviewData.container)
+        .environment(ICloudAccount())
+}
+
+#Preview("초대 받음") {
+    ContentView(pendingInvite: PendingInvite(productionTitle: "별이 빛나는 밤 뮤지컬"))
         .modelContainer(HomePreviewData.container)
         .environment(ICloudAccount())
 }
