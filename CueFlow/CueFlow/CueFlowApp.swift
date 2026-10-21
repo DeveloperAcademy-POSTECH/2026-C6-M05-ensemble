@@ -51,8 +51,11 @@ struct CueFlowApp: App {
                 .environment(iCloudAccount)
                 .task {
                     await iCloudAccount.refresh()
-                    // TODO: 앱을 켜 둔 채로 iCloud에 로그인했을 때도 시작
-                    if iCloudAccount.status == .available {
+                }
+                // 앱을 켤 때 로그인돼 있거나, 켜 둔 채로 시스템 설정에서 로그인하면 시작
+                // (로그아웃은 CKSyncEngine이 알려 줘서 CloudSync가 직접 멈춘다)
+                .onChange(of: iCloudAccount.status) { _, status in
+                    if status == .available {
                         cloudSync.start(context: sharedModelContainer.mainContext)
                     }
                 }

@@ -59,6 +59,15 @@ final class CloudSync {
                 context.delete(production)
             }
         }
+        stop()
+        logger.info("이 맥 데이터 지움 → iCloud에서 다시 받기")
+        start(context: context)
+    }
+    #endif
+
+    // 동기화를 멈추고 "어디까지 주고받았는지" 기억을 지운다 (이 맥의 공연은 그대로)
+    // 다음에 start하면 처음 동기화처럼 이 맥의 공연을 전부 다시 올린다 — 다른 계정과 섞이지 않게
+    func stop() {
         if let saveObserver {
             NotificationCenter.default.removeObserver(saveObserver)
         }
@@ -66,10 +75,7 @@ final class CloudSync {
         engine = nil
         unlinkedRecords = [:]
         store.removeAll()
-        logger.info("이 맥 데이터 지움 → iCloud에서 다시 받기")
-        start(context: context)
     }
-    #endif
 
     // MARK: - 올릴 목록 만들기
 
@@ -351,8 +357,22 @@ final class CloudSync {
             }
 
         case .accountChange(let change):
-            // TODO: 로그아웃 · 다른 계정으로 바꿨을 때 처리
-            logger.info("iCloud 계정 바뀜: \(String(describing: change.changeType))")
+            // 이 맥의 공연은 지우지 않는다 — 로그아웃해도 작업하던 큐시트는 그대로 보인다
+            switch change.changeType {
+            case .signOut:
+                logger.info("iCloud 로그아웃 → 동기화 멈춤")
+                stop()
+            case .switchAccounts:
+                // 다른 계정이면 status가 계속 .available이라 앱이 다시 시작해 주지 않는다 → 여기서 다시 시작
+                logger.info("iCloud 계정 바뀜 → 새 계정으로 처음부터 다시 올리기")
+                Task { @MainActor in
+                    guard let context = self.context else { return }
+                    self.stop()
+                    self.start(context: context)
+                }
+            default:
+                break
+            }
 
         case .fetchedDatabaseChanges(let fetched):
             // 다른 기기에서 공연을 지웠으면(폴더째) 이 맥에서도 지운다
