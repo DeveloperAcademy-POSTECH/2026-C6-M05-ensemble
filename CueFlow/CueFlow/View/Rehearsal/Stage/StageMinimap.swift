@@ -64,7 +64,7 @@ struct StageMinimap: View {
                 Color.clear
                     .frame(width: 166, height: 1)
                 Text("관객석")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.neutral400)
                     .frame(maxWidth: .infinity)
                     .padding(.leading, 20)
@@ -87,7 +87,7 @@ struct StageMinimap: View {
                 }
 
                 Text(area.rawValue)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.neutral400)
                     .frame(width: size.width)
                     .offset(y: 26)
@@ -155,20 +155,20 @@ struct StageMinimap: View {
             HStack(spacing: 3) {
                 Circle()
                     .fill(Color.brandPrimary)
-                    .frame(width: 6, height: 6)
+                    .frame(width: 10, height: 10)
                 Text("배우")
             }
             HStack(spacing: 3) {
                 StageTriangle()
                     .fill(Color.brandPrimaryHover)
-                    .frame(width: 7, height: 6)
+                    .frame(width: 11, height: 9.5)
                 Text("소품")
             }
         }
-        .font(.system(size: 10))
-        .foregroundStyle(Color.neutral500)
+        .font(.system(size: 10, weight: .semibold))
+        .foregroundStyle(Color.neutral700)
         .padding(.horizontal, 13)
-        .frame(height: 23)
+        .frame(height: 27)
         .background(Color.neutral100, in: Capsule())
     }
 }
@@ -185,27 +185,27 @@ struct StageMarkView: View {
             case .cast:
                 Circle()
                     .fill(Color.brandPrimary)
-                    .frame(width: 10, height: 10)
+                    .frame(width: 17, height: 17)
             case .prop:
                 StageTriangle()
-                    .fill(Color.brandPrimaryHover)
-                    .frame(width: 11, height: 9.5)
+                    .fill(Color.brandPrimaryHover)   // 피그마는 민트색인데 임시 색이라 연보라 그대로
+                    .frame(width: 15, height: 13)
             }
         }
         .background {
             if isHighlighted {
                 Circle()
                     .fill(Color.brandPrimarySubtle)
-                    .frame(width: 20, height: 20)
+                    .frame(width: 28, height: 28)
             }
         }
         .overlay(alignment: .top) {
             Text(mark.name)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(Color.brandPrimaryText)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(mark.kind == .cast ? Color.neutral900 : Color.neutral800)
                 .lineLimit(1)
                 .fixedSize()
-                .offset(y: mark.kind == .cast ? 14 : 11)
+                .offset(y: mark.kind == .cast ? 21 : 15)
         }
         .padding(6)                  // 잡기 쉽게
         .contentShape(Rectangle())

@@ -80,7 +80,11 @@ struct RehearsalView: View {
                             canGoPrevious: sceneIndex > 0 || triggerIndex > 0,
                             canGoNext: sceneIndex < scenes.count - 1 || triggerIndex < currentTriggers.count - 1,
                             onPrevious: goToPreviousCue,
-                            onNext: goToNextCue
+                            onNext: goToNextCue,
+                            sceneControls: HStack(spacing: 10) {
+                                sceneStepper
+                                scenePicker
+                            }
                         )
                 }
             }
@@ -126,19 +130,14 @@ struct RehearsalView: View {
         }
     }
 
-    // 공연 이름 · 장면 이동 · 종료 버튼
+    // 공연 이름 · 동기화 모드 · 종료 버튼 (장면 이동은 큐 목록 줄에)
     private var header: some View {
         HStack(spacing: 0) {
             Text(production.title)
-                .font(.system(size: 22, weight: .semibold))   // 피그마 22pt (macOS 기본 스타일에 없음)
+                .font(.system(size: 22, weight: .regular))   // 피그마 22pt (macOS 기본 스타일에 없음)
                 .foregroundStyle(Color.neutral900)
 
             Spacer()
-
-            HStack(spacing: 10) {
-                sceneStepper
-                scenePicker
-            }
 
             if UserTest.hidesUnfinished {
                 Spacer().frame(width: 8)
@@ -147,14 +146,14 @@ struct RehearsalView: View {
                     // TODO: 누르면 모두가 같은 화면(같은 장면 · 같은 큐)을 보게 — 실제 공유(iCloud) 생긴 뒤
                 }
                 .buttonStyle(.primary)
-                .frame(width: 90, height: 36)
+                .frame(width: 130, height: 36)
                 .padding(.horizontal, 8)
             }
 
             // TODO: #41 머지 후 .buttonStyle(.tertiary)로 교체
             Button("리허설 모드 종료", action: onExit)
                 .buttonStyle(.plain)
-                .frame(width: 115, height: 36)
+                .frame(width: 130, height: 36)
                 .foregroundStyle(Color.brandPrimaryText)
                 .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
                 .overlay {
