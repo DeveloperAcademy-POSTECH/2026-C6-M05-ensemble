@@ -22,11 +22,12 @@ final class Cue {
     var id: UUID = UUID()
     var title: String = ""                  // 카드 첫 줄 (예: "자베르 고지대 등장")
     var position: CuePosition = CuePosition.stage
-    var order: Int = 0                      // 같은 칸(파트 × 트리거) 안에서의 순서 → 카드의 01, 02
+    var order: Int = 0                      // 사용자가 직접 입력한 큐 번호 → 카드의 01, 02
     var createdAt: Date = Date()
 
     var part: Part?                         // 어느 파트의 큐인지 (예: 조명)
     var trigger: Trigger?                   // 언제 실행하는지 (카드 둘째 줄)
+    var stageCell: Int?                     // 위치가 무대일 때 9구역 중 어디인지 (0~8, 왼쪽 위부터). 리허설 큐 목록에서 정함, 비어 있으면 미정
 
     // 큐를 지우면 댓글·확인 기록도 같이 지운다.
     @Relationship(deleteRule: .cascade, inverse: \Comment.cue)

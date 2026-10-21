@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct HomeEmptyView: View {
+    var onNewProject: () -> Void = {}   // "새 프로젝트" → 새 공연 만들기 흐름
+
     var body: some View {
         VStack(spacing: 30) {
             VStack(spacing: 14) {
@@ -29,7 +31,7 @@ struct HomeEmptyView: View {
                 .frame(width: 200, height: 40)
 
                 Button("새 프로젝트") {
-                    // TODO: 프로젝트 생성 화면으로 이동 (다른 팀원 담당 화면)
+                    onNewProject()
                 }
                 .buttonStyle(.primary)
                 .frame(width: 200, height: 40)
