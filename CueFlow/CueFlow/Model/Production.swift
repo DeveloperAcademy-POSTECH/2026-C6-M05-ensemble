@@ -15,6 +15,11 @@ final class Production {
     var title: String = ""              // 공연명 (예: "레미제라블")
     var genre: String = ""              // 공연 유형 (예: "뮤지컬")
     var firstShowDate: Date = Date()    // 첫 공연일
+    var lastShowDate: Date?             // 마지막 공연일 (하루 공연이면 nil)
+    var venue: String = ""              // 공연장 (예: "아트스페이스 대극장")
+    var seatCount: Int?                 // 객석 규모 (예: 1200)
+    var organizer: String = ""          // 주최
+    var runningTime: Int?               // 러닝타임 (분)
     var createdAt: Date = Date()
     var updatedAt: Date = Date()        // 마지막으로 수정한 날짜 (홈 목록 "수정한 날짜")
     var lastOpenedAt: Date = Date()     // 마지막으로 연 시간 (홈 "최근에 열어본 프로젝트")

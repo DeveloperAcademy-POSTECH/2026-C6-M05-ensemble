@@ -3,7 +3,7 @@
 //  CueFlow
 //
 //  홈 화면에 보여줄 글자를 공연 데이터로 만드는 곳.
-//  아직 모델에 없는 정보(공연장, 회차, 배우/스태프 수, 소유자)는 빈칸으로 둔다.
+//  아직 모델에 없는 정보(회차, 배우/스태프 수, 소유자)는 빈칸으로 둔다.
 //
 
 import Foundation
@@ -34,10 +34,17 @@ extension Production {
         "총 \(members?.count ?? 0)명"
     }
 
-    // "2026.11.14"
-    // TODO: 프로젝트 생성 화면의 "공연장" 입력값이 Production에 생기면 "2026.11.14 · 아트스페이스 A홀"
+    // "2026.11.14 · 아트스페이스 A홀" (공연장이 비었으면 날짜만)
     var scheduleText: String {
-        Self.format(firstShowDate, "yyyy.MM.dd")
+        let date = Self.format(firstShowDate, "yyyy.MM.dd")
+        return venue.isEmpty ? date : "\(date) · \(venue)"
+    }
+
+    // "1,200석" (객석 규모를 안 적었으면 빈칸)
+    // TODO: 회차를 입력받게 되면 "1,200석 · 2회 공연"
+    var summaryText: String {
+        guard let seatCount else { return "" }
+        return "\(seatCount.formatted())석"
     }
 
     // "9월 28일"

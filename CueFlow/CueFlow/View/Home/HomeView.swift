@@ -110,7 +110,7 @@ struct HomeView: View {
                     RecentProjectCard(
                         lastWorked: production.lastWorkedText,
                         title: production.cardTitle,
-                        summary: "",   // TODO: 공연장 규모·회차 (모델에 아직 없음)
+                        summary: production.summaryText,
                         members: production.memberCountText,
                         schedule: production.scheduleText,
                         onRehearsal: {
