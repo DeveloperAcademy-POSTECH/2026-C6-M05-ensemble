@@ -12,7 +12,8 @@ struct MainCueSheetView: View {
     let production: Production                 // 어느 공연의 큐시트인지
     var onRehearsal: () -> Void = {}           // "리허설 모드" 버튼
     @State private var selectedPart: Part?     // 파트 칩에서 고른 파트 (nil = 전체)
-    
+    @State private var isSharing = false       // 멤버 버튼 → 공유하기 창
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             titleRow
@@ -34,6 +35,8 @@ extension MainCueSheetView {
         HStack {
             Text(production.title)
                 .font(.title2.weight(.semibold))
+            Spacer()
+            memberButton
         }
     }
     
@@ -56,6 +59,42 @@ extension MainCueSheetView {
         Button("리허설 모드", action: onRehearsal)
         .buttonStyle(.primary)
         .frame(width: 90, height: 30)
+    }
+
+    // 멤버 이니셜 동그라미(겹쳐서) + ∨ → 누르면 공유하기 창
+    // TODO: 멤버가 아직 없으면 사람 모양만 (#68 4단계에서 들어온 사람을 Member로 등록)
+    private var memberButton: some View {
+        Button { isSharing = true } label: {
+            HStack(spacing: 4) {
+                HStack(spacing: -6) {
+                    let initials = (production.members ?? []).prefix(2).map { String($0.name.prefix(1)).uppercased() }
+                    if initials.isEmpty {
+                        memberCircle(Image(systemName: "person.fill"))
+                    } else {
+                        ForEach(Array(initials.enumerated()), id: \.offset) { _, initial in
+                            memberCircle(Text(initial))
+                        }
+                    }
+                }
+                Image(systemName: "chevron.down")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Color.neutral500)
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $isSharing, arrowEdge: .bottom) {
+            SharePopover(production: production)
+        }
+    }
+
+    private func memberCircle(_ content: some View) -> some View {
+        content
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Color.brandPrimary)
+            .frame(width: 25, height: 25)
+            .background(Color.brandPrimarySubtle, in: .circle)
+            .overlay(Circle().strokeBorder(.white, lineWidth: 1.5))
     }
 }
 

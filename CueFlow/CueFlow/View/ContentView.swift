@@ -25,8 +25,11 @@ struct ContentView: View {
     @Environment(ICloudAccount.self) private var iCloudAccount
 
     // 받은 초대. 있으면 사이드바 없이 초대 수락 화면만 보인다.
-    // TODO: 초대 링크로 앱을 열었을 때 여기에 넣기 (#68 공유 연결 후)
+    // 초대 링크로 앱이 열리면 ShareInvites.shared.pending에 들어온다 (이 값은 미리보기용)
     @State private var pendingInvite: PendingInvite?
+    private var shareInvites = ShareInvites.shared
+
+    private var invite: PendingInvite? { shareInvites.pending ?? pendingInvite }
 
     // 저장된 공연 전부. 최근에 수정한 순서.
     @Query(sort: \Production.updatedAt, order: .reverse)
@@ -38,10 +41,20 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if let pendingInvite {
-                InviteAcceptView(invite: pendingInvite) {
-                    // TODO: 실제로 공연에 참여시키기 (#68)
-                    self.pendingInvite = nil
+            if let invite {
+                InviteAcceptView(invite: invite) {
+                    // 수락 → 나도 공연 참여자가 된다. TODO: 공유받은 공연을 받아 와서 홈에 띄우기 (#68 3단계)
+                    if let metadata = invite.metadata {
+                        Task {
+                            do {
+                                try await CloudShare.accept(metadata)
+                            } catch {
+                                print("초대 수락 실패: \(error)")
+                            }
+                        }
+                    }
+                    shareInvites.pending = nil
+                    pendingInvite = nil
                     // 수락하면 열려 있던 화면을 닫고 홈으로
                     rehearsingProduction = nil
                     openedProduction = nil

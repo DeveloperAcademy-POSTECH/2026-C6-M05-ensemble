@@ -3,14 +3,16 @@
 //  CueFlow
 //
 //  초대 링크로 들어왔을 때 보이는 초대 수락 화면 (피그마 초대수락화면).
-//  TODO: 실제 초대/공유(iCloud) 방식이 정해지면 초대 정보 받기 + 수락 시 공연 참여 연결
+//  링크로 앱이 열리면 ShareInvites가 초대를 받아 ContentView가 이 화면을 띄운다 (#68).
 //
 
 import SwiftUI
+import CloudKit
 
-// 받은 초대 정보. 지금은 화면에 보여 줄 공연 이름만 있다.
+// 받은 초대 정보
 struct PendingInvite: Equatable {
-    var productionTitle: String   // 예: "별이 빛나는 밤 뮤지컬"
+    var productionTitle: String          // 예: "별이 빛나는 밤 뮤지컬"
+    var metadata: CKShare.Metadata?      // iCloud가 준 초대 정보. 수락할 때 씀 (미리보기에선 nil)
 }
 
 struct InviteAcceptView: View {

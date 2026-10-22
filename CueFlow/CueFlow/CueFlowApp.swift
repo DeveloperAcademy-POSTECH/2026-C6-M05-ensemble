@@ -10,6 +10,9 @@ import SwiftData
 
 @main
 struct CueFlowApp: App {
+    // 초대 링크로 앱이 열리면 맥이 여기에 알려 준다 (#68)
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     // 사이드바 다크모드 스위치가 바꾸는 값
     @AppStorage("isDarkMode") private var isDarkMode = false
 
