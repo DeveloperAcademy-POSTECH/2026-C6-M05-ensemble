@@ -18,7 +18,7 @@ private enum CueListColumn {
     static let cueHeight: CGFloat = 42   // 큐 한 줄 높이
 }
 
-struct RehearsalCueList: View {
+struct RehearsalCueList<SceneControls: View>: View {
     let sceneCode: String          // "S#3"
     let triggers: [Trigger]        // 지금 장면의 트리거 (순서대로)
     let parts: [Part]              // 파트 필터 칩
@@ -27,6 +27,7 @@ struct RehearsalCueList: View {
     let canGoNext: Bool
     let onPrevious: () -> Void
     let onNext: () -> Void
+    let sceneControls: SceneControls   // < > 장면 이동 · 장면 선택 (이전 큐 왼쪽)
 
     @State private var selectedPart: Part?   // nil = 전체
 
@@ -49,14 +50,15 @@ struct RehearsalCueList: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.neutral800)
                 Text("\(cueCount)개 큐")
-                    .font(.body)
-                    .foregroundStyle(Color.neutral400)
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.neutral600)
             }
 
-            // 파트 필터 | 이전 큐 · 다음 큐
+            // 파트 필터 | 장면 이동 · 이전 큐 · 다음 큐
             HStack(spacing: 8) {
                 partFilter
                 Spacer()
+                sceneControls
                 previousButton
                 nextButton
             }
@@ -128,7 +130,7 @@ struct RehearsalCueList: View {
     private func filterChip(_ title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 12))
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(Color.neutral900)
                 .padding(.horizontal, 12)
                 .frame(minWidth: 48)
@@ -150,7 +152,7 @@ struct RehearsalCueList: View {
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(Color.neutral800)
             }
-            .frame(width: 78, height: 28)
+            .frame(width: 78, height: 36)
             .background(Color.white, in: RoundedRectangle(cornerRadius: 6))
             .overlay {
                 RoundedRectangle(cornerRadius: 6)
@@ -174,7 +176,7 @@ struct RehearsalCueList: View {
             }
         }
         .buttonStyle(.softPrimaryCompat)
-        .frame(width: 75, height: 28)
+        .frame(width: 75, height: 36)
         .disabled(!canGoNext)
         .opacity(canGoNext ? 1 : 0.4)
         .keyboardShortcut(.space, modifiers: [])   // 스페이스바 = 다음 큐
@@ -195,7 +197,7 @@ struct RehearsalCueList: View {
 
     private func columnTitle(_ text: String) -> some View {
         Text(text)
-            .font(.body)
+            .font(.system(size: 15))
             .foregroundStyle(Color.neutral800)
     }
 
@@ -227,14 +229,14 @@ struct CueListRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
             Text(code)
-                .font(.body.weight(isCurrent ? .semibold : .medium))
+                .font(.system(size: 15, weight: isCurrent ? .semibold : .medium))
                 .foregroundStyle(isCurrent ? Color.neutral900 : Color.neutral800)
                 .padding(.leading, 20)
                 .frame(width: CueListColumn.scene, height: CueListColumn.cueHeight, alignment: .leading)
 
             Text(trigger.text)
-                .font(.body)
-                .foregroundStyle(Color.neutral700)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Color.neutral900)
                 .lineLimit(1)
                 .padding(.leading, 20)
                 .frame(width: CueListColumn.trigger, height: CueListColumn.cueHeight, alignment: .leading)
@@ -263,7 +265,7 @@ struct CueListRow: View {
     private func cueLine(_ cue: Cue) -> some View {
         HStack(spacing: 0) {
             Text(cue.title)
-                .font(.body.weight(.medium))
+                .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(Color.neutral800)
                 .lineLimit(1)
                 .padding(.leading, 22)
@@ -273,7 +275,7 @@ struct CueListRow: View {
                 .frame(width: CueListColumn.position)
 
             Text(cue.part?.name ?? "")
-                .font(.body.weight(.semibold))
+                .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(Color.neutral900)
                 .frame(width: CueListColumn.part)
         }
@@ -305,7 +307,7 @@ struct CueListRow: View {
 
     private func tagLabel(_ text: String) -> some View {
         Text(text)
-            .font(.body.weight(.semibold))
+            .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(Color.brandPrimaryText)
             .padding(.horizontal, 10)
             .frame(height: 22)
