@@ -16,6 +16,9 @@ struct CueFlowApp: App {
     // 이 맥의 iCloud 로그인 상태 (앱 전체에서 같이 씀)
     @State private var iCloudAccount = ICloudAccount()
 
+    // iCloud 주고받기 (#67)
+    @State private var cloudSync = CloudSync()
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -46,10 +49,29 @@ struct CueFlowApp: App {
             ContentView()
                 .preferredColorScheme(isDarkMode ? .dark : .light)
                 .environment(iCloudAccount)
-                .task { await iCloudAccount.refresh() }
+                .task {
+                    await iCloudAccount.refresh()
+                }
+                // 앱을 켤 때 로그인돼 있거나, 켜 둔 채로 시스템 설정에서 로그인하면 시작
+                // (로그아웃은 CKSyncEngine이 알려 줘서 CloudSync가 직접 멈춘다)
+                .onChange(of: iCloudAccount.status) { _, status in
+                    if status == .available {
+                        cloudSync.start(context: sharedModelContainer.mainContext)
+                    }
+                }
         }
         .modelContainer(sharedModelContainer)
         .commands {
+            #if DEBUG
+            // 개발용 (TestFlight에는 안 보임)
+            CommandMenu("개발용") {
+                Button("이 맥 데이터만 지우기 (iCloud에서 다시 받기)") {
+                    NotificationCenter.default.post(name: UserTest.didResetNotification, object: nil)
+                    cloudSync.resetLocalAndRefetch()
+                }
+            }
+            #endif
+
             // UT 진행자용 메뉴 (TestFlight에도 보임). UserTest.hidesUnfinished를 false로 바꾸면 사라진다
             if UserTest.hidesUnfinished {
                 CommandMenu("UT 진행") {
