@@ -25,7 +25,7 @@ struct InviteAcceptView: View {
             // 썸네일 + 공연 이름 + "초대받음"
             HStack(spacing: 12) {
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.neutral100)   // 홈 목록 썸네일(ProjectListRow)과 같은 회색
+                    .fill(Color.neutral200)   // 피그마 초대수락화면 썸네일 = Neutral/200
                     .frame(width: 50, height: 50)
 
                 VStack(alignment: .leading, spacing: 8) {
