@@ -7,7 +7,7 @@
 //
 //  #67 ② 올리기: 추가 · 수정 · 삭제 → iCloud
 //  #67 ③ 받기: iCloud → SwiftData
-//  지금은 내 iCloud(개인 저장공간)만. 공유받은 공연(공유 저장공간)은 #68
+//  #68 공유받은 공연: 내 공연은 내 iCloud(개인 저장공간), 공유받은 공연은 공유 저장공간 → 엔진 두 개로 따로 주고받는다
 //
 
 import CloudKit
@@ -18,9 +18,11 @@ final class CloudSync {
     private let logger = Logger(subsystem: "Happymondayy.CueFlow", category: "CloudSync")
     private let store = CloudSyncStore()
 
-    private var engine: CKSyncEngine?
+    private var privateEngine: CKSyncEngine?   // 내 공연
+    private var sharedEngine: CKSyncEngine?    // 공유받은 공연
     private var context: ModelContext?
     private var saveObserver: NSObjectProtocol?
+    private var acceptObserver: NSObjectProtocol?
 
     // iCloud에서 받은 걸 SwiftData에 넣는 중이면 true → 그건 다시 올리지 않는다
     private var isApplyingRemoteChanges = false
@@ -31,17 +33,23 @@ final class CloudSync {
 
     // iCloud에 로그인돼 있을 때 앱이 켜지면 한 번 부른다
     func start(context: ModelContext) {
-        guard engine == nil, !ICloudAccount.isRunningForPreviews else { return }
+        guard privateEngine == nil, !ICloudAccount.isRunningForPreviews else { return }
         self.context = context
 
-        let savedState = store.loadState()
-        let configuration = CKSyncEngine.Configuration(
-            database: CKContainer(identifier: ICloudAccount.containerID).privateCloudDatabase,
+        let container = CKContainer(identifier: ICloudAccount.containerID)
+        let savedState = store.loadState(shared: false)
+        privateEngine = CKSyncEngine(CKSyncEngine.Configuration(
+            database: container.privateCloudDatabase,
             stateSerialization: savedState,
             delegate: self
-        )
-        engine = CKSyncEngine(configuration)
+        ))
+        sharedEngine = CKSyncEngine(CKSyncEngine.Configuration(
+            database: container.sharedCloudDatabase,
+            stateSerialization: store.loadState(shared: true),
+            delegate: self
+        ))
         observeSaves(of: context)
+        observeAccepts()
 
         // 이 맥에서 처음 동기화 → 이미 있던 공연도 전부 올린다
         if savedState == nil {
@@ -68,11 +76,13 @@ final class CloudSync {
     // 동기화를 멈추고 "어디까지 주고받았는지" 기억을 지운다 (이 맥의 공연은 그대로)
     // 다음에 start하면 처음 동기화처럼 이 맥의 공연을 전부 다시 올린다 — 다른 계정과 섞이지 않게
     func stop() {
-        if let saveObserver {
-            NotificationCenter.default.removeObserver(saveObserver)
+        for observer in [saveObserver, acceptObserver].compactMap({ $0 }) {
+            NotificationCenter.default.removeObserver(observer)
         }
         saveObserver = nil
-        engine = nil
+        acceptObserver = nil
+        privateEngine = nil
+        sharedEngine = nil
         unlinkedRecords = [:]
         store.removeAll()
     }
@@ -88,8 +98,23 @@ final class CloudSync {
         }
     }
 
+    // 초대를 수락하면 공유받은 공연을 바로 받아 온다 (기다리면 언젠가 오지만 바로 보이게)
+    private func observeAccepts() {
+        acceptObserver = NotificationCenter.default.addObserver(
+            forName: CloudShare.didAcceptNotification, object: nil, queue: nil
+        ) { [weak self] _ in
+            Task { @MainActor in
+                do {
+                    try await self?.sharedEngine?.fetchChanges()
+                } catch {
+                    self?.logger.error("공유받은 공연 받기 실패: \(error)")
+                }
+            }
+        }
+    }
+
     private func collectChanges() {
-        guard let context, let engine, !isApplyingRemoteChanges else { return }
+        guard let context, privateEngine != nil, !isApplyingRemoteChanges else { return }
 
         var zoneChanges: [CKSyncEngine.PendingDatabaseChange] = []
         var recordChanges: [CKSyncEngine.PendingRecordZoneChange] = []
@@ -126,13 +151,34 @@ final class CloudSync {
             }
         }
 
-        if !zoneChanges.isEmpty {
-            engine.state.add(pendingDatabaseChanges: zoneChanges)
-        }
+        enqueue(zoneChanges, recordChanges)
         if !recordChanges.isEmpty {
-            engine.state.add(pendingRecordZoneChanges: recordChanges)
             logger.info("올릴 목록에 추가: \(recordChanges.count)개")
         }
+    }
+
+    // 폴더 주인에 따라 나눠서 올릴 목록에 넣는다 — 내 공연은 개인 저장공간, 공유받은 공연은 공유 저장공간
+    // (공유받은 공연을 지우면 공유 저장공간에서 폴더를 지움 = 그 공연에서 나가기)
+    private func enqueue(
+        _ zoneChanges: [CKSyncEngine.PendingDatabaseChange],
+        _ recordChanges: [CKSyncEngine.PendingRecordZoneChange]
+    ) {
+        for (engine, isMine) in [(privateEngine, true), (sharedEngine, false)] {
+            guard let engine else { continue }
+            let zones = zoneChanges.filter { $0.zoneID.isMine == isMine }
+            let records = recordChanges.filter { $0.recordID.zoneID.isMine == isMine }
+            if !zones.isEmpty {
+                engine.state.add(pendingDatabaseChanges: zones)
+            }
+            if !records.isEmpty {
+                engine.state.add(pendingRecordZoneChanges: records)
+            }
+        }
+    }
+
+    // 폴더 주인에 따라 어느 엔진인지
+    private func engine(for zoneID: CKRecordZone.ID) -> CKSyncEngine? {
+        zoneID.isMine ? privateEngine : sharedEngine
     }
 
     // 같이 지워지는 아래 모델들의 id (모델의 cascade 규칙과 맞춤)
@@ -149,10 +195,10 @@ final class CloudSync {
         }
     }
 
-    // 처음 동기화할 때: 이 맥에 있는 공연 전부
+    // 처음 동기화할 때: 이 맥에 있는 내 공연 전부 (공유받은 공연은 공유 저장공간에서 다시 받는다)
     private func enqueueEverything() {
-        guard let context, let engine else { return }
-        let productions = (try? context.fetch(FetchDescriptor<Production>())) ?? []
+        guard let context else { return }
+        let productions = ((try? context.fetch(FetchDescriptor<Production>())) ?? []).filter { !$0.isSharedWithMe }
 
         var recordIDs = Set<CKRecord.ID>()
         for production in productions {
@@ -171,8 +217,7 @@ final class CloudSync {
             recordIDs.formUnion(items.compactMap(\.cloudRecordID))
         }
 
-        engine.state.add(pendingDatabaseChanges: productions.map { .saveZone(CKRecordZone(zoneID: $0.cloudZoneID)) })
-        engine.state.add(pendingRecordZoneChanges: recordIDs.map { .saveRecord($0) })
+        enqueue(productions.map { .saveZone(CKRecordZone(zoneID: $0.cloudZoneID)) }, recordIDs.map { .saveRecord($0) })
         logger.info("처음 올리기: 공연 \(productions.count)개, 레코드 \(recordIDs.count)개")
     }
 
@@ -182,7 +227,7 @@ final class CloudSync {
     fileprivate func record(for recordID: CKRecord.ID) -> CKRecord? {
         guard let id = UUID(uuidString: recordID.recordName), let item = findModel(id) else {
             // 올리기 전에 지워졌으면 목록에서 뺀다
-            engine?.state.remove(pendingRecordZoneChanges: [.saveRecord(recordID)])
+            engine(for: recordID.zoneID)?.state.remove(pendingRecordZoneChanges: [.saveRecord(recordID)])
             return nil
         }
         let record = store.cachedRecord(named: recordID.recordName)
@@ -284,6 +329,11 @@ final class CloudSync {
             context.insert(item)
         }
         item.applyFields(from: record)
+        // 공연이 어느 폴더에서 왔는지 기억 → 고치면 같은 폴더(주인 쪽)로 올라간다
+        if let production = item as? Production {
+            let zoneID = record.recordID.zoneID
+            production.cloudZoneOwnerName = zoneID.isMine ? nil : zoneID.ownerName
+        }
         return item
     }
 
@@ -329,12 +379,31 @@ final class CloudSync {
         logger.info("받음: 공연 지워짐 \(production.title)")
     }
 
+    // 공유받은 공연에 "나"를 멤버로 넣는다 (iCloud 계정 ID로 연결). 이미 들어가 있으면 그대로
+    // 다른 맥에서 이미 넣었으면 받은 멤버에 내 ID가 있어서 건너뛴다
+    private func addMeToSharedProductions() async {
+        guard let context else { return }
+        guard let myID = try? await CKContainer(identifier: ICloudAccount.containerID).userRecordID().recordName else { return }
+
+        let productions = ((try? context.fetch(FetchDescriptor<Production>())) ?? []).filter {
+            $0.isSharedWithMe && !($0.members ?? []).contains { $0.iCloudUserID == myID }
+        }
+        for production in productions {
+            do {
+                production.addMember(try await CloudShare.myParticipant(in: production))
+            } catch {
+                logger.error("멤버 등록 실패 \(production.title): \(error)")
+            }
+        }
+    }
+
     // MARK: - CKSyncEngine이 알려 주는 일
 
-    fileprivate func handle(_ event: CKSyncEngine.Event) {
+    fileprivate func handle(_ event: CKSyncEngine.Event, from engine: CKSyncEngine) {
+        let isShared = engine === sharedEngine
         switch event {
         case .stateUpdate(let update):
-            store.saveState(update.stateSerialization)
+            store.saveState(update.stateSerialization, shared: isShared)
 
         case .sentDatabaseChanges(let sent):
             for zoneID in sent.deletedZoneIDs {
@@ -351,12 +420,14 @@ final class CloudSync {
             for recordID in sent.deletedRecordIDs {
                 store.removeRecord(recordID)
             }
-            handleFailedSaves(sent.failedRecordSaves)
+            handleFailedSaves(sent.failedRecordSaves, engine: engine)
             if !sent.savedRecords.isEmpty || !sent.deletedRecordIDs.isEmpty {
                 logger.info("올림: 저장 \(sent.savedRecords.count)개, 삭제 \(sent.deletedRecordIDs.count)개")
             }
 
         case .accountChange(let change):
+            // 두 엔진이 둘 다 알려 주므로 한쪽(내 공연 엔진)에서만 처리
+            guard !isShared else { break }
             // 이 맥의 공연은 지우지 않는다 — 로그아웃해도 작업하던 큐시트는 그대로 보인다
             switch change.changeType {
             case .signOut:
@@ -376,6 +447,7 @@ final class CloudSync {
 
         case .fetchedDatabaseChanges(let fetched):
             // 다른 기기에서 공연을 지웠으면(폴더째) 이 맥에서도 지운다
+            // 공유받은 공연은 주인이 공유를 끊거나 나를 내보낸 경우
             applyRemoteChanges {
                 for deletion in fetched.deletions {
                     deleteProduction(in: deletion.zoneID)
@@ -392,14 +464,18 @@ final class CloudSync {
             if !unlinkedRecords.isEmpty {
                 logger.info("부모를 못 찾아 아직 못 이은 레코드: \(self.unlinkedRecords.count)개")
             }
+            if isShared {
+                Task { await addMeToSharedProductions() }
+            }
 
         default:
             break
         }
     }
 
-    private func handleFailedSaves(_ failures: [CKSyncEngine.Event.SentRecordZoneChanges.FailedRecordSave]) {
-        guard let engine else { return }
+    private func handleFailedSaves(
+        _ failures: [CKSyncEngine.Event.SentRecordZoneChanges.FailedRecordSave], engine: CKSyncEngine
+    ) {
         for failure in failures {
             let recordID = failure.record.recordID
             switch failure.error.code {
@@ -411,7 +487,12 @@ final class CloudSync {
                 engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
 
             case .zoneNotFound:
-                // 폴더가 없음 → 폴더부터 만들고 다시 (공연이 아직 이 맥에 있을 때만)
+                // 폴더가 없음 → 폴더부터 만들고 다시 (내 공연이 아직 이 맥에 있을 때만)
+                // 공유받은 공연은 주인 폴더라 내가 만들 수 없다 → 공유가 끊긴 것. 폴더 지워짐 알림이 오면 정리된다
+                guard recordID.zoneID.isMine else {
+                    engine.state.remove(pendingRecordZoneChanges: [.saveRecord(recordID)])
+                    continue
+                }
                 guard let id = UUID(uuidString: recordID.recordName), findModel(id) != nil else { continue }
                 engine.state.add(pendingDatabaseChanges: [.saveZone(CKRecordZone(zoneID: recordID.zoneID))])
                 engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
@@ -431,7 +512,7 @@ final class CloudSync {
 // CKSyncEngine은 메인 스레드가 아닌 곳에서 부르므로, 받자마자 메인으로 넘긴다
 extension CloudSync: CKSyncEngineDelegate {
     nonisolated func handleEvent(_ event: CKSyncEngine.Event, syncEngine: CKSyncEngine) async {
-        await handle(event)
+        await handle(event, from: syncEngine)
     }
 
     nonisolated func nextRecordZoneChangeBatch(
@@ -440,6 +521,27 @@ extension CloudSync: CKSyncEngineDelegate {
         let changes = syncEngine.state.pendingRecordZoneChanges.filter { context.options.scope.contains($0) }
         return await CKSyncEngine.RecordZoneChangeBatch(pendingChanges: changes) { recordID in
             await self.record(for: recordID)
+        }
+    }
+}
+
+// 올릴 목록의 한 줄이 어느 폴더 것인지 (엔진 나누기에 씀)
+private extension CKSyncEngine.PendingDatabaseChange {
+    var zoneID: CKRecordZone.ID {
+        switch self {
+        case .saveZone(let zone): zone.zoneID
+        case .deleteZone(let zoneID): zoneID
+        @unknown default: CKRecordZone.ID()
+        }
+    }
+}
+
+private extension CKSyncEngine.PendingRecordZoneChange {
+    var recordID: CKRecord.ID {
+        switch self {
+        case .saveRecord(let recordID): recordID
+        case .deleteRecord(let recordID): recordID
+        @unknown default: CKRecord.ID(recordName: "")
         }
     }
 }

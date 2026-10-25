@@ -25,6 +25,10 @@ final class Production {
     var lastOpenedAt: Date = Date()     // 마지막으로 연 시간 (홈 "최근에 열어본 프로젝트")
     var isFavorite: Bool = false        // 즐겨찾기 여부
 
+    // 공유받은 공연이면 주인의 iCloud 계정 이름 (iCloud 폴더가 주인 쪽에 있음). 내가 만든 공연이면 nil
+    // 이 맥에서만 쓰는 값이라 iCloud에 올리지 않는다 (#68)
+    var cloudZoneOwnerName: String?
+
     // 대본 입력 · 배우 · 소품 목록에서 정한 배역 · 소품 이름. 리허설 무대 미니맵에 놓는다
     var castNames: [String] = []
     var propNames: [String] = []

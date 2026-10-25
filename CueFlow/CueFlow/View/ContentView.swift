@@ -43,7 +43,7 @@ struct ContentView: View {
         Group {
             if let invite {
                 InviteAcceptView(invite: invite) {
-                    // 수락 → 나도 공연 참여자가 된다. TODO: 공유받은 공연을 받아 와서 홈에 띄우기 (#68 3단계)
+                    // 수락 → 나도 공연 참여자가 된다. 공연은 CloudSync가 받아 와서 홈에 뜨고, 나는 멤버로 들어간다
                     if let metadata = invite.metadata {
                         Task {
                             do {

@@ -39,9 +39,21 @@ extension CloudRecordConvertible {
 
 extension Production {
     // 공연마다 폴더 하나. 이름은 공연 id로 만들어서 기기가 달라도 같다
+    // 공유받은 공연은 폴더가 주인 쪽에 있어서 주인 이름을 같이 적는다
     var cloudZoneID: CKRecordZone.ID {
-        CKRecordZone.ID(zoneName: "Production-\(id.uuidString)")
+        CKRecordZone.ID(
+            zoneName: "Production-\(id.uuidString)",
+            ownerName: cloudZoneOwnerName ?? CKCurrentUserDefaultName
+        )
     }
+
+    // 다른 사람에게 공유받은 공연인지 (공유 저장공간에서 주고받는다)
+    var isSharedWithMe: Bool { cloudZoneOwnerName != nil }
+}
+
+extension CKRecordZone.ID {
+    // 내 iCloud(개인 저장공간)의 폴더인지. 아니면 공유받은 폴더
+    var isMine: Bool { ownerName == CKCurrentUserDefaultName }
 }
 
 // MARK: - 레코드 칸 이름
@@ -51,6 +63,11 @@ enum CloudKey {
     static let title = "title"
     static let genre = "genre"
     static let firstShowDate = "firstShowDate"
+    static let lastShowDate = "lastShowDate"
+    static let venue = "venue"
+    static let seatCount = "seatCount"
+    static let organizer = "organizer"
+    static let runningTime = "runningTime"
     static let createdAt = "createdAt"
     static let updatedAt = "updatedAt"
     static let castNames = "castNames"
@@ -97,12 +114,16 @@ extension Production: CloudRecordConvertible {
 
     var cloudProduction: Production? { self }
 
-    // isFavorite · lastOpenedAt은 "나한테만" 의미 있는 값이라 올리지 않는다
-    // TODO: #63(PR #65) 머지 후 lastShowDate · venue · seatCount · organizer · runningTime 추가
+    // isFavorite · lastOpenedAt · cloudZoneOwnerName은 "나한테만" 의미 있는 값이라 올리지 않는다
     func fill(_ record: CKRecord) {
         record[CloudKey.title] = title
         record[CloudKey.genre] = genre
         record[CloudKey.firstShowDate] = firstShowDate
+        record[CloudKey.lastShowDate] = lastShowDate
+        record[CloudKey.venue] = venue
+        record[CloudKey.seatCount] = seatCount
+        record[CloudKey.organizer] = organizer
+        record[CloudKey.runningTime] = runningTime
         record[CloudKey.createdAt] = createdAt
         record[CloudKey.updatedAt] = updatedAt
         record[CloudKey.castNames] = castNames.cloudList
@@ -113,6 +134,11 @@ extension Production: CloudRecordConvertible {
         title = record[CloudKey.title] as? String ?? ""
         genre = record[CloudKey.genre] as? String ?? ""
         firstShowDate = record[CloudKey.firstShowDate] as? Date ?? Date()
+        lastShowDate = record[CloudKey.lastShowDate] as? Date
+        venue = record[CloudKey.venue] as? String ?? ""
+        seatCount = record[CloudKey.seatCount] as? Int
+        organizer = record[CloudKey.organizer] as? String ?? ""
+        runningTime = record[CloudKey.runningTime] as? Int
         createdAt = record[CloudKey.createdAt] as? Date ?? Date()
         updatedAt = record[CloudKey.updatedAt] as? Date ?? Date()
         castNames = record[CloudKey.castNames] as? [String] ?? []
