@@ -22,7 +22,8 @@ struct InviteAcceptView: View {
     var body: some View {
         VStack(spacing: 60) {
             Text("프로젝트 초대를 수락하시겠습니까?")
-                .font(.system(size: 24, weight: .bold))   // 피그마 24pt (macOS .title은 22pt라 직접 지정)
+                .font(.system(size: 26, weight: .bold))   // 피그마 26pt (macOS 기본 스타일에 없어서 직접 지정)
+                .foregroundStyle(Color.neutral900)
 
             // 썸네일 + 공연 이름 + "초대받음"
             HStack(spacing: 12) {
@@ -32,9 +33,11 @@ struct InviteAcceptView: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(invite.productionTitle)
-                        .font(.title3.weight(.semibold))
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundStyle(Color.neutral700)
                     Text("초대받음")
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.neutral500)
                 }
             }
 
@@ -47,9 +50,13 @@ struct InviteAcceptView: View {
         .frame(width: 609)
         .background {
             // 그림자는 카드 바탕에만 (글자에 붙으면 글자가 번져 보임)
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(nsColor: .textBackgroundColor))
-                .shadow(color: .gray.opacity(0.35), radius: 1, x: 2, y: 3)
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.white)
+                .shadow(color: Color.neutral300, radius: 1, x: 2, y: 2)   // 피그마 Grays/Gray 3 #C7C7CC에 가장 가까운 색
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 20)
+                .strokeBorder(Color.neutral100, lineWidth: 1)   // 피그마 Backgrounds/Secondary #F2F2F7에 가장 가까운 색
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)   // 창 가운데에 카드
     }

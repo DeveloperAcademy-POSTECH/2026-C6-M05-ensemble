@@ -82,6 +82,7 @@ enum CloudKey {
     static let stageCell = "stageCell"
     static let role = "role"
     static let iCloudUserID = "iCloudUserID"
+    static let lastSeenAt = "lastSeenAt"
 
     // 부모 id (관계)
     static let productionID = "productionID"
@@ -237,6 +238,7 @@ extension Member: CloudRecordConvertible {
         record[CloudKey.name] = name
         record[CloudKey.role] = role
         record[CloudKey.iCloudUserID] = iCloudUserID
+        record[CloudKey.lastSeenAt] = lastSeenAt
         record[CloudKey.productionID] = production?.id.uuidString
         record[CloudKey.partIDs] = (parts ?? []).map(\.id.uuidString).cloudList
     }
@@ -245,5 +247,6 @@ extension Member: CloudRecordConvertible {
         name = record[CloudKey.name] as? String ?? ""
         role = record[CloudKey.role] as? String ?? ""
         iCloudUserID = record[CloudKey.iCloudUserID] as? String
+        lastSeenAt = record[CloudKey.lastSeenAt] as? Date
     }
 }
