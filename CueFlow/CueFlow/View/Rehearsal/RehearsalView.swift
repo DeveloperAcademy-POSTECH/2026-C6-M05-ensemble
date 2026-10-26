@@ -102,7 +102,7 @@ struct RehearsalView: View {
         .padding(.top, 46)
         .padding(.bottom, 45)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.white)   // 피그마 window-background = 흰색
     }
 
     // 이전 큐 / 다음 큐로 장면을 넘어갈 때는 onChange에서 첫 큐로 되돌리지 않게

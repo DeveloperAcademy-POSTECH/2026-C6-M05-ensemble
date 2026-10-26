@@ -129,6 +129,7 @@ private struct StagePlacementEditor: View {
                             .foregroundStyle(Color.neutral500)
                         StageMinimap(
                             marks: marks,
+                            style: .setup,
                             onDragChanged: { mark, location in dragging = (mark, location) },
                             onDragEnded: drop,
                             hiddenMarkID: dragging?.mark.id
@@ -137,8 +138,8 @@ private struct StagePlacementEditor: View {
                 }
 
                 Button("배치 완료") { onDone(marks) }
-                    .buttonStyle(SheetSoftButtonStyle())
-                    .frame(width: 101, height: 30)
+                    .buttonStyle(SheetSoftButtonStyle(fontSize: 15))
+                    .frame(width: 130, height: 36)
                     .disabled(marks.isEmpty)   // 하나라도 놓으면 누를 수 있다
                     .opacity(marks.isEmpty ? 0.5 : 1)
                     .help(marks.isEmpty ? "배역이나 소품을 미니맵에 하나 이상 놓아주세요" : "")
@@ -154,7 +155,7 @@ private struct StagePlacementEditor: View {
         // 끄는 중인 점 · 카드는 손가락(마우스)을 따라다닌다
         .overlay(alignment: .topLeading) {
             if let dragging {
-                StageMarkView(mark: dragging.mark)
+                StageMarkView(mark: dragging.mark, style: .setup)
                     .position(dragging.location)
                     .allowsHitTesting(false)
             }
@@ -220,7 +221,7 @@ private struct StageNameCard: View {
 
     var body: some View {
         Text(name)
-            .font(.system(size: 10.3, weight: .semibold))
+            .font(.system(size: 15))
             .foregroundStyle(isHovered ? Color.brandPrimaryText : Color.neutral900)
             .lineLimit(1)
             .padding(.horizontal, 11)

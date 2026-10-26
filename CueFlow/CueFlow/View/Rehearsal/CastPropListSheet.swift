@@ -44,7 +44,7 @@ struct CastPropListSheet: View {
 
             Button("다음으로", action: onNext)
                 .buttonStyle(SheetSoftButtonStyle())
-                .frame(width: 101, height: 31)
+                .frame(width: 130, height: 36)
                 .disabled(production.castNames.isEmpty && production.propNames.isEmpty)
                 .opacity(production.castNames.isEmpty && production.propNames.isEmpty ? 0.5 : 1)
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -75,7 +75,7 @@ private struct NameListColumn: View {
                 Text(title)
                     .font(.system(size: 15, weight: .semibold))
                 Text("\(names.count)개")
-                    .font(.body)
+                    .font(.system(size: 15))
                     .foregroundStyle(Color.neutral500)
                     .padding(.leading, 6)
             }
@@ -98,7 +98,7 @@ private struct NameListColumn: View {
 
                 Button(action: add) {
                     Text("등록")
-                        .font(.body)
+                        .font(.body.weight(.semibold))
                         .foregroundStyle(Color.brandPrimaryText)
                         .frame(width: 60, height: 36)
                         .background(Color.brandPrimarySubtle, in: RoundedRectangle(cornerRadius: 6))
@@ -143,13 +143,13 @@ private struct NameTile: View {
     var body: some View {
         HStack {
             Text(name)
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: 15))
                 .foregroundStyle(Color.neutral900)
                 .lineLimit(1)
             Spacer(minLength: 4)
             Button(action: onDelete) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 7))
+                    .font(.system(size: 8))
                     .foregroundStyle(Color.brandPrimaryDisabled)
                     .frame(width: 16, height: 16)
                     .contentShape(Rectangle())

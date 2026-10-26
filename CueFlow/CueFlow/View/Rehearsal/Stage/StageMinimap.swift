@@ -38,8 +38,21 @@ struct StageZoneFramesKey: PreferenceKey {
     }
 }
 
+// 리허설 화면과 배치 창은 글자 · 점 크기가 다르다
+// (피그마 리허설모드 951:9052 / 최초상태무대배치02 951:9819)
+enum StageMinimapStyle {
+    case rehearsal, setup
+
+    var zoneLabelSize: CGFloat { self == .rehearsal ? 15 : 14 }
+    var castSize: CGFloat { self == .rehearsal ? 17 : 15 }
+    var propSize: CGSize { self == .rehearsal ? CGSize(width: 15, height: 13) : CGSize(width: 12.5, height: 11) }
+    var nameSize: CGFloat { 15 }
+    var nameWeight: Font.Weight { self == .rehearsal ? .semibold : .regular }   // 배치 창은 목록 창 이름 칸과 같은 레귤러 15
+}
+
 struct StageMinimap: View {
     let marks: [StageMark]
+    var style: StageMinimapStyle = .rehearsal
     var highlightedIDs: Set<String> = []   // 리허설에서 지금 큐가 옮긴 것 → 둘레가 빛난다
 
     // 배치 창에서만: 점을 끄는 중 / 놓음. nil이면 보기만
@@ -64,7 +77,7 @@ struct StageMinimap: View {
                 Color.clear
                     .frame(width: 166, height: 1)
                 Text("관객석")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: style.zoneLabelSize, weight: .semibold))
                     .foregroundStyle(Color.neutral400)
                     .frame(maxWidth: .infinity)
                     .padding(.leading, 20)
@@ -87,7 +100,7 @@ struct StageMinimap: View {
                 }
 
                 Text(area.rawValue)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: style.zoneLabelSize, weight: .semibold))
                     .foregroundStyle(Color.neutral400)
                     .frame(width: size.width)
                     .offset(y: 26)
@@ -134,7 +147,7 @@ struct StageMinimap: View {
 
     @ViewBuilder
     private func markView(_ mark: StageMark) -> some View {
-        let view = StageMarkView(mark: mark, isHighlighted: highlightedIDs.contains(mark.id))
+        let view = StageMarkView(mark: mark, style: style, isHighlighted: highlightedIDs.contains(mark.id))
             .opacity(mark.id == hiddenMarkID ? 0 : 1)
         if let onDragChanged, let onDragEnded {
             view
@@ -149,34 +162,35 @@ struct StageMinimap: View {
         }
     }
 
-    // 오른쪽 아래 "● 배우 ▲ 소품"
+    // 오른쪽 아래 "● 배우 ▲ 소품" (피그마 최초상태무대배치02 크기 — 리허설 화면도 이걸로)
     private var legend: some View {
         HStack(spacing: 7) {
             HStack(spacing: 3) {
                 Circle()
                     .fill(Color.brandPrimary)
-                    .frame(width: 10, height: 10)
+                    .frame(width: 6, height: 6)
                 Text("배우")
             }
             HStack(spacing: 3) {
                 StageTriangle()
-                    .fill(Color.brandPrimaryHover)
-                    .frame(width: 11, height: 9.5)
+                    .fill(Color.stagePropMark)
+                    .frame(width: 7, height: 6)
                 Text("소품")
             }
         }
-        .font(.system(size: 10, weight: .semibold))
-        .foregroundStyle(Color.neutral700)
+        .font(.system(size: 10))
+        .foregroundStyle(Color.neutral500)
         .padding(.horizontal, 13)
-        .frame(height: 27)
+        .frame(height: 23)
         .background(Color.neutral100, in: Capsule())
     }
 }
 
-// 배역 = 보라 동그라미, 소품 = 연보라 세모. 이름은 아래에.
+// 배역 = 보라 동그라미, 소품 = 민트 세모. 이름은 아래에.
 // 동그라미 · 세모의 가운데가 놓은 자리에 오도록, 이름은 겹쳐서 아래로 내린다
 struct StageMarkView: View {
     let mark: StageMark
+    var style: StageMinimapStyle = .rehearsal
     var isHighlighted = false
 
     var body: some View {
@@ -185,11 +199,11 @@ struct StageMarkView: View {
             case .cast:
                 Circle()
                     .fill(Color.brandPrimary)
-                    .frame(width: 17, height: 17)
+                    .frame(width: style.castSize, height: style.castSize)
             case .prop:
                 StageTriangle()
-                    .fill(Color.brandPrimaryHover)   // 피그마는 민트색인데 임시 색이라 연보라 그대로
-                    .frame(width: 15, height: 13)
+                    .fill(Color.stagePropMark)
+                    .frame(width: style.propSize.width, height: style.propSize.height)
             }
         }
         .background {
@@ -201,14 +215,19 @@ struct StageMarkView: View {
         }
         .overlay(alignment: .top) {
             Text(mark.name)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(mark.kind == .cast ? Color.neutral900 : Color.neutral800)
+                .font(.system(size: style.nameSize, weight: style.nameWeight))
+                .foregroundStyle(nameColor)
                 .lineLimit(1)
                 .fixedSize()
-                .offset(y: mark.kind == .cast ? 21 : 15)
+                .offset(y: mark.kind == .cast ? style.castSize + 4 : style.propSize.height + 2)
         }
         .padding(6)                  // 잡기 쉽게
         .contentShape(Rectangle())
+    }
+
+    private var nameColor: Color {
+        if style == .setup { return .brandPrimaryText }
+        return mark.kind == .cast ? .neutral900 : .neutral800
     }
 }
 

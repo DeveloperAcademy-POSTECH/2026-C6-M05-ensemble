@@ -293,7 +293,7 @@ struct CueListRow: View {
                 Divider()
                 Button("구역 미정") { cue.stageCell = nil }
             } label: {
-                tagLabel(cue.stageCell.map { "무대 \($0 + 1)" } ?? "무대")
+                tagLabel(cue.stageCell.map { "무대 \($0 + 1)" } ?? "무대", color: tagColor(cue))
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
@@ -301,17 +301,22 @@ struct CueListRow: View {
             .fixedSize()
             .help("무대 몇 구역인지 고르기")
         } else {
-            tagLabel(cue.position.rawValue)
+            tagLabel(cue.position.rawValue, color: tagColor(cue))
         }
     }
 
-    private func tagLabel(_ text: String) -> some View {
+    // 태그 색 = 그 큐 파트의 색 (무대 보라 · 소품 하늘 · 의상 남색 · 조명 파랑 · 음향 초록)
+    private func tagColor(_ cue: Cue) -> PartColor {
+        cue.part?.color ?? PartColor.at(0)
+    }
+
+    private func tagLabel(_ text: String, color: PartColor) -> some View {
         Text(text)
             .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(Color.brandPrimaryText)
+            .foregroundStyle(color.number)
             .padding(.horizontal, 10)
             .frame(height: 22)
-            .background(Color.brandPrimarySubtle, in: Capsule())
+            .background(color.background, in: Capsule())
     }
 }
 

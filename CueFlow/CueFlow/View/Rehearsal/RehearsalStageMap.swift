@@ -108,7 +108,7 @@ struct RehearsalStageMap: View {
             StageMinimap(marks: marks, highlightedIDs: movingIDs)
                 .padding(.leading, 31)
                 .padding(.trailing, 28)
-                .padding(.top, 33)
+                .padding(.top, 18)   // 카드 높이 378 안에 범례까지 들어가게 (피그마 18)
         }
     }
 
