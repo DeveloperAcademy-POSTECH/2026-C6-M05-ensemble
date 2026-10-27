@@ -29,12 +29,12 @@ struct CueGrid: View {
 // 표 전체
 
 extension CueGrid {
-    // 머리줄 + 파트 줄들 + 파트 추가 줄
+    // 머리줄 + 파트 줄들 + 파트 추가 줄("전체"일 때만)
     private var cueTable: some View {
         Grid(horizontalSpacing: 0, verticalSpacing: 0) {
             headerRow
             ForEach(visibleParts) { partRow($0) }
-            addPartRow
+            if selectedPart == nil { addPartRow }   // "전체"일 때만 + 파트 추가 줄
         }
     }
     
@@ -68,10 +68,11 @@ extension CueGrid {
     // 왼쪽 위 모서리 칸
     private var cornerHeaderCell: some View {
         Text("파트 / 씬")
-            .font(.subheadline)
+            .font(.title3.weight(.semibold))
             .foregroundStyle(Color.neutral900)
             .padding(.leading, 16)
-            .frame(width: GridStyle.partColumnWidth, height: GridStyle.headerHeight, alignment: .leading)
+            .padding(.top, 19)
+            .frame(width: GridStyle.partColumnWidth, height: GridStyle.headerHeight, alignment: .topLeading)
             .background(Color.neutral50)
             .gridCellBorder()
     }
@@ -80,15 +81,16 @@ extension CueGrid {
     private func sceneHeaderCell(_ scene: ShowScene) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(sceneLabel(for: scene))
-                .font(.callout.weight(.semibold))
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Color.neutral900)
             Text(scene.title)
-                .font(.caption)
-                .foregroundStyle(Color.neutral500)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Color.neutral700)
                 .lineLimit(1)
         }
-        .foregroundStyle(Color.neutral900)
-        .padding(.leading, 12)
-        .frame(width: GridStyle.sceneColumnWidth, height: GridStyle.headerHeight, alignment: .leading)
+        .padding(.leading, 14)
+        .padding(.top, 19)
+        .frame(width: GridStyle.sceneColumnWidth, height: GridStyle.headerHeight, alignment: .topLeading)
         .background(Color.neutral50)
         .gridCellBorder()
         .contentShape(.rect)
@@ -103,10 +105,10 @@ extension CueGrid {
     
     // + 씬 추가 칸
     private var addSceneHeaderCell: some View {
-        Button { isAddingScene = true } label: { Image(systemName: "plus").font(.system(size: 16)) }
+        Button { isAddingScene = true } label: { Text("+").font(.system(size: 25, weight: .semibold)) }
             .popover(isPresented: $isAddingScene, arrowEdge: .bottom) { AddScene(onSave: addScene) }
             .buttonStyle(.plain)
-            .foregroundStyle(Color.neutral600)
+            .foregroundStyle(Color.neutral900)
             .frame(width: GridStyle.addSceneColumnWidth, height: GridStyle.headerHeight)
             .background(Color.neutral50)
             .gridCellBorder()
@@ -115,13 +117,13 @@ extension CueGrid {
     // 파트 칸: 파트 이름(왼쪽 위, 피그마 위치) + 왼쪽 파트색 막대
     private func partHeaderCell(_ part: Part) -> some View {
         Text(part.name)
-            .font(.body)
+            .font(.title3.weight(.semibold))
             .foregroundStyle(Color.neutral900)
-            .padding(.leading, 16)
+            .padding(.leading, 15)
             .padding(.top, 25)
             .frame(width: GridStyle.partColumnWidth, alignment: .leading)
             .frame(minHeight: GridStyle.minRowHeight, maxHeight: .infinity, alignment: .top)
-            .background(.white)
+            .background(Color.neutral25)
             .overlay(alignment: .leading) { part.color.accent.frame(width: 6) }
             .gridCellBorder()
             .contentShape(.rect)
@@ -153,10 +155,10 @@ extension CueGrid {
     
     // + 파트 추가 칸
     private var addPartHeaderCell: some View {
-        Button { isAddingPart = true } label: { Image(systemName: "plus").font(.system(size: 16)) }
+        Button { isAddingPart = true } label: { Image(systemName: "plus").font(.system(size: 25)) }
             .popover(isPresented: $isAddingPart, arrowEdge: .trailing) { AddPart(onSave: addPart) }
             .buttonStyle(.plain)
-            .foregroundStyle(Color.neutral600)
+            .foregroundStyle(Color.neutral900)
             .frame(width: GridStyle.partColumnWidth, height: GridStyle.addPartRowHeight)
             .background(Color.neutral25)
             .overlay(alignment: .leading) { Color.partAddaccent.frame(width: 6) }
@@ -281,10 +283,10 @@ extension CueGrid {
 // 크기
 
 private enum GridStyle {
-    static let partColumnWidth: CGFloat = 192
-    static let sceneColumnWidth: CGFloat = 250
-    static let addSceneColumnWidth: CGFloat = 252
-    static let headerHeight: CGFloat = 58
+    static let partColumnWidth: CGFloat = 178
+    static let sceneColumnWidth: CGFloat = 278
+    static let addSceneColumnWidth: CGFloat = 278
+    static let headerHeight: CGFloat = 80
     static let addPartRowHeight: CGFloat = 100
     static let minRowHeight: CGFloat = 148
 }
