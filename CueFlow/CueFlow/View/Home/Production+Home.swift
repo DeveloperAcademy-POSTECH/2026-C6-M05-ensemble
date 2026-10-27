@@ -34,10 +34,31 @@ extension Production {
         "총 \(members?.count ?? 0)명"
     }
 
-    // "2026.11.14 · 아트스페이스 A홀" (공연장이 비었으면 날짜만)
+    // "2026.11.14-15 · 아트스페이스 A홀" (공연장이 비었으면 날짜만)
     var scheduleText: String {
-        let date = Self.format(firstShowDate, "yyyy.MM.dd")
-        return venue.isEmpty ? date : "\(date) · \(venue)"
+        venue.isEmpty ? showPeriodText : "\(showPeriodText) · \(venue)"
+    }
+
+    // 공연 기간. 하루면 "2026.11.14", 같은 달이면 "2026.11.14-15", 달이 다르면 "2026.11.30-12.01", 해가 다르면 둘 다 전부
+    private var showPeriodText: String {
+        let start = Self.format(firstShowDate, "yyyy.MM.dd")
+        let calendar = Calendar.current
+        guard let lastShowDate, !calendar.isDate(lastShowDate, inSameDayAs: firstShowDate) else { return start }
+
+        let end: String
+        if !calendar.isDate(lastShowDate, equalTo: firstShowDate, toGranularity: .year) {
+            end = Self.format(lastShowDate, "yyyy.MM.dd")
+        } else if !calendar.isDate(lastShowDate, equalTo: firstShowDate, toGranularity: .month) {
+            end = Self.format(lastShowDate, "MM.dd")
+        } else {
+            end = Self.format(lastShowDate, "dd")
+        }
+        return "\(start)-\(end)"
+    }
+
+    // "러닝타임 170분" (안 적었으면 nil → 카드에서 줄을 숨긴다)
+    var runningTimeText: String? {
+        runningTime.map { "러닝타임 \($0)분" }
     }
 
     // "1,200석" (객석 규모를 안 적었으면 빈칸)

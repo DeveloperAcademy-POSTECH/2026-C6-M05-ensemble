@@ -23,7 +23,7 @@ struct SidebarView: View {
                     SidebarMenuRow(
                         menu: menu,
                         isSelected: selectedMenu == menu,
-                        badgeCount: menu == .notice ? 2 : 0   // TODO: 공지사항 작업 때 안 읽은 개수로 바꾸기
+                        badgeCount: 0   // TODO: #33 공지사항 머지 후 공지사항 메뉴에 안 읽은 개수
                     ) {
                         selectedMenu = menu
                     }
@@ -64,15 +64,16 @@ struct SidebarMenuRow: View {
                         .background(Color.brandPrimarySubtle, in: Circle())
                 }
             }
-            .font(.body.weight(isSelected ? .semibold : .medium))
-            .foregroundStyle(isSelected ? Color.white : Color.brandPrimaryText)
+            // 피그마: 글자 13 semibold neutral900, 선택된 메뉴는 연보라 바탕
+            .font(.body.weight(.semibold))
+            .foregroundStyle(Color.neutral900)
             .padding(.leading, 14)
             .padding(.trailing, 4)
             .frame(height: 35)
             .background {
                 if isSelected {
                     RoundedRectangle(cornerRadius: 7)
-                        .fill(Color.brandPrimary)
+                        .fill(Color.brandPrimarySubtle)
                 }
             }
             .contentShape(Rectangle())   // 글자 말고 빈 곳을 눌러도 선택되게
