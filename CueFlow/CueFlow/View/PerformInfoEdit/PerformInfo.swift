@@ -53,11 +53,11 @@ extension PerformInfo {
             }
             HStack(alignment: .top, spacing: 15) {
                 labeledField("공연장") { textField(text: $draft.venue) }
-                labeledField("객석 규모") { numberField(value: $draft.seatCount) }
+                labeledField("객석 규모") { numberField(value: $draft.seatCount, unit: "석") }
             }
             HStack(alignment: .top, spacing: 15) {
                 labeledField("주최") { textField(text: $draft.organizer) }
-                labeledField("러닝타임") { numberField(value: $draft.runningTime) }
+                labeledField("러닝타임") { numberField(value: $draft.runningTime, unit: "분") }
             }
         }
     }
@@ -91,11 +91,15 @@ extension PerformInfo {
             .formBox()
     }
     
-    // 숫자만 받는 입력칸 (객석 규모, 러닝타임)
-    private func numberField(value: Binding<Int?>) -> some View {
-        TextField("", value: value, format: .number)
-            .textFieldStyle(.plain)
-            .formBox()
+    // 숫자만 받는 입력칸 + 칸 안 오른쪽 끝에 고정 단위 (객석 규모 "석", 러닝타임 "분")
+    private func numberField(value: Binding<Int?>, unit: String) -> some View {
+        HStack(spacing: 4) {
+            TextField("", value: value, format: .number)
+                .textFieldStyle(.plain)
+            Text(unit)
+                .foregroundStyle(Color.neutral500)
+        }
+        .formBox()
     }
 }
 
