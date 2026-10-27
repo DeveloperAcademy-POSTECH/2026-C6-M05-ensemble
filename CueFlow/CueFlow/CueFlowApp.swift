@@ -72,6 +72,10 @@ struct CueFlowApp: App {
                     NotificationCenter.default.post(name: UserTest.didResetNotification, object: nil)
                     cloudSync.resetLocalAndRefetch()
                 }
+                // 초대 링크 없이 역할 선택 화면 확인 (ContentView가 테스트용 공연을 만들어 띄운다)
+                Button("가짜 초대 수락 (역할 선택 화면)") {
+                    NotificationCenter.default.post(name: InviteRoleView.fakeAcceptNotification, object: nil)
+                }
             }
             #endif
 
