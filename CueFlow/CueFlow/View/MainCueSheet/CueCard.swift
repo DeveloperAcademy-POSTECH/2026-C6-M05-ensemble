@@ -17,11 +17,11 @@ struct CueCard: View {
     @Environment(\.modelContext) private var modelContext   // 큐를 지울 곳
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 13) {
+        VStack(alignment: .leading, spacing: 17) {
             cueHeader
             buttonSpace
         }
-        .padding(8)
+        .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.white, in: .rect(cornerRadius: 6))
         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(partColor.background, lineWidth: 1))
@@ -55,9 +55,9 @@ extension CueCard {
     // 번호 동그라미 생김새 (01, 02 …)
     private var cueNumberLabel: some View {
         Text(cueNumberText)
-            .font(.system(size: 8, weight: .medium))
+            .font(.callout.weight(.medium))
             .foregroundStyle(partColor.number)
-            .frame(width: 20, height: 20)
+            .frame(width: 23, height: 23)
             .background(partColor.background, in: .circle)
             .contentShape(.circle)
     }
@@ -73,7 +73,7 @@ extension CueCard {
     
     // 트리거(윗줄) + 큐 제목(아랫줄)
     private var cueTexts: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 5) {
             triggerText
             cueTitleText
         }
@@ -82,17 +82,17 @@ extension CueCard {
     // 언제 실행하는지 (예: 코우 - "너 나가!" 대사 종료 후)
     private var triggerText: some View {
         Text(cue.trigger?.text ?? "")
-            .font(.caption)
-            .foregroundStyle(.black.opacity(0.82))
-            .lineLimit(1)
+            .font(.body)
+            .foregroundStyle(Color.neutral800)
+            .fixedSize(horizontal: false, vertical: true)   // 길면 다음 줄로
     }
     
     // 무엇을 하는지 (예: 정원 전화 받으며 퇴장)
     private var cueTitleText: some View {
         Text(cue.title)
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.black.opacity(0.82))
-            .lineLimit(1)
+            .font(.body.weight(.semibold))
+            .foregroundStyle(Color.neutral900)
+            .fixedSize(horizontal: false, vertical: true)   // 길면 다음 줄로
     }
     
     // 위치 태그: 누르면 상수 · 하수 · 무대 · 콘솔 중에서 고르는 메뉴가 뜸
@@ -120,21 +120,21 @@ extension CueCard {
     // 태그 생김새 (원래 positionTag에 있던 모양 그대로)
     private var positionTagLabel: some View {
         Text(cue.position.rawValue)
-            .font(.caption)
+            .font(.callout.weight(.medium))
             .foregroundStyle(partColor.number)
-            .padding(.horizontal, 6)
-            .frame(height: 18)
+            .padding(.horizontal, 5)
+            .frame(height: 23)
             .background(partColor.background, in: .capsule)
     }
     
     private var buttonSpace: some View {
         Color.clear
-            .frame(height: 17)
+            .frame(height: 23)
     }
     
     // 더블클릭했을 때 뜨는 수정 팝오버 (원래 값이 채워진 채로)
     private var cueEditor: some View {
-        AddCueCardInfo(triggerText: cue.trigger?.text ?? "", cueTitle: cue.title, position: cue.position) {
+        AddCueCardInfo(triggerText: cue.trigger?.text ?? "", cueTitle: cue.title, position: cue.position, production: cue.part?.production) {
             updateCue(triggerText: $0, cueTitle: $1, position: $2)
         }
     }
@@ -143,7 +143,20 @@ extension CueCard {
     private func updateCue(triggerText: String, cueTitle: String, position: CuePosition) {
         cue.title = cueTitle
         cue.position = position
-        cue.trigger?.text = triggerText
+        changeTrigger(to: triggerText)
+    }
+    
+    // 트리거 글이 바뀌었을 때: 다른 큐와 같이 쓰는 트리거면 이 큐만 새 트리거로 떼어냄
+    private func changeTrigger(to text: String) {
+        guard let trigger = cue.trigger, trigger.text != text else { return }
+        guard (trigger.cues?.count ?? 0) > 1 else {
+            trigger.text = text   // 이 큐 혼자 쓰는 트리거면 글만 바꿈
+            return
+        }
+        let newTrigger = Trigger(text: text, order: trigger.order)   // 같은 씬, 같은 순서 자리에
+        modelContext.insert(newTrigger)
+        newTrigger.scene = trigger.scene
+        cue.trigger = newTrigger
     }
 }
 
