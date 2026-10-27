@@ -16,11 +16,11 @@ struct PartColor {
 
     // 순서 = colorIndex 0, 1, 2 …
     static let all: [PartColor] = [
-        PartColor(background: .stageBackground, accent: .stageAccent, number: .stagenumber),          // 무대 (보라)
-        PartColor(background: .propsbackground, accent: .propsaccent, number: .propsnumber),          // 소품 (하늘)
-        PartColor(background: .costumebackground, accent: .costumeaccent, number: .costumenumber),    // 의상 (남색)
-        PartColor(background: .lightbackground, accent: .lightaccent, number: .lightnumber),          // 조명 (파랑)
-        PartColor(background: .soundbackground, accent: .soundaccent, number: .soundnumber),          // 음향 (초록)
+        PartColor(background: .stageBackground, accent: .stageAccent, number: .stageNumber),          // 무대 (보라)
+        PartColor(background: .propsBackground, accent: .propsAccent, number: .propsNumber),          // 소품 (하늘)
+        PartColor(background: .costumeBackground, accent: .costumeAccent, number: .costumeNumber),    // 의상 (남색)
+        PartColor(background: .lightBackground, accent: .lightAccent, number: .lightNumber),          // 조명 (파랑)
+        PartColor(background: .soundBackground, accent: .soundAccent, number: .soundNumber),          // 음향 (초록)
     ]
 
     static func at(_ index: Int) -> PartColor {
