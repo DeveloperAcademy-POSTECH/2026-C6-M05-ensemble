@@ -11,7 +11,7 @@ import Foundation
 import SwiftData
 
 enum UserTest {
-    // true면 미정 기능 숨김: 사이드바 공지사항 · 도움말, 홈 알림 · 설정, 큐시트 씬 단위 화면, 리허설 동기화 모드
+    // true면 미정 기능 숨김: 사이드바 공지사항 · 도움말, 홈 알림 · 설정, 큐시트 씬 단위 화면
     // + 메뉴 막대에 "UT 진행" 메뉴가 보인다
     static let hidesUnfinished = true
 
