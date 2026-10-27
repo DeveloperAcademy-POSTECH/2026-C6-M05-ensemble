@@ -13,60 +13,74 @@ struct NoticeRow: View {
     let sentDate: String     // 예: "9월 28일"
     let sender: String       // 예: "Rami"
     let isStarred: Bool      // 별표(중요) 여부
+    let isChecked: Bool      // 삭제하려고 체크했는지
     let onToggleStar: () -> Void
+    let onToggleCheck: () -> Void
     let onOpen: () -> Void   // 줄을 누르면 상세로
 
     var body: some View {
         HStack(spacing: 20) {
-            // 체크박스 (보류 — 삭제용이 될 가능성 높음)
-            RoundedRectangle(cornerRadius: 4)
-                .strokeBorder(.secondary, lineWidth: 1.5)
-                .frame(width: 20, height: 20)
-
-            // 별표: 누르면 중요 켜기/끄기
-            Button(action: onToggleStar) {
-                Image(systemName: isStarred ? "star.fill" : "star")
-                    .font(.title3)
-                    .foregroundStyle(isStarred ? Color.brandPrimary : Color.secondary)
-                    .frame(width: 24, height: 24)
+            // 체크박스: 체크한 공지를 위의 "삭제"로 지운다
+            Button(action: onToggleCheck) {
+                checkbox
             }
             .buttonStyle(.plain)
-            .help(isStarred ? "중요 해제" : "중요 표시")
 
-            // 별표·체크박스를 뺀 나머지 부분을 누르면 상세로 이동
-            Button(action: onOpen) {
-                HStack(spacing: 20) {
-                    // 보낸 사람 첫 글자 동그라미
-                    Text(String(sender.prefix(1)))
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 40, height: 40)
-                        .background(Color(nsColor: .quaternarySystemFill), in: Circle())
+            // 보낸 사람 첫 글자 동그라미
+            Text(String(sender.prefix(1)))
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color.neutral500)
+                .frame(width: 40, height: 40)
+                .background(Color.neutral100, in: Circle())
 
-                    // 제목 + 미리보기 (위아래로 쌓기)
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(title)
-                            .font(.body.weight(.semibold))
-                        Text(preview)
-                            .foregroundStyle(.secondary)
-                    }
+            // 제목 + 미리보기 (위아래로 쌓기)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Color.neutral900)
+                Text(preview)
+                    .foregroundStyle(Color.neutral500)
+            }
+            .frame(maxWidth: 370, alignment: .leading)
 
-                    Spacer()
+            Spacer()
 
-                    HStack(spacing: 0) {
-                        Text(sentDate)
-                            .frame(width: 140, alignment: .leading)
-                        Text(sender)
-                            .frame(width: 60, alignment: .trailing)
-                    }
-                    .font(.body)
-                    .padding(.trailing, 20)
+            HStack(spacing: 60) {
+                // 별표: 누르면 중요 켜기/끄기
+                Button(action: onToggleStar) {
+                    Image(systemName: isStarred ? "star.fill" : "star")
+                        .font(.system(size: isStarred ? 15 : 14))
+                        .foregroundStyle(isStarred ? Color.brandPrimaryHover : Color.neutral400)
+                        .frame(width: 16)
                 }
-                .contentShape(Rectangle())   // 글자 없는 빈 곳을 눌러도 이동
+                .buttonStyle(.plain)
+                .help(isStarred ? "중요 해제" : "중요 표시")
+
+                Text(sentDate)
+                    .frame(width: 60, alignment: .leading)
+                Text(sender)
+                    .frame(width: 60, alignment: .leading)
             }
-            .buttonStyle(.plain)
+            .foregroundStyle(Color.neutral700)
         }
+        .font(.body)
         .lineLimit(1)
+        .contentShape(Rectangle())   // 체크박스·별표 말고 줄 어디를 눌러도 상세로
+        .onTapGesture(perform: onOpen)
+    }
+
+    private var checkbox: some View {
+        RoundedRectangle(cornerRadius: 3)
+            .strokeBorder(isChecked ? Color.brandPrimary : Color.neutral400, lineWidth: 2)
+            .background(isChecked ? Color.brandPrimary : Color.clear, in: RoundedRectangle(cornerRadius: 3))
+            .overlay {
+                if isChecked {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+            }
+            .frame(width: 20, height: 20)
     }
 }
 
@@ -77,7 +91,9 @@ struct NoticeRow: View {
         sentDate: "9월 28일",
         sender: "Rami",
         isStarred: true,
+        isChecked: false,
         onToggleStar: {},
+        onToggleCheck: {},
         onOpen: {}
     )
     .frame(width: 1200)
