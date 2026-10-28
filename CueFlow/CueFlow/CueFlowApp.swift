@@ -72,6 +72,10 @@ struct CueFlowApp: App {
                     NotificationCenter.default.post(name: UserTest.didResetNotification, object: nil)
                     cloudSync.resetLocalAndRefetch()
                 }
+                // 초대 링크 없이 역할 선택 화면 확인 (ContentView가 테스트용 공연을 만들어 띄운다)
+                Button("가짜 초대 수락 (역할 선택 화면)") {
+                    NotificationCenter.default.post(name: InviteRoleView.fakeAcceptNotification, object: nil)
+                }
 
                 // 리허설 동기화 모드(#69) "따라가기"를 맥 한 대로 확인. 리허설 화면이 열려 있을 때만 동작
                 Divider()

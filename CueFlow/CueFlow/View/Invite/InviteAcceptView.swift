@@ -13,6 +13,12 @@ import CloudKit
 struct PendingInvite: Equatable {
     var productionTitle: String          // 예: "별이 빛나는 밤 뮤지컬"
     var metadata: CKShare.Metadata?      // iCloud가 준 초대 정보. 수락할 때 씀 (미리보기에선 nil)
+
+    // 초대받은 공연의 id (공연 폴더 이름 = "Production-공연id"). 수락 후 역할 선택 화면에서 씀
+    var productionID: UUID? {
+        guard let zoneName = metadata?.share.recordID.zoneID.zoneName else { return nil }
+        return UUID(uuidString: zoneName.replacingOccurrences(of: "Production-", with: ""))
+    }
 }
 
 struct InviteAcceptView: View {

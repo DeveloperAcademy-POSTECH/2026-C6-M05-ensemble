@@ -31,6 +31,9 @@ struct ContentView: View {
 
     private var invite: PendingInvite? { shareInvites.pending ?? pendingInvite }
 
+    // 초대를 수락한 공연. 있으면 사이드바 없이 역할 선택 화면만 보인다
+    @State private var roleProductionID: UUID?
+
     // 저장된 공연 전부. 최근에 수정한 순서.
     @Query(sort: \Production.updatedAt, order: .reverse)
     private var productions: [Production]
@@ -55,12 +58,22 @@ struct ContentView: View {
                     }
                     shareInvites.pending = nil
                     pendingInvite = nil
-                    // 수락하면 열려 있던 화면을 닫고 홈으로
+                    // 수락하면 열려 있던 화면을 닫고 → 역할 선택 (공연 id를 모르면 바로 홈으로)
                     rehearsingProduction = nil
                     openedProduction = nil
                     isCreatingProduction = false
                     selectedMenu = .project
+                    roleProductionID = invite.productionID
                 }
+            } else if let roleProductionID {
+                InviteRoleView(
+                    productionID: roleProductionID,
+                    onPrevious: { self.roleProductionID = nil },   // 역할을 안 고르고 홈으로
+                    onDone: {
+                        self.roleProductionID = nil
+                        openedProduction = $0   // 고르면 그 공연 큐시트 열기
+                    }
+                )
             } else if let rehearsingProduction {
                 RehearsalView(production: rehearsingProduction) {
                     self.rehearsingProduction = nil   // 종료하면 들어오기 전 화면(홈 또는 큐시트)으로
@@ -83,7 +96,38 @@ struct ContentView: View {
             isCreatingProduction = false
             selectedMenu = .project
         }
+        #if DEBUG
+        .onReceive(NotificationCenter.default.publisher(for: InviteRoleView.fakeAcceptNotification)) { _ in
+            startFakeInvite()
+        }
+        #endif
     }
+
+    #if DEBUG
+    // 개발용 "가짜 초대 수락": 역할 선택 화면을 띄우고, 2초 뒤 테스트용 공연이 "도착"한다
+    // (진짜 초대처럼 "받아 오는 중" → 역할 선택 순서로 보이게). 진짜 공연은 건드리지 않는다
+    private func startFakeInvite() {
+        let production = Production(title: "초대 테스트 공연", genre: "뮤지컬", firstShowDate: .now)
+        rehearsingProduction = nil
+        openedProduction = nil
+        isCreatingProduction = false
+        selectedMenu = .project
+        roleProductionID = production.id
+
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            modelContext.insert(production)
+            for part in Part.makeDefaultParts() {
+                part.production = production
+            }
+            // 초대받은 사람 = 나 (진짜 초대에선 CloudShare가 넣어 준다)
+            let me = Member(name: "나 (테스트)", role: "")
+            me.iCloudUserID = iCloudAccount.userRecordName
+            me.production = production
+            try? modelContext.save()
+        }
+    }
+    #endif
 
     // 사이드바에서 메뉴를 누르면(같은 메뉴여도) 열어 둔 큐시트를 닫는다
     private var menuSelection: Binding<SidebarMenu> {

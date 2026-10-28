@@ -11,11 +11,17 @@
 //  #69 리허설 동기화 모드: 공연 폴더에 "리허설 위치" 레코드도 같이 주고받는다 (SwiftData 모델 아님 → RehearsalSync)
 //
 
+import AppKit
 import CloudKit
 import SwiftData
 import os
 
 final class CloudSync {
+    // 다른 사람이 고친 걸 받아서 넣으면 보낸다 → 큐시트가 다시 그린다
+    // (받은 큐·씬은 "큐.파트 = 파트"처럼 자식 쪽에서 잇는데, 그러면 파트.큐 목록을 보는 화면이 바뀐 줄 몰라서
+    //  다른 일로 다시 그릴 때까지(참여자 기록 1분 등) 안 보였다)
+    static let didApplyRemoteNotification = Notification.Name("CloudSync.didApplyRemote")
+
     private let logger = Logger(subsystem: "Happymondayy.CueFlow", category: "CloudSync")
     private let store = CloudSyncStore()
 
@@ -25,6 +31,11 @@ final class CloudSync {
     private var saveObserver: NSObjectProtocol?
     private var acceptObserver: NSObjectProtocol?
     private var rehearsalObserver: NSObjectProtocol?
+    private var activeObserver: NSObjectProtocol?
+    private var pollTask: Task<Void, Never>?
+    private var saveTask: Task<Void, Never>?
+    // 공유 중인 공연 폴더를 직접 볼 때 "어디까지 받았는지" (앱을 켤 때마다 새로 시작)
+    private var directTokens: [CKRecordZone.ID: CKServerChangeToken] = [:]
 
     // iCloud에서 받은 걸 SwiftData에 넣는 중이면 true → 그건 다시 올리지 않는다
     private var isApplyingRemoteChanges = false
@@ -53,6 +64,9 @@ final class CloudSync {
         observeSaves(of: context)
         observeAccepts()
         observeRehearsal()
+        observeAppActive()
+        startPolling()
+        startSaving()
 
         // 이 맥에서 처음 동기화 → 이미 있던 공연도 전부 올린다
         if savedState == nil {
@@ -79,15 +93,21 @@ final class CloudSync {
     // 동기화를 멈추고 "어디까지 주고받았는지" 기억을 지운다 (이 맥의 공연은 그대로)
     // 다음에 start하면 처음 동기화처럼 이 맥의 공연을 전부 다시 올린다 — 다른 계정과 섞이지 않게
     func stop() {
-        for observer in [saveObserver, acceptObserver, rehearsalObserver].compactMap({ $0 }) {
+        for observer in [saveObserver, acceptObserver, rehearsalObserver, activeObserver].compactMap({ $0 }) {
             NotificationCenter.default.removeObserver(observer)
         }
         saveObserver = nil
         acceptObserver = nil
         rehearsalObserver = nil
+        activeObserver = nil
+        pollTask?.cancel()
+        pollTask = nil
+        saveTask?.cancel()
+        saveTask = nil
         privateEngine = nil
         sharedEngine = nil
         unlinkedRecords = [:]
+        directTokens = [:]
         store.removeAll()
     }
 
@@ -143,6 +163,76 @@ final class CloudSync {
         }
     }
 
+    // 앱 창으로 돌아올 때마다 두 저장공간 다 새로 받아 온다
+    // (다른 사람이 고친 건 원래 iCloud 알림(푸시)으로 오는데, 알림이 늦거나 안 와도 여기서 한 번 더 챙긴다)
+    private func observeAppActive() {
+        activeObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification, object: nil, queue: nil
+        ) { [weak self] _ in
+            Task { @MainActor in
+                do {
+                    try await self?.privateEngine?.fetchChanges()
+                    try await self?.sharedEngine?.fetchChanges()
+                } catch {
+                    self?.logger.error("돌아왔을 때 받기 실패: \(error)")
+                }
+            }
+        }
+    }
+
+    // 큐시트 화면들은 직접 저장하지 않고 SwiftData 자동 저장에 맡기는데, 자동 저장은 언제 될지 모른다
+    // (실제로는 참여자 현황 기록이 1분마다 저장할 때 같이 올라가서 1분씩 걸렸다)
+    // → 바뀐 게 있으면 1초 안에 저장 = 저장 직전에 올릴 목록에 들어간다
+    private func startSaving() {
+        saveTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                guard let context = self?.context, context.hasChanges else { continue }
+                do {
+                    try context.save()
+                } catch {
+                    self?.logger.error("자동 저장 실패: \(error)")
+                }
+            }
+        }
+    }
+
+    // 엔진은 모았다가 몇 초 뒤에 올린다 → 고치자마자 바로 올리게
+    // (지금은 willSave 안이라 저장이 끝난 다음 차례에 올라간다)
+    private func sendNow(hasChanges: Bool) {
+        guard hasChanges else { return }
+        Task { @MainActor [weak self] in
+            do {
+                try await self?.privateEngine?.sendChanges()
+                try await self?.sharedEngine?.sendChanges()
+            } catch {
+                self?.logger.error("바로 올리기 실패: \(error)")
+            }
+        }
+    }
+
+    // 앱이 켜져 있는 동안 지금 보고 있는 공연 폴더는 2초마다, 전체는 10초마다 직접 받아 온다
+    // (iCloud 알림(푸시)이 맥에 안 오고 있어서 — 알림 기록 lastPushReceivedDate가 계속 비어 있음. 알림이 잘 오면 없애도 된다)
+    private func startPolling() {
+        pollTask = Task { @MainActor [weak self] in
+            var round = 0
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(2))
+                // 다른 앱을 누르고 있어도 Cuedit 창은 옆에 떠 있을 수 있어서, 켜져 있으면 항상 본다
+                guard let self else { continue }
+                round += 1
+                await self.fetchSharedZonesDirectly(onlyRecent: round % 5 != 0)
+                guard round % 5 == 0 else { continue }
+                do {
+                    try await self.privateEngine?.fetchChanges()
+                    try await self.sharedEngine?.fetchChanges()
+                } catch {
+                    self.logger.error("10초마다 받기 실패: \(error)")
+                }
+            }
+        }
+    }
+
     private func collectChanges() {
         guard let context, privateEngine != nil, !isApplyingRemoteChanges else { return }
 
@@ -185,6 +275,7 @@ final class CloudSync {
         if !recordChanges.isEmpty {
             logger.info("올릴 목록에 추가: \(recordChanges.count)개")
         }
+        sendNow(hasChanges: !zoneChanges.isEmpty || !recordChanges.isEmpty)
     }
 
     // 폴더 주인에 따라 나눠서 올릴 목록에 넣는다 — 내 공연은 개인 저장공간, 공유받은 공연은 공유 저장공간
@@ -293,18 +384,21 @@ final class CloudSync {
         isApplyingRemoteChanges = true
         defer { isApplyingRemoteChanges = false }
         apply()
+        let changed = context.hasChanges
         do {
             try context.save()
         } catch {
             logger.error("받은 것 저장 실패: \(error)")
         }
+        if changed {
+            NotificationCenter.default.post(name: CloudSync.didApplyRemoteNotification, object: nil)
+        }
     }
 
-    private func applyFetched(_ fetched: CKSyncEngine.Event.FetchedRecordZoneChanges) {
+    private func applyFetched(records: [CKRecord], deletedIDs: [CKRecord.ID]) {
         // 1) 글자 · 숫자 먼저 넣고 (없으면 새로 만들고)
         var received: [(any CloudRecordConvertible, CKRecord)] = []
-        for modification in fetched.modifications {
-            let record = modification.record
+        for record in records {
             store.cache(record)
             if record.recordType == RehearsalSync.recordType {
                 RehearsalSync.shared.receive(record)
@@ -336,16 +430,55 @@ final class CloudSync {
         }
 
         // 4) 지운 것
-        for deletion in fetched.deletions {
-            store.removeRecord(deletion.recordID)
-            unlinkedRecords[deletion.recordID.recordName] = nil
-            if let id = UUID(uuidString: deletion.recordID.recordName), let item = findModel(id) {
+        for recordID in deletedIDs {
+            store.removeRecord(recordID)
+            unlinkedRecords[recordID.recordName] = nil
+            if let id = UUID(uuidString: recordID.recordName), let item = findModel(id) {
                 context?.delete(item)
             }
         }
 
-        if !fetched.modifications.isEmpty || !fetched.deletions.isEmpty {
-            logger.info("받음: 저장 \(fetched.modifications.count)개, 삭제 \(fetched.deletions.count)개")
+        if !records.isEmpty || !deletedIDs.isEmpty {
+            let kinds = records.map(\.recordType).joined(separator: ", ")
+            logger.info("받음: 저장 \(records.count)개 [\(kinds)], 삭제 \(deletedIDs.count)개")
+        }
+    }
+
+    // 공유 중인 공연 폴더를 엔진을 거치지 않고 직접 확인한다
+    // 엔진은 "어느 폴더가 바뀌었나" 목록(데이터베이스 변경)을 먼저 보는데, 다른 사람이 고친 건 이 목록에 1~2분 늦게 올라온다
+    // (10/28 기록: 팀원은 바로 올렸는데 내 엔진은 2분 동안 "바뀐 폴더 없음"). 폴더를 직접 보면 바로 보인다
+    // onlyRecent: true면 마지막으로 연 공연(지금 보고 있는 공연)만, false면 전부
+    private func fetchSharedZonesDirectly(onlyRecent: Bool) async {
+        guard let context else { return }
+        let container = CKContainer(identifier: ICloudAccount.containerID)
+        // 멤버 수로 "공유 중"을 가리면 안 된다 — 친구의 멤버 정보가 아직 안 왔으면 내 공연이 빠져서 친구 수정이 늦게 왔다 (10/28)
+        let all = ((try? context.fetch(FetchDescriptor<Production>())) ?? []).sorted { $0.lastOpenedAt > $1.lastOpenedAt }
+        let productions = onlyRecent ? Array(all.prefix(1)) : all
+
+        for production in productions {
+            let zoneID = production.cloudZoneID
+            let database = zoneID.isMine ? container.privateCloudDatabase : container.sharedCloudDatabase
+            let isFirst = directTokens[zoneID] == nil
+            do {
+                let changes = try await database.recordZoneChanges(inZoneWith: zoneID, since: directTokens[zoneID])
+                directTokens[zoneID] = changes.changeToken
+                // 처음엔 "여기서부터" 표시만 한다 (이미 엔진이 다 받아 둔 것)
+                guard !isFirst else { continue }
+
+                let pending = engine(for: zoneID)?.state.pendingRecordZoneChanges ?? []
+                let records = changes.modificationResultsByID.values.compactMap { try? $0.get().record }.filter { record in
+                    // 내가 방금 올린 것(같은 버전 꼬리표) · 아직 못 올린 내 수정이 있는 것은 건너뛴다 → 치던 글자가 되돌아가지 않게
+                    store.cachedRecord(named: record.recordID.recordName)?.recordChangeTag != record.recordChangeTag
+                        && !pending.contains(.saveRecord(record.recordID))
+                }
+                let deletedIDs = changes.deletions.map(\.recordID)
+                guard !records.isEmpty || !deletedIDs.isEmpty else { continue }
+                applyRemoteChanges {
+                    applyFetched(records: records, deletedIDs: deletedIDs)
+                }
+            } catch {
+                logger.error("폴더 직접 받기 실패 \(production.title): \(error)")
+            }
         }
     }
 
@@ -388,17 +521,27 @@ final class CloudSync {
             return model
         }
 
+        // 부모 목록에도 직접 넣는다. 자식 쪽만 이으면 부모 목록(파트.큐 등)을 보는 화면이 늦게 바뀐다
+        func addIfMissing<T: PersistentModel>(_ child: T, to list: inout [T]?) {
+            if !(list ?? []).contains(child) { list = (list ?? []) + [child] }
+        }
+
         var found = true
         switch item {
         case let scene as ShowScene:
             scene.production = parent(CloudKey.productionID, as: Production.self, found: &found)
+            if let production = scene.production { addIfMissing(scene, to: &production.scenes) }
         case let trigger as Trigger:
             trigger.scene = parent(CloudKey.sceneID, as: ShowScene.self, found: &found)
+            if let scene = trigger.scene { addIfMissing(trigger, to: &scene.triggers) }
         case let part as Part:
             part.production = parent(CloudKey.productionID, as: Production.self, found: &found)
+            if let production = part.production { addIfMissing(part, to: &production.parts) }
         case let cue as Cue:
             cue.trigger = parent(CloudKey.triggerID, as: Trigger.self, found: &found)
             cue.part = parent(CloudKey.partID, as: Part.self, found: &found)
+            if let trigger = cue.trigger { addIfMissing(cue, to: &trigger.cues) }
+            if let part = cue.part { addIfMissing(cue, to: &part.cues) }
         case let member as Member:
             member.production = parent(CloudKey.productionID, as: Production.self, found: &found)
             let partIDs = record.uuids(CloudKey.partIDs)
@@ -497,7 +640,7 @@ final class CloudSync {
 
         case .fetchedRecordZoneChanges(let fetched):
             applyRemoteChanges {
-                applyFetched(fetched)
+                applyFetched(records: fetched.modifications.map(\.record), deletedIDs: fetched.deletions.map(\.recordID))
             }
 
         case .didFetchChanges:
