@@ -13,6 +13,7 @@ struct MainCueSheetView: View {
     var onRehearsal: () -> Void = {}           // "리허설 모드" 버튼
     @State private var selectedPart: Part?     // 파트 칩에서 고른 파트 (nil = 전체)
     @State private var isShowingParticipants = false   // 멤버 버튼 → 참여자 현황
+    @State private var isShowingShare = false          // 임시 초대하기 버튼 → 공유하기 창
     @Environment(ICloudAccount.self) private var iCloudAccount
 
     var body: some View {
@@ -44,6 +45,8 @@ extension MainCueSheetView {
             Text(production.title)
                 .font(.title2.weight(.semibold))
             Spacer()
+            #if DEBUG
+            shareButton
             memberButton
         }
     }
@@ -68,6 +71,17 @@ extension MainCueSheetView {
         .buttonStyle(.primary)
         .frame(width: 90, height: 30)
     }
+
+    #if DEBUG
+    // 임시: 사이드바 공유하기가 붙기 전까지 초대 테스트용 (TestFlight에는 안 보임)
+    private var shareButton: some View {
+        Button("초대하기") { isShowingShare = true }
+            .buttonStyle(.bordered)
+            .popover(isPresented: $isShowingShare, arrowEdge: .bottom) {
+                SharePopover(production: production)
+            }
+    }
+    #endif
 
     // 멤버 이니셜 동그라미(겹쳐서) + ∨ → 누르면 참여자 현황
     private var memberButton: some View {
