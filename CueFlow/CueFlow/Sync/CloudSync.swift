@@ -16,6 +16,11 @@ import SwiftData
 import os
 
 final class CloudSync {
+    // 다른 사람이 고친 걸 받아서 넣으면 보낸다 → 큐시트가 다시 그린다
+    // (받은 큐·씬은 "큐.파트 = 파트"처럼 자식 쪽에서 잇는데, 그러면 파트.큐 목록을 보는 화면이 바뀐 줄 몰라서
+    //  다른 일로 다시 그릴 때까지(참여자 기록 1분 등) 안 보였다)
+    static let didApplyRemoteNotification = Notification.Name("CloudSync.didApplyRemote")
+
     private let logger = Logger(subsystem: "Happymondayy.CueFlow", category: "CloudSync")
     private let store = CloudSyncStore()
 
@@ -26,6 +31,7 @@ final class CloudSync {
     private var acceptObserver: NSObjectProtocol?
     private var activeObserver: NSObjectProtocol?
     private var pollTask: Task<Void, Never>?
+    private var saveTask: Task<Void, Never>?
 
     // iCloud에서 받은 걸 SwiftData에 넣는 중이면 true → 그건 다시 올리지 않는다
     private var isApplyingRemoteChanges = false
@@ -55,6 +61,7 @@ final class CloudSync {
         observeAccepts()
         observeAppActive()
         startPolling()
+        startSaving()
 
         // 이 맥에서 처음 동기화 → 이미 있던 공연도 전부 올린다
         if savedState == nil {
@@ -89,6 +96,8 @@ final class CloudSync {
         activeObserver = nil
         pollTask?.cancel()
         pollTask = nil
+        saveTask?.cancel()
+        saveTask = nil
         privateEngine = nil
         sharedEngine = nil
         unlinkedRecords = [:]
@@ -133,6 +142,23 @@ final class CloudSync {
                     try await self?.sharedEngine?.fetchChanges()
                 } catch {
                     self?.logger.error("돌아왔을 때 받기 실패: \(error)")
+                }
+            }
+        }
+    }
+
+    // 큐시트 화면들은 직접 저장하지 않고 SwiftData 자동 저장에 맡기는데, 자동 저장은 언제 될지 모른다
+    // (실제로는 참여자 현황 기록이 1분마다 저장할 때 같이 올라가서 1분씩 걸렸다)
+    // → 바뀐 게 있으면 1초 안에 저장 = 저장 직전에 올릴 목록에 들어간다
+    private func startSaving() {
+        saveTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                guard let context = self?.context, context.hasChanges else { continue }
+                do {
+                    try context.save()
+                } catch {
+                    self?.logger.error("자동 저장 실패: \(error)")
                 }
             }
         }
@@ -313,10 +339,14 @@ final class CloudSync {
         isApplyingRemoteChanges = true
         defer { isApplyingRemoteChanges = false }
         apply()
+        let changed = context.hasChanges
         do {
             try context.save()
         } catch {
             logger.error("받은 것 저장 실패: \(error)")
+        }
+        if changed {
+            NotificationCenter.default.post(name: CloudSync.didApplyRemoteNotification, object: nil)
         }
     }
 

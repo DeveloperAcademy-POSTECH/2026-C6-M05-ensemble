@@ -14,18 +14,22 @@ struct MainCueSheetView: View {
     @State private var selectedPart: Part?     // 파트 칩에서 고른 파트 (nil = 전체)
     @State private var isShowingParticipants = false   // 멤버 버튼 → 참여자 현황
     @State private var isShowingShare = false          // 임시 초대하기 버튼 → 공유하기 창
+    @State private var remoteRevision = 0              // 다른 사람이 고친 걸 받으면 +1 → 표 다시 그리기
     @Environment(ICloudAccount.self) private var iCloudAccount
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             titleRow
             filterRow
-            CueGrid(production: production, selectedPart: selectedPart)
+            CueGrid(production: production, selectedPart: selectedPart, remoteRevision: remoteRevision)
         }
         .padding(.horizontal, 35)
         .padding(.top, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(.white)
+        .onReceive(NotificationCenter.default.publisher(for: CloudSync.didApplyRemoteNotification)) { _ in
+            remoteRevision += 1
+        }
         // 큐시트를 보고 있는 동안 1분마다 "나 지금 보고 있음"을 남긴다 → 다른 사람 참여자 현황에 보인다
         .task(id: production.id) {
             while !Task.isCancelled {

@@ -11,6 +11,7 @@ import SwiftData
 struct CueGrid: View {
     let production: Production                    // 어느 공연의 표인지
     var selectedPart: Part? = nil                 // 파트 탭바에서 고른 파트 (nil = 전체)
+    var remoteRevision = 0                        // iCloud에서 받을 때마다 +1 → 표를 다시 그린다
     @Environment(\.modelContext) private var modelContext   // 새 큐를 저장할 곳
 
     @State private var hoveredSlotKey: String?    // 마우스가 올라가 있는 칸 (파트id-씬id)
