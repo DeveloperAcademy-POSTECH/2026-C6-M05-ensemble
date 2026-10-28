@@ -83,7 +83,7 @@ extension CueCard {
     private var triggerText: some View {
         Text(cue.trigger?.text ?? "")
             .font(.body)
-            .foregroundStyle(Color.neutral800)
+            .foregroundStyle(Color.neutral700)
             .fixedSize(horizontal: false, vertical: true)   // 길면 다음 줄로
     }
     
