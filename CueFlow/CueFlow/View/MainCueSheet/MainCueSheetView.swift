@@ -33,19 +33,20 @@ extension MainCueSheetView {
     private var titleRow: some View {
         HStack {
             Text(production.title)
-                .font(.title2.weight(.semibold))
+                .font(.title)
+                .foregroundStyle(Color.neutral900)
         }
     }
     
     // 파트 칩 + 오른쪽 "씬 단위 화면" 버튼
     private var filterRow: some View {
         HStack {
-            PartFilterTabBar(production: production, selectedPart: $selectedPart)
+            PartFilterTabBar(parts: production.parts ?? [], selectedPart: $selectedPart)
             Spacer()
-                rehearsalModeButton
+            rehearsalModeButton
         }
         .padding(.top, 18)
-        .padding(.bottom, 15)
+        .padding(.bottom, 18)
     }
 }
 
@@ -55,7 +56,7 @@ extension MainCueSheetView {
     private var rehearsalModeButton: some View {
         Button("리허설 모드", action: onRehearsal)
         .buttonStyle(.primary)
-        .frame(width: 90, height: 30)
+        .frame(width: 100, height: 36)
     }
 }
 

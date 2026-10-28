@@ -43,10 +43,10 @@ extension CueCell {
             Label("Add new", systemImage: "plus")
         }
         .buttonStyle(.plain)
-        .font(.callout)
-        .foregroundStyle(.black)
+        .font(.body.weight(.medium))
+        .foregroundStyle(Color.neutral900)
         .popover(isPresented: $isAddingCue, arrowEdge: .bottom) {
-            AddCueCardInfo(onSave: onAddCue)
+            AddCueCardInfo(production: part.production, onSave: onAddCue)
         }
     }
     
