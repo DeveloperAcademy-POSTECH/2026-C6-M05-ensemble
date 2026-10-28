@@ -32,6 +32,8 @@ final class CloudSync {
     private var activeObserver: NSObjectProtocol?
     private var pollTask: Task<Void, Never>?
     private var saveTask: Task<Void, Never>?
+    // 공유 중인 공연 폴더를 직접 볼 때 "어디까지 받았는지" (앱을 켤 때마다 새로 시작)
+    private var directTokens: [CKRecordZone.ID: CKServerChangeToken] = [:]
 
     // iCloud에서 받은 걸 SwiftData에 넣는 중이면 true → 그건 다시 올리지 않는다
     private var isApplyingRemoteChanges = false
@@ -101,6 +103,7 @@ final class CloudSync {
         privateEngine = nil
         sharedEngine = nil
         unlinkedRecords = [:]
+        directTokens = [:]
         store.removeAll()
     }
 
@@ -185,6 +188,7 @@ final class CloudSync {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(5))
                 guard let self, NSApplication.shared.isActive else { continue }
+                await self.fetchSharedZonesDirectly()
                 do {
                     try await self.privateEngine?.fetchChanges()
                     try await self.sharedEngine?.fetchChanges()
@@ -350,11 +354,10 @@ final class CloudSync {
         }
     }
 
-    private func applyFetched(_ fetched: CKSyncEngine.Event.FetchedRecordZoneChanges) {
+    private func applyFetched(records: [CKRecord], deletedIDs: [CKRecord.ID]) {
         // 1) 글자 · 숫자 먼저 넣고 (없으면 새로 만들고)
         var received: [(any CloudRecordConvertible, CKRecord)] = []
-        for modification in fetched.modifications {
-            let record = modification.record
+        for record in records {
             store.cache(record)
             if let item = upsert(record) {
                 received.append((item, record))
@@ -382,16 +385,53 @@ final class CloudSync {
         }
 
         // 4) 지운 것
-        for deletion in fetched.deletions {
-            store.removeRecord(deletion.recordID)
-            unlinkedRecords[deletion.recordID.recordName] = nil
-            if let id = UUID(uuidString: deletion.recordID.recordName), let item = findModel(id) {
+        for recordID in deletedIDs {
+            store.removeRecord(recordID)
+            unlinkedRecords[recordID.recordName] = nil
+            if let id = UUID(uuidString: recordID.recordName), let item = findModel(id) {
                 context?.delete(item)
             }
         }
 
-        if !fetched.modifications.isEmpty || !fetched.deletions.isEmpty {
-            logger.info("받음: 저장 \(fetched.modifications.count)개, 삭제 \(fetched.deletions.count)개")
+        if !records.isEmpty || !deletedIDs.isEmpty {
+            logger.info("받음: 저장 \(records.count)개, 삭제 \(deletedIDs.count)개")
+        }
+    }
+
+    // 공유 중인 공연 폴더를 엔진을 거치지 않고 직접 확인한다
+    // 엔진은 "어느 폴더가 바뀌었나" 목록(데이터베이스 변경)을 먼저 보는데, 다른 사람이 고친 건 이 목록에 1~2분 늦게 올라온다
+    // (10/28 기록: 팀원은 바로 올렸는데 내 엔진은 2분 동안 "바뀐 폴더 없음"). 폴더를 직접 보면 바로 보인다
+    private func fetchSharedZonesDirectly() async {
+        guard let context else { return }
+        let container = CKContainer(identifier: ICloudAccount.containerID)
+        // 공유받은 공연 + 내 공연 중 다른 사람이 들어와 있는 것
+        let productions = ((try? context.fetch(FetchDescriptor<Production>())) ?? [])
+            .filter { $0.isSharedWithMe || ($0.members ?? []).count > 1 }
+
+        for production in productions {
+            let zoneID = production.cloudZoneID
+            let database = zoneID.isMine ? container.privateCloudDatabase : container.sharedCloudDatabase
+            let isFirst = directTokens[zoneID] == nil
+            do {
+                let changes = try await database.recordZoneChanges(inZoneWith: zoneID, since: directTokens[zoneID])
+                directTokens[zoneID] = changes.changeToken
+                // 처음엔 "여기서부터" 표시만 한다 (이미 엔진이 다 받아 둔 것)
+                guard !isFirst else { continue }
+
+                let pending = engine(for: zoneID)?.state.pendingRecordZoneChanges ?? []
+                let records = changes.modificationResultsByID.values.compactMap { try? $0.get().record }.filter { record in
+                    // 내가 방금 올린 것(같은 버전 꼬리표) · 아직 못 올린 내 수정이 있는 것은 건너뛴다 → 치던 글자가 되돌아가지 않게
+                    store.cachedRecord(named: record.recordID.recordName)?.recordChangeTag != record.recordChangeTag
+                        && !pending.contains(.saveRecord(record.recordID))
+                }
+                let deletedIDs = changes.deletions.map(\.recordID)
+                guard !records.isEmpty || !deletedIDs.isEmpty else { continue }
+                applyRemoteChanges {
+                    applyFetched(records: records, deletedIDs: deletedIDs)
+                }
+            } catch {
+                logger.error("폴더 직접 받기 실패 \(production.title): \(error)")
+            }
         }
     }
 
@@ -543,7 +583,7 @@ final class CloudSync {
 
         case .fetchedRecordZoneChanges(let fetched):
             applyRemoteChanges {
-                applyFetched(fetched)
+                applyFetched(records: fetched.modifications.map(\.record), deletedIDs: fetched.deletions.map(\.recordID))
             }
 
         case .didFetchChanges:
