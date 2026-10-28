@@ -19,11 +19,13 @@ struct CueGrid: View {
     @State private var isAddingPart = false       // 파트 추가 팝오버가 열려 있는지
     @State private var editingScene: ShowScene?   // 더블클릭해서 수정 중인 씬
     @State private var editingPart: Part?         // 더블클릭해서 수정 중인 파트
+    @State private var selectedScene: ShowScene?  // 머리칸을 눌러 고른 씬 열 (nil = 선택 안 함)
 
     var body: some View {
         ScrollView([.horizontal, .vertical]) {
             cueTable
         }
+        .contentMargins(.vertical, 12, for: .scrollContent)
     }
 }
 
@@ -37,6 +39,10 @@ extension CueGrid {
             ForEach(visibleParts) { partRow($0) }
             if selectedPart == nil { addPartRow }   // "전체"일 때만 + 파트 추가 줄
         }
+        .overlay(alignment: .topLeading) { selectedColumnEffect }
+        .animation(.easeInOut(duration: 0.25), value: selectedScene)   // 선택 · 해제할 때 부드럽게
+        .onTapGesture { selectedScene = nil }   // 표의 다른 곳을 누르면 선택 해제
+        .background { escapeShortcut }          // Esc 키로 선택 해제
     }
     
     private var headerRow: some View {
@@ -96,6 +102,8 @@ extension CueGrid {
         .gridCellBorder()
         .contentShape(.rect)
         .onTapGesture(count: 2) { editingScene = scene }   // 더블클릭하면 수정 팝오버
+        .onTapGesture { selectColumn(scene) }   // 한 번 누르면 이 씬 열 선택
+        .overlay(alignment: .topTrailing) { selectedMark(for: scene) }
         .popover(isPresented: isEditing(scene), arrowEdge: .bottom) {
             AddScene(title: scene.title, kind: scene.kind) { scene.title = $0; scene.kind = $1 }
         }
@@ -178,6 +186,63 @@ extension CueGrid {
             .frame(width: width)
             .frame(maxHeight: .infinity)
             .gridCellBorder()
+    }
+}
+
+// 씬 열 선택: 머리칸을 한 번 누르면 그 열만 밝게 + 테두리 일렁임, 나머지는 회색으로 흐리게
+
+extension CueGrid {
+    @ViewBuilder
+    private var selectedColumnEffect: some View {
+        if let selectedScene { columnEffect(for: selectedScene) }
+    }
+
+    // [회색 | 고른 열(일렁이는 테두리) | 회색]
+    private func columnEffect(for scene: ShowScene) -> some View {
+        HStack(spacing: 0) {
+            dimmedArea
+                .frame(width: columnX(of: scene))
+            PulseBorder()
+                .frame(width: GridStyle.sceneColumnWidth)
+            dimmedArea
+        }
+        .allowsHitTesting(false)   // 덮어도 아래 칸은 그대로 누를 수 있게
+    }
+
+    // 고르지 않은 곳을 덮는 회색 (피그마: #697586 10%)
+    private var dimmedArea: some View {
+        Color.neutral500.opacity(0.1)
+    }
+
+    // 표 왼쪽 끝에서 이 씬 열까지의 거리
+    private func columnX(of scene: ShowScene) -> CGFloat {
+        let index = sortedScenes.firstIndex(of: scene) ?? 0
+        return GridStyle.partColumnWidth + CGFloat(index) * GridStyle.sceneColumnWidth
+    }
+
+    // 한 번 누르면 이 씬 열 선택 (해제는 표의 다른 곳 클릭 · Esc)
+    private func selectColumn(_ scene: ShowScene) {
+        selectedScene = scene
+    }
+
+    // 고른 씬 머리칸 오른쪽 위 아이콘
+    @ViewBuilder
+    private func selectedMark(for scene: ShowScene) -> some View {
+        if selectedScene == scene {
+            Image(systemName: "number.circle")
+                .font(.system(size: 16))
+                .foregroundStyle(Color.brandPrimaryText)
+                .wiggle()
+                .padding(.top, 11)
+                .padding(.trailing, 13)
+        }
+    }
+    
+    // 화면에는 안 보이는 버튼: Esc 키를 누르면 선택 해제
+    private var escapeShortcut: some View {
+        Button("선택 해제") { selectedScene = nil }
+            .keyboardShortcut(.cancelAction)
+            .opacity(0)
     }
 }
 

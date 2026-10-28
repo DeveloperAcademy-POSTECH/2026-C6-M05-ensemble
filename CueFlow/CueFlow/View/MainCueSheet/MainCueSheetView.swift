@@ -19,6 +19,7 @@ struct MainCueSheetView: View {
             titleRow
             filterRow
             CueGrid(production: production, selectedPart: selectedPart, onShowHistory: { historyCue = $0 })
+            .padding(.top, -12)   // 위 여유(12)만큼 올려서 표 위치는 피그마 그대로
         }
         .padding(.horizontal, 35)
         .padding(.top, 16)
