@@ -181,7 +181,7 @@ final class CloudSync {
         }
     }
 
-    // 앱이 켜져 있는 동안 공유 중인 공연 폴더는 2초마다, 전체는 10초마다 새로 받아 온다
+    // 앱이 켜져 있는 동안 지금 보고 있는 공연 폴더는 2초마다, 전체는 10초마다 직접 받아 온다
     // (iCloud 알림(푸시)이 맥에 안 오고 있어서 — 알림 기록 lastPushReceivedDate가 계속 비어 있음. 알림이 잘 오면 없애도 된다)
     private func startPolling() {
         pollTask = Task { @MainActor [weak self] in
@@ -190,8 +190,8 @@ final class CloudSync {
                 try? await Task.sleep(for: .seconds(2))
                 // 다른 앱을 누르고 있어도 Cuedit 창은 옆에 떠 있을 수 있어서, 켜져 있으면 항상 본다
                 guard let self else { continue }
-                await self.fetchSharedZonesDirectly()
                 round += 1
+                await self.fetchSharedZonesDirectly(onlyRecent: round % 5 != 0)
                 guard round % 5 == 0 else { continue }
                 do {
                     try await self.privateEngine?.fetchChanges()
@@ -406,12 +406,13 @@ final class CloudSync {
     // 공유 중인 공연 폴더를 엔진을 거치지 않고 직접 확인한다
     // 엔진은 "어느 폴더가 바뀌었나" 목록(데이터베이스 변경)을 먼저 보는데, 다른 사람이 고친 건 이 목록에 1~2분 늦게 올라온다
     // (10/28 기록: 팀원은 바로 올렸는데 내 엔진은 2분 동안 "바뀐 폴더 없음"). 폴더를 직접 보면 바로 보인다
-    private func fetchSharedZonesDirectly() async {
+    // onlyRecent: true면 마지막으로 연 공연(지금 보고 있는 공연)만, false면 전부
+    private func fetchSharedZonesDirectly(onlyRecent: Bool) async {
         guard let context else { return }
         let container = CKContainer(identifier: ICloudAccount.containerID)
-        // 공유받은 공연 + 내 공연 중 다른 사람이 들어와 있는 것
-        let productions = ((try? context.fetch(FetchDescriptor<Production>())) ?? [])
-            .filter { $0.isSharedWithMe || ($0.members ?? []).count > 1 }
+        // 멤버 수로 "공유 중"을 가리면 안 된다 — 친구의 멤버 정보가 아직 안 왔으면 내 공연이 빠져서 친구 수정이 늦게 왔다 (10/28)
+        let all = ((try? context.fetch(FetchDescriptor<Production>())) ?? []).sorted { $0.lastOpenedAt > $1.lastOpenedAt }
+        let productions = onlyRecent ? Array(all.prefix(1)) : all
 
         for production in productions {
             let zoneID = production.cloudZoneID
