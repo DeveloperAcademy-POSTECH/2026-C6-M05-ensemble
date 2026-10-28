@@ -25,6 +25,7 @@ final class CloudSync {
     private var saveObserver: NSObjectProtocol?
     private var acceptObserver: NSObjectProtocol?
     private var activeObserver: NSObjectProtocol?
+    private var pollTask: Task<Void, Never>?
 
     // iCloud에서 받은 걸 SwiftData에 넣는 중이면 true → 그건 다시 올리지 않는다
     private var isApplyingRemoteChanges = false
@@ -53,6 +54,7 @@ final class CloudSync {
         observeSaves(of: context)
         observeAccepts()
         observeAppActive()
+        startPolling()
 
         // 이 맥에서 처음 동기화 → 이미 있던 공연도 전부 올린다
         if savedState == nil {
@@ -85,6 +87,8 @@ final class CloudSync {
         saveObserver = nil
         acceptObserver = nil
         activeObserver = nil
+        pollTask?.cancel()
+        pollTask = nil
         privateEngine = nil
         sharedEngine = nil
         unlinkedRecords = [:]
@@ -134,6 +138,37 @@ final class CloudSync {
         }
     }
 
+    // 엔진은 모았다가 몇 초 뒤에 올린다 → 고치자마자 바로 올리게
+    // (지금은 willSave 안이라 저장이 끝난 다음 차례에 올라간다)
+    private func sendNow(hasChanges: Bool) {
+        guard hasChanges else { return }
+        Task { @MainActor [weak self] in
+            do {
+                try await self?.privateEngine?.sendChanges()
+                try await self?.sharedEngine?.sendChanges()
+            } catch {
+                self?.logger.error("바로 올리기 실패: \(error)")
+            }
+        }
+    }
+
+    // 앱을 보고 있는 동안 5초마다 새로 받아 온다
+    // (iCloud 알림(푸시)이 맥에 안 오고 있어서 — 알림 기록 lastPushReceivedDate가 계속 비어 있음. 알림이 잘 오면 없애도 된다)
+    private func startPolling() {
+        pollTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(5))
+                guard let self, NSApplication.shared.isActive else { continue }
+                do {
+                    try await self.privateEngine?.fetchChanges()
+                    try await self.sharedEngine?.fetchChanges()
+                } catch {
+                    self.logger.error("5초마다 받기 실패: \(error)")
+                }
+            }
+        }
+    }
+
     private func collectChanges() {
         guard let context, privateEngine != nil, !isApplyingRemoteChanges else { return }
 
@@ -176,6 +211,7 @@ final class CloudSync {
         if !recordChanges.isEmpty {
             logger.info("올릴 목록에 추가: \(recordChanges.count)개")
         }
+        sendNow(hasChanges: !zoneChanges.isEmpty || !recordChanges.isEmpty)
     }
 
     // 폴더 주인에 따라 나눠서 올릴 목록에 넣는다 — 내 공연은 개인 저장공간, 공유받은 공연은 공유 저장공간
