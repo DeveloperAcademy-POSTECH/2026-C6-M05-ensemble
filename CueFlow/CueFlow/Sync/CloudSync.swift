@@ -181,19 +181,23 @@ final class CloudSync {
         }
     }
 
-    // 앱을 보고 있는 동안 5초마다 새로 받아 온다
+    // 앱이 켜져 있는 동안 공유 중인 공연 폴더는 2초마다, 전체는 10초마다 새로 받아 온다
     // (iCloud 알림(푸시)이 맥에 안 오고 있어서 — 알림 기록 lastPushReceivedDate가 계속 비어 있음. 알림이 잘 오면 없애도 된다)
     private func startPolling() {
         pollTask = Task { @MainActor [weak self] in
+            var round = 0
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(5))
-                guard let self, NSApplication.shared.isActive else { continue }
+                try? await Task.sleep(for: .seconds(2))
+                // 다른 앱을 누르고 있어도 Cuedit 창은 옆에 떠 있을 수 있어서, 켜져 있으면 항상 본다
+                guard let self else { continue }
                 await self.fetchSharedZonesDirectly()
+                round += 1
+                guard round % 5 == 0 else { continue }
                 do {
                     try await self.privateEngine?.fetchChanges()
                     try await self.sharedEngine?.fetchChanges()
                 } catch {
-                    self.logger.error("5초마다 받기 실패: \(error)")
+                    self.logger.error("10초마다 받기 실패: \(error)")
                 }
             }
         }
@@ -394,7 +398,8 @@ final class CloudSync {
         }
 
         if !records.isEmpty || !deletedIDs.isEmpty {
-            logger.info("받음: 저장 \(records.count)개, 삭제 \(deletedIDs.count)개")
+            let kinds = records.map(\.recordType).joined(separator: ", ")
+            logger.info("받음: 저장 \(records.count)개 [\(kinds)], 삭제 \(deletedIDs.count)개")
         }
     }
 
@@ -474,17 +479,27 @@ final class CloudSync {
             return model
         }
 
+        // 부모 목록에도 직접 넣는다. 자식 쪽만 이으면 부모 목록(파트.큐 등)을 보는 화면이 늦게 바뀐다
+        func addIfMissing<T: PersistentModel>(_ child: T, to list: inout [T]?) {
+            if !(list ?? []).contains(child) { list = (list ?? []) + [child] }
+        }
+
         var found = true
         switch item {
         case let scene as ShowScene:
             scene.production = parent(CloudKey.productionID, as: Production.self, found: &found)
+            if let production = scene.production { addIfMissing(scene, to: &production.scenes) }
         case let trigger as Trigger:
             trigger.scene = parent(CloudKey.sceneID, as: ShowScene.self, found: &found)
+            if let scene = trigger.scene { addIfMissing(trigger, to: &scene.triggers) }
         case let part as Part:
             part.production = parent(CloudKey.productionID, as: Production.self, found: &found)
+            if let production = part.production { addIfMissing(part, to: &production.parts) }
         case let cue as Cue:
             cue.trigger = parent(CloudKey.triggerID, as: Trigger.self, found: &found)
             cue.part = parent(CloudKey.partID, as: Part.self, found: &found)
+            if let trigger = cue.trigger { addIfMissing(cue, to: &trigger.cues) }
+            if let part = cue.part { addIfMissing(cue, to: &part.cues) }
         case let member as Member:
             member.production = parent(CloudKey.productionID, as: Production.self, found: &found)
             let partIDs = record.uuids(CloudKey.partIDs)
