@@ -28,9 +28,22 @@ struct CueCard: View {
         .contentShape(.rect)
         .onTapGesture(count: 2) { isEditingCue = true }   // 더블클릭하면 수정 팝오버
         .popover(isPresented: $isEditingCue, arrowEdge: .trailing) { cueEditor }
-        .contextMenu {   // 우클릭 메뉴
-            Button("삭제", role: .destructive) { modelContext.deleteCue(cue) }
-        }
+        .contextMenu { cueMenu }   // 우클릭 메뉴
+    }
+}
+
+// 우클릭 메뉴: 큐 수정하기 · History / 복사하기 · 붙여넣기 / 삭제하기
+
+extension CueCard {
+    @ViewBuilder
+    private var cueMenu: some View {
+        Button("큐 수정하기") { isEditingCue = true }   // 더블클릭과 같은 수정 팝오버
+        Button("History") { }
+        Divider()
+        Button("복사하기") { }
+        Button("붙여넣기") { }
+        Divider()
+        Button("삭제하기") { modelContext.deleteCue(cue) }
     }
 }
 
