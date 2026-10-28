@@ -12,6 +12,7 @@ import SwiftData
 
 struct CueCard: View {
     @Bindable var cue: Cue   // 카드 안에서 cue의 값을 바꿀 수 있게 (위치 선택용)
+    var onShowHistory: () -> Void = {}   // 우클릭 → History
     @State private var isEditingNumber = false   // 번호 수정 창이 열려 있는지
     @State private var isEditingCue = false      // 큐 수정 팝오버가 열려 있는지
     @Environment(\.modelContext) private var modelContext   // 큐를 지울 곳
@@ -29,6 +30,7 @@ struct CueCard: View {
         .onTapGesture(count: 2) { isEditingCue = true }   // 더블클릭하면 수정 팝오버
         .popover(isPresented: $isEditingCue, arrowEdge: .trailing) { cueEditor }
         .contextMenu { cueMenu }   // 우클릭 메뉴
+        .onChange(of: cue.position) { recordPositionChange(from: $0, to: $1) }
     }
 }
 
@@ -38,7 +40,7 @@ extension CueCard {
     @ViewBuilder
     private var cueMenu: some View {
         Button("큐 수정하기") { isEditingCue = true }   // 더블클릭과 같은 수정 팝오버
-        Button("History") { }
+        Button("History", action: onShowHistory)       // 오른쪽 History 사이드바 열기
         Divider()
         Button("복사하기") { }
         Button("붙여넣기") { }
@@ -154,9 +156,22 @@ extension CueCard {
     
     // 팝오버에서 Enter를 누르면 이 카드의 값만 바꿈
     private func updateCue(triggerText: String, cueTitle: String, position: CuePosition) {
+        recordChange("큐 변경", from: cue.title, to: cueTitle)
+        recordChange("트리거 변경", from: cue.trigger?.text ?? "", to: triggerText)
         cue.title = cueTitle
-        cue.position = position
+        cue.position = position   // 위치 기록은 onChange에서 남김
         changeTrigger(to: triggerText)
+    }
+    
+    // 글이 바뀌었으면 "이전 · 변경" 기록 남기기
+    private func recordChange(_ title: String, from before: String, to after: String) {
+        guard before != after else { return }
+        cue.addHistory(title, detail: "\(CurrentEditor.name)님의 수정", before: before, after: after)
+    }
+    
+    // 위치가 바뀌면 (카드 태그 · 수정 팝오버 둘 다) "하수 → 상수로 변경" 기록
+    private func recordPositionChange(from old: CuePosition, to new: CuePosition) {
+        cue.addHistory("위치 변경", detail: "\(CurrentEditor.name)님이 \(old.rawValue) → \(new.rawValue)로 변경")
     }
     
     // 트리거 글이 바뀌었을 때: 다른 큐와 같이 쓰는 트리거면 이 큐만 새 트리거로 떼어냄

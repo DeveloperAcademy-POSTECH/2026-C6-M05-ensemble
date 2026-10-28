@@ -11,6 +11,7 @@ import SwiftData
 struct CueGrid: View {
     let production: Production                    // 어느 공연의 표인지
     var selectedPart: Part? = nil                 // 파트 탭바에서 고른 파트 (nil = 전체)
+    var onShowHistory: (Cue) -> Void = { _ in }   // 큐 카드 우클릭 → History
     @Environment(\.modelContext) private var modelContext   // 새 큐를 저장할 곳
 
     @State private var hoveredSlotKey: String?    // 마우스가 올라가 있는 칸 (파트id-씬id)
@@ -141,7 +142,13 @@ extension CueGrid {
         let key = "\(part.id)-\(scene.id)"                              // 이 칸의 이름표
         let slotCues = cues(of: part, in: scene)
         let isCellVisible = !slotCues.isEmpty || hoveredSlotKey == key
-        return CueCell(part: part, cues: slotCues, isHovering: hoveredSlotKey == key) { addCue(part: part, scene: scene, triggerText: $0, cueTitle: $1, position: $2) }
+        return CueCell(
+            part: part,
+            cues: slotCues,
+            isHovering: hoveredSlotKey == key,
+            onAddCue: { addCue(part: part, scene: scene, triggerText: $0, cueTitle: $1, position: $2) },
+            onShowHistory: onShowHistory
+        )
             .opacity(isCellVisible ? 1 : 0)
             .padding(.horizontal, 13)
             .padding(.vertical, 5)
@@ -198,6 +205,7 @@ extension CueGrid {
         cue.trigger = trigger
         cue.part = part
         scene.triggers = (scene.triggers ?? []) + [trigger]
+        cue.addHistory("큐 생성", detail: "\(CurrentEditor.name)님이 이 큐를 만들었습니다.", isChange: false)
     }
     
     // 이 파트의 큐 번호 중 가장 큰 번호 + 1

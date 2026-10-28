@@ -12,17 +12,30 @@ struct MainCueSheetView: View {
     let production: Production                 // 어느 공연의 큐시트인지
     var onRehearsal: () -> Void = {}           // "리허설 모드" 버튼
     @State private var selectedPart: Part?     // 파트 칩에서 고른 파트 (nil = 전체)
+    @State private var historyCue: Cue?        // History 사이드바에 보여줄 큐 (nil = 닫힘)
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             titleRow
             filterRow
-            CueGrid(production: production, selectedPart: selectedPart)
+            CueGrid(production: production, selectedPart: selectedPart, onShowHistory: { historyCue = $0 })
         }
         .padding(.horizontal, 35)
         .padding(.top, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(.white)
+        .overlay(alignment: .trailing) { historySidebar }
+    }
+}
+
+// 오른쪽 History 사이드바 (큐 카드 우클릭 → History)
+
+extension MainCueSheetView {
+    @ViewBuilder
+    private var historySidebar: some View {
+        if let historyCue {
+            CueHistorySidebar(cue: historyCue, onClose: { self.historyCue = nil })
+        }
     }
 }
 
