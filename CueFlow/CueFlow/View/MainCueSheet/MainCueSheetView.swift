@@ -47,6 +47,7 @@ extension MainCueSheetView {
             Spacer()
             #if DEBUG
             shareButton
+            #endif
             memberButton
         }
     }
