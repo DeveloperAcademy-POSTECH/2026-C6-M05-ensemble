@@ -10,6 +10,7 @@
 //  #68 공유받은 공연: 내 공연은 내 iCloud(개인 저장공간), 공유받은 공연은 공유 저장공간 → 엔진 두 개로 따로 주고받는다
 //
 
+import AppKit
 import CloudKit
 import SwiftData
 import os
@@ -23,6 +24,7 @@ final class CloudSync {
     private var context: ModelContext?
     private var saveObserver: NSObjectProtocol?
     private var acceptObserver: NSObjectProtocol?
+    private var activeObserver: NSObjectProtocol?
 
     // iCloud에서 받은 걸 SwiftData에 넣는 중이면 true → 그건 다시 올리지 않는다
     private var isApplyingRemoteChanges = false
@@ -50,6 +52,7 @@ final class CloudSync {
         ))
         observeSaves(of: context)
         observeAccepts()
+        observeAppActive()
 
         // 이 맥에서 처음 동기화 → 이미 있던 공연도 전부 올린다
         if savedState == nil {
@@ -76,11 +79,12 @@ final class CloudSync {
     // 동기화를 멈추고 "어디까지 주고받았는지" 기억을 지운다 (이 맥의 공연은 그대로)
     // 다음에 start하면 처음 동기화처럼 이 맥의 공연을 전부 다시 올린다 — 다른 계정과 섞이지 않게
     func stop() {
-        for observer in [saveObserver, acceptObserver].compactMap({ $0 }) {
+        for observer in [saveObserver, acceptObserver, activeObserver].compactMap({ $0 }) {
             NotificationCenter.default.removeObserver(observer)
         }
         saveObserver = nil
         acceptObserver = nil
+        activeObserver = nil
         privateEngine = nil
         sharedEngine = nil
         unlinkedRecords = [:]
@@ -108,6 +112,23 @@ final class CloudSync {
                     try await self?.sharedEngine?.fetchChanges()
                 } catch {
                     self?.logger.error("공유받은 공연 받기 실패: \(error)")
+                }
+            }
+        }
+    }
+
+    // 앱 창으로 돌아올 때마다 두 저장공간 다 새로 받아 온다
+    // (다른 사람이 고친 건 원래 iCloud 알림(푸시)으로 오는데, 알림이 늦거나 안 와도 여기서 한 번 더 챙긴다)
+    private func observeAppActive() {
+        activeObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification, object: nil, queue: nil
+        ) { [weak self] _ in
+            Task { @MainActor in
+                do {
+                    try await self?.privateEngine?.fetchChanges()
+                    try await self?.sharedEngine?.fetchChanges()
+                } catch {
+                    self?.logger.error("돌아왔을 때 받기 실패: \(error)")
                 }
             }
         }
