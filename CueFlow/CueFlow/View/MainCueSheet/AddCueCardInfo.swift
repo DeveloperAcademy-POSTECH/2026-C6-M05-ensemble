@@ -11,13 +11,14 @@ struct AddCueCardInfo: View {
     // 다 입력하고 Enter를 눌렀을 때 할 일 (트리거 글, 큐 제목, 위치)
     var onSave: (String, String, CuePosition) -> Void
     var production: Production?   // 이전 트리거를 찾을 공연 (없으면 후보 없음)
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.closeAppPopover) private var closePopover   // 저장하면 팝오버 닫기
     @State private var triggerText: String
     @State private var cueTitle: String
     @State private var position: CuePosition?   // nil = 아직 안 고름
     @FocusState private var focusedField: InputField?
     @State private var showPositionWarning = false   // 위치 안 고르고 저장하려 했는지
     @State private var highlightedSuggestion: Int?   // 방향키로 고른 후보 번호 (nil = 안 고름)
+    @State private var isPickingPosition = false   // 위치 고르는 팝오버가 열려 있는지
     
     // 새로 만들 때는 빈 칸으로, 수정할 때는 원래 값을 채워서 연다
     init(triggerText: String = "", cueTitle: String = "", position: CuePosition? = nil,
@@ -46,8 +47,6 @@ struct AddCueCardInfo: View {
                     .padding(.top, 10)
             }
         }
-        .padding(16)
-        .frame(width: 240)
         .onAppear { focusedField = .trigger }
         .onChange(of: position) { showPositionWarning = false }
     }
@@ -56,21 +55,14 @@ struct AddCueCardInfo: View {
 // 서브뷰
 
 extension AddCueCardInfo {
-    // 오른쪽 위 "위치 ▾" → 누르면 상수/하수/무대/콘솔 선택 (꼭 골라야 저장됨)
+    // 오른쪽 위 "위치 ▾" → 누르면 상수/하수/무대/콘솔 고르는 팝오버 (꼭 골라야 저장됨)
     private var positionMenu: some View {
-        Menu {
-            Picker("위치", selection: $position) {
-                ForEach(CuePosition.allCases, id: \.self) { Text($0.rawValue).tag(Optional($0)) }
+        Button { isPickingPosition = true } label: { positionMenuLabel }
+            .buttonStyle(.plain)
+            .fixedSize()
+            .appPopover(isPresented: $isPickingPosition, width: nil) {
+                PopoverCheckList(items: CuePosition.allCases, selected: position, title: \.rawValue) { position = $0 }
             }
-            .pickerStyle(.inline)
-            .labelsHidden()
-        } label: {
-            positionMenuLabel
-        }
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .menuIndicator(.hidden)
-        .fixedSize()
     }
     
     // 위치 버튼 생김새: 안 골랐으면 "위치", 안 고르고 저장하려 하면 빨갛게
@@ -185,7 +177,7 @@ extension AddCueCardInfo {
             return
         }
         onSave(triggerText, title, position)
-        dismiss()
+        closePopover()
     }
     
     // 한글 입력이 끝난 다음에 칸을 옮겨야 트리거 칸 글자가 남는다
@@ -221,6 +213,6 @@ extension AddCueCardInfo {
 
 #Preview {
     AddCueCardInfo()
-        .padding()
-        .background(Color.neutral100)
+        .popoverStyle()
+        .padding(60)
 }

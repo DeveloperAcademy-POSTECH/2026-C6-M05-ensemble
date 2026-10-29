@@ -95,7 +95,7 @@ extension CueGrid {
         .gridCellBorder()
         .contentShape(.rect)
         .onTapGesture(count: 2) { editingScene = scene }   // 더블클릭하면 수정 팝오버
-        .popover(isPresented: isEditing(scene), arrowEdge: .bottom) {
+        .appPopover(isPresented: isEditing(scene)) {
             AddScene(title: scene.title, kind: scene.kind) { scene.title = $0; scene.kind = $1 }
         }
         .contextMenu {   // 우클릭 메뉴
@@ -106,7 +106,7 @@ extension CueGrid {
     // + 씬 추가 칸
     private var addSceneHeaderCell: some View {
         Button { isAddingScene = true } label: { Text("+").font(.system(size: 25, weight: .semibold)) }
-            .popover(isPresented: $isAddingScene, arrowEdge: .bottom) { AddScene(onSave: addScene) }
+            .appPopover(isPresented: $isAddingScene) { AddScene(onSave: addScene) }
             .buttonStyle(.plain)
             .foregroundStyle(Color.neutral900)
             .frame(width: GridStyle.addSceneColumnWidth, height: GridStyle.headerHeight)
@@ -128,7 +128,7 @@ extension CueGrid {
             .gridCellBorder()
             .contentShape(.rect)
             .onTapGesture(count: 2) { editingPart = part }   // 더블클릭하면 수정 팝오버
-            .popover(isPresented: isEditing(part), arrowEdge: .trailing) {
+            .appPopover(isPresented: isEditing(part), edge: .trailing) {
                 AddPart(name: part.name) { part.name = $0 }
             }
             .contextMenu {   // 우클릭 메뉴
@@ -156,7 +156,7 @@ extension CueGrid {
     // + 파트 추가 칸
     private var addPartHeaderCell: some View {
         Button { isAddingPart = true } label: { Image(systemName: "plus").font(.system(size: 25)) }
-            .popover(isPresented: $isAddingPart, arrowEdge: .trailing) { AddPart(onSave: addPart) }
+            .appPopover(isPresented: $isAddingPart, edge: .trailing) { AddPart(onSave: addPart) }
             .buttonStyle(.plain)
             .foregroundStyle(Color.neutral900)
             .frame(width: GridStyle.partColumnWidth, height: GridStyle.addPartRowHeight)

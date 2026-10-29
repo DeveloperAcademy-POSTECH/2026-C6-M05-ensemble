@@ -23,6 +23,7 @@ struct MainCueSheetView: View {
         .padding(.top, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(.white)
+        .appPopoverHost()   // 표 안 팝오버(파트 추가 · 수정)가 그려지는 곳
     }
 }
 

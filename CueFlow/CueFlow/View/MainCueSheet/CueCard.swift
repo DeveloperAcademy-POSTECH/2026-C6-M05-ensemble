@@ -14,6 +14,7 @@ struct CueCard: View {
     @Bindable var cue: Cue   // 카드 안에서 cue의 값을 바꿀 수 있게 (위치 선택용)
     @State private var isEditingNumber = false   // 번호 수정 창이 열려 있는지
     @State private var isEditingCue = false      // 큐 수정 팝오버가 열려 있는지
+    @State private var isPickingPosition = false  // 위치 고르는 팝오버가 열려 있는지
     @Environment(\.modelContext) private var modelContext   // 큐를 지울 곳
     
     var body: some View {
@@ -27,7 +28,7 @@ struct CueCard: View {
         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(partColor.background, lineWidth: 1))
         .contentShape(.rect)
         .onTapGesture(count: 2) { isEditingCue = true }   // 더블클릭하면 수정 팝오버
-        .popover(isPresented: $isEditingCue, arrowEdge: .trailing) { cueEditor }
+        .appPopover(isPresented: $isEditingCue, edge: .trailing) { cueEditor }
         .contextMenu {   // 우클릭 메뉴
             Button("삭제", role: .destructive) { modelContext.deleteCue(cue) }
         }
@@ -95,26 +96,14 @@ extension CueCard {
             .fixedSize(horizontal: false, vertical: true)   // 길면 다음 줄로
     }
     
-    // 위치 태그: 누르면 상수 · 하수 · 무대 · 콘솔 중에서 고르는 메뉴가 뜸
+    // 위치 태그: 누르면 상수 · 하수 · 무대 · 콘솔 고르는 팝오버 (피그마 무대위치)
     private var positionTag: some View {
-        Menu {
-            positionPicker
-        } label: {
-            positionTagLabel
-        }
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .menuIndicator(.hidden)
-        .fixedSize()
-    }
-    
-    // 메뉴 안의 선택지 (지금 고른 위치에 체크 표시가 붙음)
-    private var positionPicker: some View {
-        Picker("위치", selection: $cue.position) {
-            ForEach(CuePosition.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-        }
-        .pickerStyle(.inline)
-        .labelsHidden()
+        Button { isPickingPosition = true } label: { positionTagLabel }
+            .buttonStyle(.plain)
+            .fixedSize()
+            .appPopover(isPresented: $isPickingPosition, width: nil) {
+                PopoverCheckList(items: CuePosition.allCases, selected: cue.position, title: \.rawValue) { cue.position = $0 }
+            }
     }
     
     // 태그 생김새 (원래 positionTag에 있던 모양 그대로)
