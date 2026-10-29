@@ -15,6 +15,7 @@ struct SidebarView: View {
     var productions: [Production] = []          // 큐시트 펼치기 목록에 보일 공연
     var isInProduction = false                  // 공연 큐시트를 보고 있으면 true → 선택 표시 없음
     var onOpenProduction: (Production) -> Void = { _ in }
+    var unreadNoticeCount = 0                   // 공지사항 옆 숫자 배지 (안 읽은 공지 수, #82)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -29,7 +30,7 @@ struct SidebarView: View {
                     SidebarMenuRow(
                         menu: menu,
                         isSelected: !isInProduction && selectedMenu == menu,
-                        badgeCount: 0   // TODO: #33 공지사항 머지 후 공지사항 메뉴에 안 읽은 개수
+                        badgeCount: menu == .notice ? unreadNoticeCount : 0
                     ) {
                         selectedMenu = menu
                     }

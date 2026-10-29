@@ -6,7 +6,7 @@
 //  공연 하나 = iCloud 폴더(레코드 존) 하나. 공연을 공유하면 그 폴더 통째로 공유된다 (#68).
 //  레코드 이름 = 모델의 id(UUID) → 기기가 달라도 같은 큐는 같은 이름.
 //
-//  1차: 공연 · 씬 · 트리거 · 파트 · 큐 · 멤버. #86: 대본 · 무대 배치 · 큐 기록(History). #98: 댓글 · 큐 확인
+//  1차: 공연 · 씬 · 트리거 · 파트 · 큐 · 멤버. #86: 대본 · 무대 배치 · 큐 기록(History). #98: 댓글 · 큐 확인. #82: 공지 · 읽음
 //  관계(어느 씬의 트리거인지 등)는 부모의 id를 적어 두고, 받을 때(#67 ③단계) id로 찾아서 다시 잇는다.
 //
 
@@ -93,6 +93,9 @@ enum CloudKey {
     static let isChange = "isChange"
     static let date = "date"
     static let checkedAt = "checkedAt"
+    static let body = "body"
+    static let sentAt = "sentAt"
+    static let readAt = "readAt"
 
     // 부모 id (관계)
     static let productionID = "productionID"
@@ -102,7 +105,10 @@ enum CloudKey {
     static let cueID = "cueID"
     static let authorID = "authorID"   // 댓글 쓴 멤버
     static let parentID = "parentID"   // 답글이면 원래 댓글
-    static let memberID = "memberID"   // 확인한 멤버
+    static let memberID = "memberID"   // 확인한 멤버 · 공지를 읽은 멤버
+    static let noticeID = "noticeID"
+    static let targetPartID = "targetPartID"       // 공지 받을 파트
+    static let targetMemberID = "targetMemberID"   // 공지 받을 사람
     static let partIDs = "partIDs"     // 멤버가 맡은 파트들 (여러 개)
 }
 
@@ -368,5 +374,44 @@ extension CueCheck: CloudRecordConvertible {
 
     func applyFields(from record: CKRecord) {
         checkedAt = record[CloudKey.checkedAt] as? Date ?? Date()
+    }
+}
+
+extension Notice: CloudRecordConvertible {
+    static let recordType = "Notice"
+
+    var cloudProduction: Production? { production }
+
+    // 별표(isImportant)는 "나한테 중요한 것"이라 올리지 않는다 (공연 즐겨찾기처럼)
+    func fill(_ record: CKRecord) {
+        record[CloudKey.title] = title
+        record[CloudKey.body] = body
+        record[CloudKey.sentAt] = sentAt
+        record[CloudKey.productionID] = production?.id.uuidString
+        record[CloudKey.authorID] = author?.id.uuidString
+        record[CloudKey.targetPartID] = targetPart?.id.uuidString
+        record[CloudKey.targetMemberID] = targetMember?.id.uuidString
+    }
+
+    func applyFields(from record: CKRecord) {
+        title = record[CloudKey.title] as? String ?? ""
+        body = record[CloudKey.body] as? String ?? ""
+        sentAt = record[CloudKey.sentAt] as? Date ?? Date()
+    }
+}
+
+extension NoticeRead: CloudRecordConvertible {
+    static let recordType = "NoticeRead"
+
+    var cloudProduction: Production? { notice?.production ?? member?.production }
+
+    func fill(_ record: CKRecord) {
+        record[CloudKey.readAt] = readAt
+        record[CloudKey.noticeID] = notice?.id.uuidString
+        record[CloudKey.memberID] = member?.id.uuidString
+    }
+
+    func applyFields(from record: CKRecord) {
+        readAt = record[CloudKey.readAt] as? Date ?? Date()
     }
 }

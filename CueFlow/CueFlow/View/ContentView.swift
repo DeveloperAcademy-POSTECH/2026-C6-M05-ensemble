@@ -42,6 +42,10 @@ struct ContentView: View {
     @Query(sort: \Notice.sentAt, order: .reverse)
     private var notices: [Notice]
 
+    // 새 공지 알림 카드 (#82) / 카드에서 [공지 자세히 보기] 누른 공지 → 공지사항 상세로
+    @State private var toastNotice: Notice?
+    @State private var noticeToOpen: Notice?
+
     init(pendingInvite: PendingInvite? = nil) {
         _pendingInvite = State(initialValue: pendingInvite)
     }
@@ -93,6 +97,16 @@ struct ContentView: View {
                     }
             }
         }
+        // 다른 사람이 보낸 새 공지가 iCloud로 오면 창 오른쪽 위에 알림 카드 (어느 화면이든)
+        .onReceive(NotificationCenter.default.publisher(for: CloudSync.didReceiveNoticesNotification)) { notification in
+            showToast(for: notification.object as? [UUID] ?? [])
+        }
+        .overlay(alignment: .topTrailing) { noticeToast }
+        #if DEBUG
+        .onReceive(NotificationCenter.default.publisher(for: NoticeToastCard.fakeNoticeNotification)) { _ in
+            showFakeNotice()
+        }
+        #endif
         // UT 진행자 메뉴로 예시 공연을 넣거나 전부 지우면 → 열린 화면을 닫고 홈으로
         .onReceive(NotificationCenter.default.publisher(for: UserTest.didResetNotification)) { _ in
             rehearsingProduction = nil
@@ -158,7 +172,9 @@ struct ContentView: View {
                     selectedMenu = .project
                     isCreatingProduction = false
                     openedProduction = production
-                }
+                },
+                // 공지 목록 "안읽음" 숫자와 같은 기준 (내가 보낸 건 읽은 것으로)
+                unreadNoticeCount: notices.filter { $0.isUnread(byUserID: iCloudAccount.userRecordName) }.count
             )
                 .navigationSplitViewColumnWidth(220)
         } detail: {
@@ -191,12 +207,79 @@ struct ContentView: View {
             case .notice:
                 // NavigationStack: 목록 → 상세로 들어갔다가 뒤로 돌아올 수 있게
                 NavigationStack {
-                    NoticeListView(notices: notices)
+                    NoticeListView(notices: notices, openRequest: $noticeToOpen)
                 }
             case .help:
                 Text("도움말 화면")
             }
         }
+    }
+}
+
+// 새 공지 알림 카드 (#82 · 피그마 951:7387)
+
+extension ContentView {
+    @ViewBuilder
+    private var noticeToast: some View {
+        if let toastNotice {
+            NoticeToastCard(tag: toastNotice.targetTag, title: toastNotice.title, preview: toastNotice.body) {
+                openNotice(toastNotice)
+            }
+            .onTapGesture { withAnimation { self.toastNotice = nil } }   // 카드를 누르면 닫힘
+            .padding(.top, 12)   // 제목 막대 바로 아래
+            .padding(.trailing, 20)
+            .transition(.move(edge: .top).combined(with: .opacity))   // 위에서 내려온다
+            // 8초 뒤 저절로 닫힘 (피그마에 닫기 버튼이 없어서)
+            .task(id: toastNotice.id) {
+                try? await Task.sleep(for: .seconds(8))
+                withAnimation { self.toastNotice = nil }
+            }
+        }
+    }
+
+    // 막 들어온 공지 중 다른 사람이 보낸 · 나한테 온 · 안 읽은 · 10분 안에 보낸 것 중 가장 최근 것
+    // (10분: 새 맥에서 처음 받을 때 예전 공지가 줄줄이 뜨지 않게)
+    private func showToast(for ids: [UUID]) {
+        guard !ids.isEmpty else { return }
+        let myID = iCloudAccount.userRecordName
+        let received = (try? modelContext.fetch(FetchDescriptor<Notice>(predicate: #Predicate { ids.contains($0.id) }))) ?? []
+        let fresh = received.filter {
+            Date.now.timeIntervalSince($0.sentAt) < 10 * 60
+                && !$0.isSent(byUserID: myID) && $0.isForMe(userID: myID) && !$0.isRead(byUserID: myID)
+        }
+        guard let latest = fresh.max(by: { $0.sentAt < $1.sentAt }) else { return }
+        withAnimation { toastNotice = latest }
+    }
+
+    #if DEBUG
+    // 가장 최근에 연 공연에 "다른 사람(테스트)"이 보낸 전체 공지를 하나 넣고 카드를 띄운다.
+    // iCloud에서 온 것처럼 조건(다른 사람 · 나한테 옴 · 안 읽음)을 그대로 거친다 — 실제로 공지 목록에도 남고 iCloud에도 올라간다
+    private func showFakeNotice() {
+        guard let production = productions.max(by: { $0.lastOpenedAt < $1.lastOpenedAt }) else { return }
+        let sender = (production.members ?? []).first { $0.iCloudUserID == "fake-sender" } ?? {
+            let member = Member(name: "테스트", role: "무대감독")
+            modelContext.insert(member)
+            member.iCloudUserID = "fake-sender"
+            member.production = production
+            return member
+        }()
+        let notice = Notice(title: "오늘 리허설 콜타임 변경 안내", body: "18:40으로 변경되었습니다. 지금 확인하고 큐시트 변경 사항을 놓치지 마세요.")
+        modelContext.insert(notice)
+        notice.production = production
+        notice.author = sender
+        try? modelContext.save()
+        showToast(for: [notice.id])
+    }
+    #endif
+
+    // [공지 자세히 보기] → 리허설 · 큐시트에 있어도 공지사항으로 가서 그 공지를 연다
+    private func openNotice(_ notice: Notice) {
+        toastNotice = nil
+        rehearsingProduction = nil
+        openedProduction = nil
+        isCreatingProduction = false
+        selectedMenu = .notice
+        noticeToOpen = notice
     }
 }
 
