@@ -12,6 +12,7 @@ struct CueGrid: View {
     let production: Production                    // 어느 공연의 표인지
     var selectedPart: Part? = nil                 // 파트 탭바에서 고른 파트 (nil = 전체)
     var onShowHistory: (Cue) -> Void = { _ in }   // 큐 카드 우클릭 → History
+    @Binding var priorityScene: ShowScene?        // 우선순위 사이드바에 보여줄 씬 (nil = 닫힘)
     @Environment(\.modelContext) private var modelContext   // 새 큐를 저장할 곳
 
     @State private var hoveredSlotKey: String?    // 마우스가 올라가 있는 칸 (파트id-씬id)
@@ -20,6 +21,7 @@ struct CueGrid: View {
     @State private var editingScene: ShowScene?   // 더블클릭해서 수정 중인 씬
     @State private var editingPart: Part?         // 더블클릭해서 수정 중인 파트
     @State private var selectedScene: ShowScene?  // 머리칸을 눌러 고른 씬 열 (nil = 선택 안 함)
+    @State private var selectedCueIDs: Set<UUID> = []   // 선택된 큐 카드들 (shift로 여러 개)
 
     var body: some View {
         ScrollView([.horizontal, .vertical]) {
@@ -41,7 +43,7 @@ extension CueGrid {
         }
         .overlay(alignment: .topLeading) { selectedColumnEffect }
         .animation(.easeInOut(duration: 0.25), value: selectedScene)   // 선택 · 해제할 때 부드럽게
-        .onTapGesture { selectedScene = nil }   // 표의 다른 곳을 누르면 선택 해제
+        .onTapGesture { clearSelection() }   // 표의 다른 곳을 누르면 선택 해제
         .background { escapeShortcut }          // Esc 키로 선택 해제
     }
     
@@ -155,7 +157,9 @@ extension CueGrid {
             cues: slotCues,
             isHovering: hoveredSlotKey == key,
             onAddCue: { addCue(part: part, scene: scene, triggerText: $0, cueTitle: $1, position: $2) },
-            onShowHistory: onShowHistory
+            onShowHistory: onShowHistory,
+            selectedCueIDs: selectedCueIDs,
+            onSelectCue: { selectCue($0, isShiftPressed: $1) }
         )
             .opacity(isCellVisible ? 1 : 0)
             .padding(.horizontal, 13)
@@ -220,28 +224,57 @@ extension CueGrid {
         return GridStyle.partColumnWidth + CGFloat(index) * GridStyle.sceneColumnWidth
     }
 
-    // 한 번 누르면 이 씬 열 선택 (해제는 표의 다른 곳 클릭 · Esc)
+    // 한 번 누르면 이 씬 열 선택. 우선순위 사이드바가 열려 있으면 새 열로 바뀜
     private func selectColumn(_ scene: ShowScene) {
         selectedScene = scene
+        if priorityScene != nil { priorityScene = scene }
     }
 
-    // 고른 씬 머리칸 오른쪽 위 아이콘
+    // 고른 씬 머리칸 오른쪽 위 흔들리는 ⓝ 버튼 → 우선순위 사이드바 열기 / 닫기
     @ViewBuilder
     private func selectedMark(for scene: ShowScene) -> some View {
         if selectedScene == scene {
-            Image(systemName: "number.circle")
-                .font(.system(size: 16))
-                .foregroundStyle(Color.brandPrimaryText)
-                .wiggle()
+            Button { togglePriority(scene) } label: { priorityIcon }
+                .buttonStyle(.plain)
                 .padding(.top, 11)
                 .padding(.trailing, 13)
         }
     }
     
+    private var priorityIcon: some View {
+        Image(systemName: "number.circle")
+            .font(.system(size: 16))
+            .foregroundStyle(Color.brandPrimaryText)
+            .wiggle()
+    }
+    
+    private func togglePriority(_ scene: ShowScene) {
+        priorityScene = priorityScene == scene ? nil : scene
+    }
+    
+    // 열 선택 해제 (우선순위 사이드바도 닫힘)
+    private func clearSelection() {
+        selectedScene = nil
+        priorityScene = nil
+        selectedCueIDs = []
+    }
+    
+    // 큐 카드 클릭: 그 카드만 선택. shift를 누른 채 클릭하면 선택에 추가 (이미 선택된 카드면 빠짐)
+    private func selectCue(_ cue: Cue, isShiftPressed: Bool) {
+        guard isShiftPressed else {
+            selectedCueIDs = [cue.id]
+            return
+        }
+        if selectedCueIDs.contains(cue.id) {
+            selectedCueIDs.remove(cue.id)
+        } else {
+            selectedCueIDs.insert(cue.id)
+        }
+    }
+    
     // 화면에는 안 보이는 버튼: Esc 키를 누르면 선택 해제
     private var escapeShortcut: some View {
-        Button("선택 해제") { selectedScene = nil }
-            .keyboardShortcut(.cancelAction)
+        Button("선택 해제", action: clearSelection)            .keyboardShortcut(.cancelAction)
             .opacity(0)
     }
 }
@@ -265,17 +298,12 @@ extension CueGrid {
     // Add new 팝오버에서 입력을 마치면: 트리거와 큐를 새로 만들어 이 칸 맨 아래에 넣기
     private func addCue(part: Part, scene: ShowScene, triggerText: String, cueTitle: String, position: CuePosition) {
         let trigger = Trigger(text: triggerText, order: scene.triggers?.count ?? 0)
-        let cue = Cue(title: cueTitle, position: position, order: nextCueNumber(in: part))
+        let cue = Cue(title: cueTitle, position: position, order: 0)   // 번호는 우선순위 사이드바에서 정함
         modelContext.insert(cue)
         cue.trigger = trigger
         cue.part = part
         scene.triggers = (scene.triggers ?? []) + [trigger]
         cue.addHistory("큐 생성", detail: "\(CurrentEditor.name)님이 이 큐를 만들었습니다.", isChange: false)
-    }
-    
-    // 이 파트의 큐 번호 중 가장 큰 번호 + 1
-    private func nextCueNumber(in part: Part) -> Int {
-        ((part.cues ?? []).map(\.order).max() ?? 0) + 1
     }
     
     // 이 씬의 수정 팝오버를 열고 닫는 스위치
@@ -387,7 +415,6 @@ private extension View {
     cue.trigger = trigger
     cue.part = production.parts?.first { $0.order == 0 }
     
-    return CueGrid(production: production)
-        .frame(width: 1100, height: 600)
+    return CueGrid(production: production, priorityScene: .constant(nil))        .frame(width: 1100, height: 600)
         .modelContainer(container)
 }

@@ -13,12 +13,13 @@ struct MainCueSheetView: View {
     var onRehearsal: () -> Void = {}           // "리허설 모드" 버튼
     @State private var selectedPart: Part?     // 파트 칩에서 고른 파트 (nil = 전체)
     @State private var historyCue: Cue?        // History 사이드바에 보여줄 큐 (nil = 닫힘)
+    @State private var priorityScene: ShowScene?  // 우선순위 사이드바에 보여줄 씬 (nil = 닫힘)
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             titleRow
             filterRow
-            CueGrid(production: production, selectedPart: selectedPart, onShowHistory: { historyCue = $0 })
+            CueGrid(production: production, selectedPart: selectedPart, onShowHistory: { historyCue = $0 }, priorityScene: $priorityScene)
             .padding(.top, -12)   // 위 여유(12)만큼 올려서 표 위치는 피그마 그대로
         }
         .padding(.horizontal, 35)
@@ -29,13 +30,16 @@ struct MainCueSheetView: View {
     }
 }
 
-// 오른쪽 History 사이드바 (큐 카드 우클릭 → History)
+// 오른쪽 사이드바: History (큐 카드 우클릭) · 우선순위 (씬 열 ⓝ)
 
 extension MainCueSheetView {
     @ViewBuilder
     private var historySidebar: some View {
         if let historyCue {
             CueHistorySidebar(cue: historyCue, onClose: { self.historyCue = nil })
+        } else if let priorityScene {
+            CuePrioritySidebar(scene: priorityScene)
+                .id(priorityScene)   // 다른 열로 바뀌면 새로 그림 (00 카드 번호 다시 매기기)
         }
     }
 }

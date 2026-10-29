@@ -13,6 +13,8 @@ import SwiftData
 struct CueCard: View {
     @Bindable var cue: Cue   // 카드 안에서 cue의 값을 바꿀 수 있게 (위치 선택용)
     var onShowHistory: () -> Void = {}   // 우클릭 → History
+    var isSelected = false                       // 선택된 카드인지 (테두리가 파트 accent 색)
+    var onSelect: (Bool) -> Void = { _ in }      // 카드를 눌렀을 때 (true = shift 누른 채)
     @State private var isEditingNumber = false   // 번호 수정 창이 열려 있는지
     @State private var isEditingCue = false      // 큐 수정 팝오버가 열려 있는지
     @Environment(\.modelContext) private var modelContext   // 큐를 지울 곳
@@ -25,9 +27,11 @@ struct CueCard: View {
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.white, in: .rect(cornerRadius: 6))
-        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(partColor.background, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(isSelected ? partColor.accent : partColor.background, lineWidth: isSelected ? 1.5 : 1))
         .contentShape(.rect)
         .onTapGesture(count: 2) { isEditingCue = true }   // 더블클릭하면 수정 팝오버
+        .highPriorityGesture(TapGesture().modifiers(.shift).onEnded { onSelect(true) })   // Shift+클릭 = 선택에 추가
+        .onTapGesture { onSelect(false) }                                                // 그냥 클릭 = 이 카드만 선택
         .popover(isPresented: $isEditingCue, arrowEdge: .trailing) { cueEditor }
         .contextMenu { cueMenu }   // 우클릭 메뉴
         .onChange(of: cue.position) { recordPositionChange(from: $0, to: $1) }
