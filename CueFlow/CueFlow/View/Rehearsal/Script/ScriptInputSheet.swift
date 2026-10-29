@@ -94,7 +94,7 @@ struct ScriptInputSheet: View {
                 .sheetBox()
                 .overlay(alignment: .topLeading) {
                     if text.isEmpty {
-                        Text("S#1 공장\n(판틴과 노동자들이 공장에서 일하고 있다.)\n판틴: 오늘도 일을 마쳐야 해.\nN#1 하루의 끝에서\n판틴: 코제트를 위해 버텨야 해.\n(판틴이 공장을 떠난다.)\n암전\n(노동자들이 퇴장하고 공장 작업대를 반출한다.)\nS#2 거리")
+                        Text("S#1 공장\n(판틴과 노동자들이 공장에서 일하고 있다.)\n판틴: 오늘도 일을 마쳐야 해.\nN#1 하루의 끝에서\n판틴: 코제트를 위해 버텨야 해.\n(판틴이 공장을 떠난다.)\n암전\n(노동자들이 퇴장하고 공장 작업대를 반출한다.)\nS#2 거리\n(판틴이 거리로 들어온다.)")
                             .font(.system(size: 17))
                             .lineSpacing(5)
                             .foregroundStyle(Color.neutral400)
