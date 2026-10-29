@@ -137,8 +137,9 @@ extension MainCueSheetView {
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        // 팀 팝오버 (셀리나 #90 · 유리 효과 없이 흰색 70%) — 피그마 951:10223 폭 420
-        .appPopover(isPresented: $isShowingShare, width: 420, background: .display) {
+        // 팀 팝오버 (셀리나 #90) — 피그마 951:10223 폭 420
+        // 바탕은 셀리나 댓글 · 확인 팝오버처럼 불투명 Neutral/25 (흰색 70%는 뒤의 큐시트가 비쳐 보여서)
+        .appPopover(isPresented: $isShowingShare, width: 420) {
             SharePopover(production: production)
         }
     }
@@ -165,7 +166,7 @@ extension MainCueSheetView {
         }
         .buttonStyle(.plain)
         // 피그마 1618:7175 폭 426
-        .appPopover(isPresented: $isShowingParticipants, width: 426, background: .display) {
+        .appPopover(isPresented: $isShowingParticipants, width: 426) {
             ParticipantsPopover(production: production, myUserID: iCloudAccount.userRecordName)
         }
     }

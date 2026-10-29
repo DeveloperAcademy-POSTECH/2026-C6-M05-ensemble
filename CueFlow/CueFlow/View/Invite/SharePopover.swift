@@ -252,6 +252,6 @@ private struct GrayButtonStyle: ButtonStyle {
             ShareMember(id: "2", name: "곽선우", isMe: false, isOwner: false),
         ]
     )
-    .popoverStyle(width: 420, background: .display)
+    .popoverStyle(width: 420)
     .padding(40)
 }
