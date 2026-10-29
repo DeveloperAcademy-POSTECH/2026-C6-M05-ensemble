@@ -76,6 +76,8 @@ extension MainCueSheetView {
             Text(production.title)
                 .font(.title)
                 .foregroundStyle(Color.neutral900)
+            Spacer()
+            shareButton
         }
     }
     
@@ -98,6 +100,18 @@ extension MainCueSheetView {
         Button("리허설 모드", action: onRehearsal)
         .buttonStyle(.primary)
         .frame(width: 100, height: 36)
+    }
+    
+    private var shareButton: some View {
+        Button { } label: {
+            Text("공유하기")
+                .font(.body)                                   // Body/Regular 13
+                .foregroundStyle(Color.neutral25)
+                .frame(width: 79, height: 28)
+                .background(Color.brandPrimaryHover, in: .rect(cornerRadius: 6))
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
     }
 }
 

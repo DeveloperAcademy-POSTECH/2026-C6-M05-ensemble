@@ -15,7 +15,6 @@ struct CueCard: View {
     var onShowHistory: () -> Void = {}   // 우클릭 → History
     var isSelected = false                       // 선택된 카드인지 (테두리가 파트 accent 색)
     var onSelect: (Bool) -> Void = { _ in }      // 카드를 눌렀을 때 (true = shift 누른 채)
-    @State private var isEditingNumber = false   // 번호 수정 창이 열려 있는지
     @State private var isEditingCue = false      // 큐 수정 팝오버가 열려 있는지
     @State private var isPickingPosition = false  // 위치 고르는 팝오버가 열려 있는지
     @State private var isShowingMenu = false      // 우클릭 메뉴 팝오버가 열려 있는지
@@ -62,7 +61,7 @@ extension CueCard {
     private var cueHeader: some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(alignment: .firstTextBaseline, spacing: 5) {   // 번호 · 트리거 첫 줄 · 위치 태그 글자 밑선 맞춤
-                cueNumberButton
+                cueNumberLabel
                 triggerText
                 Spacer(minLength: 0)
                 positionTag
@@ -70,13 +69,6 @@ extension CueCard {
             cueTitleText
                 .padding(.leading, 28)   // 트리거 글 시작 위치에 맞춤 (번호 23 + 간격 5)
         }
-    }
-    
-    // 번호 버튼: 누르면 번호를 고치는 작은 창이 뜸
-    private var cueNumberButton: some View {
-        Button { isEditingNumber = true } label: { cueNumberLabel }
-            .buttonStyle(.plain)
-            .popover(isPresented: $isEditingNumber, arrowEdge: .bottom) { cueNumberEditor }
     }
     
     // 번호 동그라미 생김새 (01, 02 …)
@@ -87,15 +79,6 @@ extension CueCard {
             .frame(width: 23, height: 23)
             .background(partColor.background, in: .circle)
             .contentShape(.circle)
-    }
-    
-    // 번호 입력 창: 숫자를 입력하고 Enter를 누르면 저장되고 창이 닫힘
-    private var cueNumberEditor: some View {
-        TextField("번호", value: $cue.order, format: .number)
-            .textFieldStyle(.roundedBorder)
-            .frame(width: 60)
-            .padding(10)
-            .onSubmit { isEditingNumber = false }
     }
     
     // 언제 실행하는지 (예: 코우 - "너 나가!" 대사 종료 후)
