@@ -35,6 +35,10 @@ final class Cue {
 
     @Relationship(deleteRule: .cascade, inverse: \CueCheck.cue)
     var checks: [CueCheck]? = []
+    
+    // 큐를 지우면 수정 기록도 같이 지운다.
+    @Relationship(deleteRule: .cascade, inverse: \CueHistory.cue)
+    var histories: [CueHistory]? = []
 
     init(title: String, position: CuePosition, order: Int) {
         self.title = title
