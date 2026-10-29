@@ -73,7 +73,7 @@ struct ScriptInputSheet: View {
         VStack(alignment: .leading, spacing: 16) {
             SheetHeader(
                 title: "대본 입력",
-                subtitle: "작성해둔 대본을 복사해 붙여넣거나, 직접 쓰거나, 파일을 불러오세요.\n줄 맨 앞의 S1 · 씬 1 · 1장 · N1 · M1 · D1 같은 표시로 장면을 나눠요. 다음 화면에서 고칠 수 있어요."
+                subtitle: "작성해둔 대본을 복사해 붙여넣거나, 직접 쓰거나, 파일을 불러오세요.\nS#1 씬 이름 · N#1 넘버 이름 · 암전으로 장면을 나누고, 대사는 \"배역: 대사\", 행동은 (괄호)로 적어요. 다음 화면에서 고칠 수 있어요."
             ) {
                 importButton
             }
@@ -94,7 +94,7 @@ struct ScriptInputSheet: View {
                 .sheetBox()
                 .overlay(alignment: .topLeading) {
                     if text.isEmpty {
-                        Text("S1 (하루가 끝날 무렵, 공장 안)\n판틴 (편지를 숨기며) 아무것도 아니에요.\n공장장 일하는 시간에 편지라니!")
+                        Text("S#1 공장\n(판틴과 노동자들이 공장에서 일하고 있다.)\n판틴: 오늘도 일을 마쳐야 해.\nN#1 하루의 끝에서\n판틴: 코제트를 위해 버텨야 해.\n(판틴이 공장을 떠난다.)\n암전\n(노동자들이 퇴장하고 공장 작업대를 반출한다.)\nS#2 거리")
                             .font(.system(size: 17))
                             .lineSpacing(5)
                             .foregroundStyle(Color.neutral400)
