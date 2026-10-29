@@ -115,14 +115,14 @@ struct RehearsalScriptPanel: View {
 struct ScriptLineView: View {
     let speaker: String?
     let text: String
-    var fontSize: CGFloat = 14   // 대본 입력 미리보기는 17
+    var fontSize: CGFloat = 15   // 대본 입력 미리보기는 17
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             if let speaker {
                 Text(speaker)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.neutral600)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.neutral800)
             }
 
             Text(ScriptLineView.styled(text, isDirection: speaker == nil, fontSize: fontSize))
@@ -132,9 +132,9 @@ struct ScriptLineView: View {
         }
     }
 
-    // 괄호 (지문) 부분만 회색 기울임. 지문 줄이면 전부 회색
-    // 피그마: 대사는 굵게(semibold), 괄호 지문은 보통 굵기 회색 기울임, 지문 줄은 전부 연회색 기울임
-    static func styled(_ text: String, isDirection: Bool, fontSize: CGFloat = 14) -> AttributedString {
+    // 괄호 (지문) 부분만 회색. 지문 줄이면 전부 보통 굵기
+    // 피그마: 대사는 굵게(bold), 괄호 지문은 보통 굵기 회색, 지문 줄은 보통 굵기 진한 색
+    static func styled(_ text: String, isDirection: Bool, fontSize: CGFloat = 15) -> AttributedString {
         var result = AttributedString()
         var depth = 0          // 괄호 안에 있는지
         var piece = ""
@@ -143,13 +143,13 @@ struct ScriptLineView: View {
             guard !piece.isEmpty else { return }
             var run = AttributedString(piece)
             if isDirection {
-                run.font = .system(size: fontSize).italic()
-                run.foregroundColor = Color.neutral400
+                run.font = .system(size: fontSize)
+                run.foregroundColor = Color.neutral900
             } else if depth > 0 {
-                run.font = .system(size: fontSize).italic()
-                run.foregroundColor = Color.neutral500
+                run.font = .system(size: fontSize)
+                run.foregroundColor = Color.neutral600
             } else {
-                run.font = .system(size: fontSize, weight: .semibold)
+                run.font = .system(size: fontSize, weight: .bold)
             }
             result += run
             piece = ""
