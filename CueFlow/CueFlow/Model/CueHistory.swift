@@ -31,6 +31,9 @@ final class CueHistory {
 // 지금 수정하는 사람 이름. 이 공연 멤버 중 내 iCloud 계정이면 멤버 이름(공유한 사람들끼리 같은 이름),
 // 멤버가 아니면(공유 전 · 혼자 쓰는 공연) 이 맥의 사용자 이름 (#86)
 enum CurrentEditor {
+    // 공연을 모를 때 (예전 코드 · 셀리나 #96 댓글 등에서 씀) — 이 맥의 사용자 이름
+    static var name: String { NSFullUserName() }
+
     static func name(in production: Production?) -> String {
         let myID = ICloudAccount.currentUserRecordName
         let member = (production?.members ?? []).first { myID != nil && $0.iCloudUserID == myID }
