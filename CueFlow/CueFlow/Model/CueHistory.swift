@@ -28,12 +28,24 @@ final class CueHistory {
     }
 }
 
-// 지금 수정하는 사람 이름. 아직 팀원 연결(#68)이 없어서 이 맥의 사용자 이름을 쓴다
+// 지금 수정하는 사람 이름. 이 공연 멤버 중 내 iCloud 계정이면 멤버 이름(공유한 사람들끼리 같은 이름),
+// 멤버가 아니면(공유 전 · 혼자 쓰는 공연) 이 맥의 사용자 이름 (#86)
 enum CurrentEditor {
+    // 공연을 모를 때 (예전 코드 · 셀리나 #96 댓글 등에서 씀) — 이 맥의 사용자 이름
     static var name: String { NSFullUserName() }
+
+    static func name(in production: Production?) -> String {
+        let myID = ICloudAccount.currentUserRecordName
+        let member = (production?.members ?? []).first { myID != nil && $0.iCloudUserID == myID }
+        if let name = member?.name, !name.isEmpty { return name }
+        return NSFullUserName()
+    }
 }
 
 extension Cue {
+    // 이 큐를 고치는 사람 이름 (기록 문구에 쓴다)
+    var editorName: String { CurrentEditor.name(in: cloudProduction) }
+
     // 이 큐에 기록 한 줄 남기기
     func addHistory(_ title: String, detail: String, before: String? = nil, after: String? = nil, isChange: Bool = true) {
         let history = CueHistory(title: title, detail: detail, before: before, after: after, isChange: isChange)

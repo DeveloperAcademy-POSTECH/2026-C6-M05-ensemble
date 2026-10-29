@@ -315,7 +315,7 @@ extension CueGrid {
         cue.trigger = trigger
         cue.part = part
         scene.triggers = (scene.triggers ?? []) + [trigger]
-        cue.addHistory("큐 생성", detail: "\(CurrentEditor.name)님이 이 큐를 만들었습니다.", isChange: false)
+        cue.addHistory("큐 생성", detail: "\(cue.editorName)님이 이 큐를 만들었습니다.", isChange: false)
     }
     
     // 이 씬의 수정 팝오버를 열고 닫는 스위치

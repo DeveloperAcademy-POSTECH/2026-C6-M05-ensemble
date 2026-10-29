@@ -6,7 +6,7 @@
 //  공연 하나 = iCloud 폴더(레코드 존) 하나. 공연을 공유하면 그 폴더 통째로 공유된다 (#68).
 //  레코드 이름 = 모델의 id(UUID) → 기기가 달라도 같은 큐는 같은 이름.
 //
-//  1차: 공연 · 씬 · 트리거 · 파트 · 큐 · 멤버. (댓글 · 확인 · 대본 · 무대 배치는 2차)
+//  1차: 공연 · 씬 · 트리거 · 파트 · 큐 · 멤버. #86: 대본 · 무대 배치 · 큐 기록(History). (댓글 · 확인은 2차)
 //  관계(어느 씬의 트리거인지 등)는 부모의 id를 적어 두고, 받을 때(#67 ③단계) id로 찾아서 다시 잇는다.
 //
 
@@ -83,12 +83,22 @@ enum CloudKey {
     static let role = "role"
     static let iCloudUserID = "iCloudUserID"
     static let lastSeenAt = "lastSeenAt"
+    static let speaker = "speaker"
+    static let area = "area"
+    static let x = "x"
+    static let y = "y"
+    static let detail = "detail"
+    static let before = "before"
+    static let after = "after"
+    static let isChange = "isChange"
+    static let date = "date"
 
     // 부모 id (관계)
     static let productionID = "productionID"
     static let sceneID = "sceneID"
     static let triggerID = "triggerID"
     static let partID = "partID"
+    static let cueID = "cueID"
     static let partIDs = "partIDs"     // 멤버가 맡은 파트들 (여러 개)
 }
 
@@ -248,5 +258,74 @@ extension Member: CloudRecordConvertible {
         role = record[CloudKey.role] as? String ?? ""
         iCloudUserID = record[CloudKey.iCloudUserID] as? String
         lastSeenAt = record[CloudKey.lastSeenAt] as? Date
+    }
+}
+
+extension ScriptLine: CloudRecordConvertible {
+    static let recordType = "ScriptLine"
+
+    var cloudProduction: Production? { scene?.production }
+
+    func fill(_ record: CKRecord) {
+        record[CloudKey.order] = order
+        record[CloudKey.speaker] = speaker
+        record[CloudKey.text] = text
+        record[CloudKey.sceneID] = scene?.id.uuidString
+    }
+
+    func applyFields(from record: CKRecord) {
+        order = record[CloudKey.order] as? Int ?? 0
+        speaker = record[CloudKey.speaker] as? String
+        text = record[CloudKey.text] as? String ?? ""
+    }
+}
+
+extension StagePlacement: CloudRecordConvertible {
+    static let recordType = "StagePlacement"
+
+    // 최초 상태 배치는 공연에, 장면 배치는 장면에 붙는다
+    var cloudProduction: Production? { production ?? scene?.production }
+
+    func fill(_ record: CKRecord) {
+        record[CloudKey.name] = name
+        record[CloudKey.kind] = kind.rawValue
+        record[CloudKey.area] = area.rawValue
+        record[CloudKey.x] = x
+        record[CloudKey.y] = y
+        record[CloudKey.productionID] = production?.id.uuidString
+        record[CloudKey.sceneID] = scene?.id.uuidString
+    }
+
+    func applyFields(from record: CKRecord) {
+        name = record[CloudKey.name] as? String ?? ""
+        kind = (record[CloudKey.kind] as? String).flatMap(StageItemKind.init(rawValue:)) ?? .cast
+        area = (record[CloudKey.area] as? String).flatMap(StageArea.init(rawValue:)) ?? .stage
+        x = record[CloudKey.x] as? Double ?? 0.5
+        y = record[CloudKey.y] as? Double ?? 0.5
+    }
+}
+
+extension CueHistory: CloudRecordConvertible {
+    static let recordType = "CueHistory"
+
+    var cloudProduction: Production? { cue?.cloudProduction }
+
+    func fill(_ record: CKRecord) {
+        record[CloudKey.title] = title
+        record[CloudKey.detail] = detail
+        record[CloudKey.before] = before
+        record[CloudKey.after] = after
+        record[CloudKey.isChange] = isChange
+        record[CloudKey.date] = date
+        record[CloudKey.cueID] = cue?.id.uuidString
+    }
+
+    func applyFields(from record: CKRecord) {
+        title = record[CloudKey.title] as? String ?? ""
+        detail = record[CloudKey.detail] as? String ?? ""
+        before = record[CloudKey.before] as? String
+        after = record[CloudKey.after] as? String
+        isChange = record[CloudKey.isChange] as? Bool ?? true
+        date = record[CloudKey.date] as? Date ?? Date()
     }
 }
