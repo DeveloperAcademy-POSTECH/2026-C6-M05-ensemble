@@ -3,12 +3,14 @@
 //  CueFlow
 //
 //  붙여넣은 대본 글을 장면 / 배역 / 대사 / 지문으로 나누는 규칙.
+//  팀 대본 규칙(#87): S#1 공장 / N#1 하루의 끝에서 / 암전 / 판틴: 대사 / (지문)
 //  - 줄 맨 앞 장면 표시 → 새 장면 시작 (씬 · 넘버 · 전환)
 //      씬: S15 · S#15 · 씬 15 · Scene 15 · #15 · 15장 · 제15장
 //      넘버: N10 · M10 · 넘버 10 · Number 10
-//      전환: D3 · 전환 3
+//      전환: 암전 · 전환 (번호 없이 한 단어 → 앞 전환 번호 + 1) · D3 · 전환 3
 //  - 미리보기에서 사용자가 고친 것(SceneOverrides)이 위 규칙보다 먼저
-//  - 줄 맨 앞 단어가 배역 목록에 있으면 → 배역 + 대사 ("우현 (팔뚝을 만지며) 에구구," / "우현: 에구구,")
+//  - 콜론 앞이 배역 목록에 있으면 → 배역 + 대사 ("노동자 1: 에구구,"). 콜론 앞 이름은 한 번만 나와도 배역 후보
+//  - 줄 맨 앞 단어가 배역 목록에 있으면 → 배역 + 대사 ("우현 (팔뚝을 만지며) 에구구,") — 콜론 없는 예전 대본
 //  - 그 외 줄 → 지문
 //  - 괄호가 다음 줄까지 이어지면 한 줄로 합친다
 //
@@ -72,13 +74,15 @@ enum ScriptParser {
         (/(?:제\s?)?(\d+)\s?장[.:]?(\s+.*)?/, SceneKind.scene),
         (/(?:N|M|넘버|number)\s?#?\s?(\d+)[.:]?(\s+.*)?/.ignoresCase(), SceneKind.number),
         (/(?:D|전환)\s?#?\s?(\d+)[.:]?(\s+.*)?/.ignoresCase(), SceneKind.transition),
+        // 번호 없는 "암전" (캡처 1은 늘 비어 있음). 뒤에는 괄호 지문만 — "암전 속에서 ~" 같은 지문 줄을 장면으로 잘못 나누지 않게
+        (/(?:암전|전환)()[.:]?(\s*\(.*)?/, SceneKind.transition),
     ]
 
-    // "S15 장면 설명" → (씬, 15, "장면 설명"). 장면 표시가 아니면 nil
-    static func heading(_ paragraph: String) -> (kind: SceneKind, number: Int, rest: String)? {
+    // "S15 장면 설명" → (씬, 15, "장면 설명"). 장면 표시가 아니면 nil. 번호 없이 쓴 "암전"은 number가 nil
+    static func heading(_ paragraph: String) -> (kind: SceneKind, number: Int?, rest: String)? {
         for (pattern, kind) in headingPatterns {
-            guard let match = paragraph.wholeMatch(of: pattern),
-                  let number = Int(match.1) else { continue }
+            guard let match = paragraph.wholeMatch(of: pattern) else { continue }
+            let number = Int(match.1)
             let rest = (match.2.map(String.init) ?? "").trimmingCharacters(in: CharacterSet(charactersIn: " -–—:"))   // "Scene 2 - 거리" → "거리"
             return (kind, number, rest)
         }
@@ -93,17 +97,34 @@ enum ScriptParser {
         return name.isEmpty ? nil : name
     }
 
-    // 배역 후보: 줄 맨 앞에 2번 이상 나온 짧은 단어 (많이 나온 순)
+    // "판틴: 대사" → ("판틴", "대사"). 띄어쓰기 있는 이름도 된다 ("노동자 1: …")
+    // 괄호로 시작하는 줄 · 콜론 앞이 길거나 괄호가 있는 줄 · "10:30"처럼 숫자뿐인 줄은 nil
+    static func colonSpeaker(_ paragraph: String) -> (name: String, text: String)? {
+        guard !paragraph.hasPrefix("("),
+              let colon = paragraph.firstIndex(where: { $0 == ":" || $0 == "：" }) else { return nil }
+        let name = paragraph[..<colon].trimmingCharacters(in: .whitespaces)
+        guard (1...10).contains(name.count), !name.contains("("), !name.allSatisfy(\.isNumber) else { return nil }
+        let text = paragraph[paragraph.index(after: colon)...].trimmingCharacters(in: .whitespaces)
+        return (name, text)
+    }
+
+    // 배역 후보: 콜론 앞 이름(한 번만 나와도) + 줄 맨 앞에 2번 이상 나온 짧은 단어 (많이 나온 순)
     static func castCandidates(in text: String) -> [String] {
+        var named: [String] = []
         var counts: [String: Int] = [:]
         for paragraph in paragraphs(text) where heading(paragraph) == nil {
+            if let speaker = colonSpeaker(paragraph) {
+                if !named.contains(speaker.name) { named.append(speaker.name) }
+                continue
+            }
             guard let word = firstWord(paragraph), word.count <= 6 else { continue }
             counts[word, default: 0] += 1
         }
-        return counts
-            .filter { $0.value >= 2 }
+        let counted = counts
+            .filter { $0.value >= 2 && !named.contains($0.key) }
             .sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }
             .map(\.key)
+        return named + counted
     }
 
     // 소품 후보에서 아예 뺄 말 (대신 가리키는 말)
@@ -125,7 +146,8 @@ enum ScriptParser {
     static func propCandidates(in text: String, cast: Set<String>) -> [String] {
         var counts: [String: Int] = [:]
         for paragraph in paragraphs(text) where heading(paragraph) == nil {
-            let isDialogue = firstWord(paragraph).map(cast.contains) ?? false
+            let isDialogue = colonSpeaker(paragraph).map { cast.contains($0.name) }
+                ?? firstWord(paragraph).map(cast.contains) ?? false
             for piece in directions(in: paragraph, isDialogue: isDialogue) {
                 for word in piece.split(whereSeparator: { $0.isWhitespace || ",.!?…()".contains($0) }) {
                     guard let last = word.last, last == "을" || last == "를" else { continue }
@@ -163,7 +185,8 @@ enum ScriptParser {
                 // 직접 나눈 곳: 이 줄은 새 장면의 첫 줄로 남는다
                 startScene(ParsedScene(kind: kind, number: (lastNumber[kind] ?? 0) + 1, splitIndex: index))
             } else if !overrides.merged.contains(index), let heading = heading(paragraph) {
-                startScene(ParsedScene(kind: heading.kind, number: heading.number, headingIndex: index))
+                let number = heading.number ?? (lastNumber[heading.kind] ?? 0) + 1   // 번호 없는 "암전" = 앞 전환 + 1
+                startScene(ParsedScene(kind: heading.kind, number: number, headingIndex: index))
                 // "S15 (장면 설명)"처럼 괄호뿐이면 제목 대신 첫 지문으로
                 if heading.rest.hasPrefix("(") {
                     current.lines.append(ParsedLine(index: index, speaker: nil, text: heading.rest))
@@ -173,7 +196,9 @@ enum ScriptParser {
                 continue
             }
 
-            if let name = firstWord(paragraph), cast.contains(name) {
+            if let speaker = colonSpeaker(paragraph), cast.contains(speaker.name) {
+                current.lines.append(ParsedLine(index: index, speaker: speaker.name, text: speaker.text))
+            } else if let name = firstWord(paragraph), cast.contains(name) {
                 let parts = paragraph.split(separator: " ", maxSplits: 1)
                 let line = parts.count > 1 ? String(parts[1]) : ""
                 current.lines.append(ParsedLine(index: index, speaker: name, text: line))

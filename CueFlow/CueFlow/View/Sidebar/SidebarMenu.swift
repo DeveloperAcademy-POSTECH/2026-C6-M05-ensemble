@@ -12,14 +12,12 @@ enum SidebarMenu: CaseIterable {
     case notice
     case help
 
-    // 사이드바에 보여줄 메뉴 (유저테스트 때는 프로젝트만)
-    static var visibleCases: [SidebarMenu] {
-        UserTest.hidesUnfinished ? [.project] : allCases
-    }
+    // 사이드바에 보여줄 메뉴
+    static var visibleCases: [SidebarMenu] { allCases }
 
     var title: String {
         switch self {
-        case .project: "프로젝트"
+        case .project: "홈"
         case .notice: "공지사항"
         case .help: "도움말"
         }
@@ -28,7 +26,7 @@ enum SidebarMenu: CaseIterable {
     // SF Symbol 이름
     var icon: String {
         switch self {
-        case .project: "folder"
+        case .project: "house"
         case .notice: "envelope"
         case .help: "info.circle"
         }

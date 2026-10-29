@@ -23,7 +23,6 @@ struct DateCard: View {
             monthView(month)
             monthView(calendar.date(byAdding: .month, value: 1, to: month)!)
         }
-        .padding(16)
         .overlay(alignment: .top) { arrows }
         .onAppear { month = startDate }
     }
@@ -92,7 +91,6 @@ struct DateCard: View {
             Spacer()
             arrowButton("chevron.right", by: 1)
         }
-        .padding(16)
     }
     
     private func arrowButton(_ icon: String, by value: Int) -> some View {
@@ -135,5 +133,6 @@ struct DateCard: View {
     @Previewable @State var start = Date()
     @Previewable @State var end: Date? = nil
     DateCard(startDate: $start, endDate: $end)
-        .background(.white)
+        .popoverStyle(width: nil)
+        .padding(60)
 }

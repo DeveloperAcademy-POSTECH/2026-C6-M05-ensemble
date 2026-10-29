@@ -28,6 +28,7 @@ struct PerformPart: View {
             partGrid
                 .padding(.top, 13)
         }
+        .appPopoverHost()   // 추가하기 팝오버가 그려지는 곳
     }
 }
 
@@ -66,7 +67,7 @@ extension PerformPart {
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .popover(isPresented: $isAddingPart, arrowEdge: .bottom) {
+        .appPopover(isPresented: $isAddingPart) {
             AddPart(onSave: addCustomPart)
         }
     }
