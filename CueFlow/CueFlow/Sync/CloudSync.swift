@@ -22,6 +22,9 @@ final class CloudSync {
     //  다른 일로 다시 그릴 때까지(참여자 기록 1분 등) 안 보였다)
     static let didApplyRemoteNotification = Notification.Name("CloudSync.didApplyRemote")
 
+    // 이 맥에 처음 들어온 공지가 있으면 보낸다 (object = 공지 id들) → 알림 카드 (#82)
+    static let didReceiveNoticesNotification = Notification.Name("CloudSync.didReceiveNotices")
+
     private let logger = Logger(subsystem: "Happymondayy.CueFlow", category: "CloudSync")
     private let store = CloudSyncStore()
 
@@ -556,11 +559,16 @@ final class CloudSync {
     private func applyFetched(records: [CKRecord], deletedIDs: [CKRecord.ID]) {
         // 1) 글자 · 숫자 먼저 넣고 (없으면 새로 만들고)
         var received: [(any CloudRecordConvertible, CKRecord)] = []
+        var newNoticeIDs: [UUID] = []
         for record in records {
             store.cache(record)
             if record.recordType == RehearsalSync.recordType {
                 RehearsalSync.shared.receive(record)
                 continue
+            }
+            if record.recordType == Notice.recordType,
+               let id = UUID(uuidString: record.recordID.recordName), findModel(id) == nil {
+                newNoticeIDs.append(id)
             }
             if let item = upsert(record) {
                 received.append((item, record))
@@ -593,6 +601,13 @@ final class CloudSync {
             unlinkedRecords[recordID.recordName] = nil
             if let id = UUID(uuidString: recordID.recordName), let item = findModel(id) {
                 context?.delete(item)
+            }
+        }
+
+        // 저장이 끝난 다음에 알린다 (받는 쪽이 공지 · 보낸 사람 · 읽음을 다 이은 상태로 보게)
+        if !newNoticeIDs.isEmpty {
+            Task { @MainActor in
+                NotificationCenter.default.post(name: CloudSync.didReceiveNoticesNotification, object: newNoticeIDs)
             }
         }
 

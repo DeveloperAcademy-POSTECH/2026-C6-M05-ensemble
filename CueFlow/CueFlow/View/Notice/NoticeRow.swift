@@ -81,6 +81,10 @@ struct NoticeRow: View {
                 }
             }
             .frame(width: 20, height: 20)
+            // 안쪽이 투명하면 테두리 선에만 클릭이 잡혀서 줄(상세 열기)이 눌렸다 → 네모 전체 + 둘레 조금 더
+            .padding(6)
+            .contentShape(Rectangle())
+            .padding(-6)
     }
 }
 

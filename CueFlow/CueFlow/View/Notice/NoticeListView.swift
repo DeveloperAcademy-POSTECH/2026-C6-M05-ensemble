@@ -17,6 +17,7 @@ enum NoticeFilter: String, CaseIterable {
 
 struct NoticeListView: View {
     let notices: [Notice]   // 최근에 보낸 순서로 들어온다
+    var openRequest: Binding<Notice?> = .constant(nil)   // 알림 카드 [공지 자세히 보기] → 이 공지 상세로 (#82)
 
     @Environment(\.modelContext) private var modelContext
     @State private var filter: NoticeFilter = .all
@@ -30,7 +31,7 @@ struct NoticeListView: View {
         case .all:
             notices
         case .unread:
-            notices   // TODO: "나"를 알게 되면 내 읽음 기록이 없는 공지만
+            notices.filter { $0.isUnread(byUserID: ICloudAccount.currentUserRecordName) }
         case .important:
             notices.filter { $0.isImportant }
         }
@@ -40,7 +41,7 @@ struct NoticeListView: View {
     private func count(of item: NoticeFilter) -> Int {
         switch item {
         case .all: notices.count
-        case .unread: 0   // TODO: 위와 같이
+        case .unread: notices.filter { $0.isUnread(byUserID: ICloudAccount.currentUserRecordName) }.count
         case .important: notices.filter { $0.isImportant }.count
         }
     }
@@ -83,6 +84,11 @@ struct NoticeListView: View {
         }
         .navigationDestination(isPresented: $isComposing) {
             NoticeComposeView()
+        }
+        .onChange(of: openRequest.wrappedValue, initial: true) { _, notice in
+            guard let notice else { return }
+            openedNotice = notice
+            openRequest.wrappedValue = nil
         }
     }
 

@@ -62,17 +62,17 @@ struct NoticeRecipientField: View {
     // 칸: 고른 대상 칩 또는 검색 입력
     private var inputBox: some View {
         HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.tertiary)
-
             switch recipient {
             case .all:
+                // 피그마 951:7467: 비워 두면 전체. 글자를 치면 이름 · 파트를 찾아서 그중에서 고를 수 있다
                 TextField(
-                    production == nil
-                        ? "프로젝트를 먼저 선택하세요."
-                        : "이름이나 파트로 검색 (비워 두면 프로젝트 전체 멤버 \(allMemberCount)명)",
-                    text: $query
+                    "",
+                    text: $query,
+                    prompt: Text(production == nil ? "프로젝트를 먼저 선택하세요." : "프로젝트 전체 멤버 (\(allMemberCount)명)")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Color.neutral400)
                 )
+                .help("이름이나 파트를 입력하면 그 사람 · 파트에게만 보낼 수 있어요")
                 .textFieldStyle(.plain)
                 .focused($isFocused)
                 .disabled(production == nil)
@@ -85,11 +85,13 @@ struct NoticeRecipientField: View {
                 Spacer()
             }
         }
-        .padding(.horizontal, 16)
-        .frame(height: 49)
+        .font(.body)
+        .padding(.horizontal, 25)   // 피그마 951:7466
+        .frame(height: 50)
+        .background(.white, in: RoundedRectangle(cornerRadius: 6))
         .overlay {
             RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
+                .strokeBorder(Color.neutral300, lineWidth: 1)
         }
     }
 
