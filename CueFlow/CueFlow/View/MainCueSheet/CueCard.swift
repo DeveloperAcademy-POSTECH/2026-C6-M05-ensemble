@@ -53,9 +53,6 @@ extension CueCard {
             PopoverMenuItem("History", action: onShowHistory)       // 오른쪽 History 사이드바 열기
             PopoverMenuItem("미확인 수정사항", action: onShowUnread)
             PopoverMenuDivider()
-            PopoverMenuItem("복사하기") { }
-            PopoverMenuItem("붙여넣기") { }
-            PopoverMenuDivider()
             PopoverMenuItem("삭제하기") { modelContext.deleteCue(cue) }
         }
     }
