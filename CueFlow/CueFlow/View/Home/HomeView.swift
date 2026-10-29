@@ -109,8 +109,8 @@ struct HomeView: View {
                 ForEach(recentlyOpened) { production in
                     RecentProjectCard(
                         lastWorked: production.lastWorkedText,
-                        title: production.cardTitle,
-                        summary: production.summaryText,
+                        title: production.title,
+                        tags: [production.genre, production.summaryText],
                         members: production.memberCountText,
                         runningTime: production.runningTimeText,
                         schedule: production.scheduleText,

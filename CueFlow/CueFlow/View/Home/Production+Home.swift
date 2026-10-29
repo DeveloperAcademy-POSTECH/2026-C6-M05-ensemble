@@ -9,22 +9,17 @@
 import Foundation
 
 extension Production {
-    // "뮤지컬 | 레미제라블"
-    var cardTitle: String {
-        genre.isEmpty ? title : "\(genre) | \(title)"
-    }
-
     // "뮤지컬_레미제라블"
     var listName: String {
         genre.isEmpty ? title : "\(genre)_\(title)"
     }
 
-    // "최근 작업 오늘 16:32" / "최근 작업 9월 28일"
+    // "오늘 16:32 수정" / "9월 28일 수정" (피그마 951:11299)
     var lastWorkedText: String {
-        if Calendar.current.isDateInToday(lastOpenedAt) {
-            return "최근 작업 오늘 " + Self.format(lastOpenedAt, "HH:mm")
+        if Calendar.current.isDateInToday(updatedAt) {
+            return "오늘 " + Self.format(updatedAt, "HH:mm") + " 수정"
         }
-        return "최근 작업 " + Self.format(lastOpenedAt, "M월 d일")
+        return Self.format(updatedAt, "M월 d일") + " 수정"
     }
 
     // "총 38명"
