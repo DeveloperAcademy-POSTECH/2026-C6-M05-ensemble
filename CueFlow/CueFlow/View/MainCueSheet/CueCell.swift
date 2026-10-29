@@ -14,7 +14,9 @@ struct CueCell: View {
     let cues: [Cue]                     // 이 칸에 들어갈 큐들
     var isHovering = false              // 마우스가 이 칸 위에 있는지 (CueGrid가 알려줌)
     var onAddCue: (String, String, CuePosition) -> Void = { _, _, _ in }   // 팝오버에서 입력을 마치면 할 일
-    
+    var onShowHistory: (Cue) -> Void = { _ in }   // 카드 우클릭 → History
+    var selectedCueIDs: Set<UUID> = []                   // 선택된 큐 카드들 (CueGrid가 알려줌)
+    var onSelectCue: (Cue, Bool) -> Void = { _, _ in }   // 카드를 눌렀을 때 (true = shift)
     @State private var isAddingCue = false          // Add new 팝오버가 열려 있는지
     
     var body: some View {
@@ -34,7 +36,16 @@ struct CueCell: View {
 extension CueCell {
     // 큐 카드들을 번호 순서대로 세로로
     private var cueCards: some View {
-        ForEach(sortedCues) { CueCard(cue: $0) }
+        ForEach(sortedCues) { cueCard($0) }
+    }
+    
+    private func cueCard(_ cue: Cue) -> some View {
+        CueCard(
+            cue: cue,
+            onShowHistory: { onShowHistory(cue) },
+            isSelected: selectedCueIDs.contains(cue.id),
+            onSelect: { onSelectCue(cue, $0) }
+        )
     }
     
     // + Add new
@@ -43,10 +54,10 @@ extension CueCell {
             Label("Add new", systemImage: "plus")
         }
         .buttonStyle(.plain)
-        .font(.callout)
-        .foregroundStyle(.black)
+        .font(.body.weight(.medium))
+        .foregroundStyle(Color.neutral900)
         .popover(isPresented: $isAddingCue, arrowEdge: .bottom) {
-            AddCueCardInfo(onSave: onAddCue)
+            AddCueCardInfo(production: part.production, onSave: onAddCue)
         }
     }
     

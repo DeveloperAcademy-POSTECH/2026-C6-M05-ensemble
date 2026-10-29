@@ -12,25 +12,44 @@ import SwiftData
 
 struct CueCard: View {
     @Bindable var cue: Cue   // 카드 안에서 cue의 값을 바꿀 수 있게 (위치 선택용)
+    var onShowHistory: () -> Void = {}   // 우클릭 → History
+    var isSelected = false                       // 선택된 카드인지 (테두리가 파트 accent 색)
+    var onSelect: (Bool) -> Void = { _ in }      // 카드를 눌렀을 때 (true = shift 누른 채)
     @State private var isEditingNumber = false   // 번호 수정 창이 열려 있는지
     @State private var isEditingCue = false      // 큐 수정 팝오버가 열려 있는지
     @Environment(\.modelContext) private var modelContext   // 큐를 지울 곳
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 13) {
+        VStack(alignment: .leading, spacing: 17) {
             cueHeader
             buttonSpace
         }
-        .padding(8)
+        .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.white, in: .rect(cornerRadius: 6))
-        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(partColor.background, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(isSelected ? partColor.accent : partColor.background, lineWidth: isSelected ? 1.5 : 1))
         .contentShape(.rect)
         .onTapGesture(count: 2) { isEditingCue = true }   // 더블클릭하면 수정 팝오버
+        .highPriorityGesture(TapGesture().modifiers(.shift).onEnded { onSelect(true) })   // Shift+클릭 = 선택에 추가
+        .onTapGesture { onSelect(false) }                                                // 그냥 클릭 = 이 카드만 선택
         .popover(isPresented: $isEditingCue, arrowEdge: .trailing) { cueEditor }
-        .contextMenu {   // 우클릭 메뉴
-            Button("삭제", role: .destructive) { modelContext.deleteCue(cue) }
-        }
+        .contextMenu { cueMenu }   // 우클릭 메뉴
+        .onChange(of: cue.position) { recordPositionChange(from: $0, to: $1) }
+    }
+}
+
+// 우클릭 메뉴: 큐 수정하기 · History / 복사하기 · 붙여넣기 / 삭제하기
+
+extension CueCard {
+    @ViewBuilder
+    private var cueMenu: some View {
+        Button("큐 수정하기") { isEditingCue = true }   // 더블클릭과 같은 수정 팝오버
+        Button("History", action: onShowHistory)       // 오른쪽 History 사이드바 열기
+        Divider()
+        Button("복사하기") { }
+        Button("붙여넣기") { }
+        Divider()
+        Button("삭제하기") { modelContext.deleteCue(cue) }
     }
 }
 
@@ -55,9 +74,9 @@ extension CueCard {
     // 번호 동그라미 생김새 (01, 02 …)
     private var cueNumberLabel: some View {
         Text(cueNumberText)
-            .font(.system(size: 8, weight: .medium))
+            .font(.callout.weight(.medium))
             .foregroundStyle(partColor.number)
-            .frame(width: 20, height: 20)
+            .frame(width: 23, height: 23)
             .background(partColor.background, in: .circle)
             .contentShape(.circle)
     }
@@ -73,7 +92,7 @@ extension CueCard {
     
     // 트리거(윗줄) + 큐 제목(아랫줄)
     private var cueTexts: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 5) {
             triggerText
             cueTitleText
         }
@@ -82,17 +101,17 @@ extension CueCard {
     // 언제 실행하는지 (예: 코우 - "너 나가!" 대사 종료 후)
     private var triggerText: some View {
         Text(cue.trigger?.text ?? "")
-            .font(.caption)
-            .foregroundStyle(.black.opacity(0.82))
-            .lineLimit(1)
+            .font(.body)
+            .foregroundStyle(Color.neutral700)
+            .fixedSize(horizontal: false, vertical: true)   // 길면 다음 줄로
     }
     
     // 무엇을 하는지 (예: 정원 전화 받으며 퇴장)
     private var cueTitleText: some View {
         Text(cue.title)
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.black.opacity(0.82))
-            .lineLimit(1)
+            .font(.body.weight(.semibold))
+            .foregroundStyle(Color.neutral900)
+            .fixedSize(horizontal: false, vertical: true)   // 길면 다음 줄로
     }
     
     // 위치 태그: 누르면 상수 · 하수 · 무대 · 콘솔 중에서 고르는 메뉴가 뜸
@@ -120,30 +139,56 @@ extension CueCard {
     // 태그 생김새 (원래 positionTag에 있던 모양 그대로)
     private var positionTagLabel: some View {
         Text(cue.position.rawValue)
-            .font(.caption)
+            .font(.callout.weight(.medium))
             .foregroundStyle(partColor.number)
-            .padding(.horizontal, 6)
-            .frame(height: 18)
+            .padding(.horizontal, 5)
+            .frame(height: 23)
             .background(partColor.background, in: .capsule)
     }
     
     private var buttonSpace: some View {
         Color.clear
-            .frame(height: 17)
+            .frame(height: 23)
     }
     
     // 더블클릭했을 때 뜨는 수정 팝오버 (원래 값이 채워진 채로)
     private var cueEditor: some View {
-        AddCueCardInfo(triggerText: cue.trigger?.text ?? "", cueTitle: cue.title, position: cue.position) {
+        AddCueCardInfo(triggerText: cue.trigger?.text ?? "", cueTitle: cue.title, position: cue.position, production: cue.part?.production) {
             updateCue(triggerText: $0, cueTitle: $1, position: $2)
         }
     }
     
     // 팝오버에서 Enter를 누르면 이 카드의 값만 바꿈
     private func updateCue(triggerText: String, cueTitle: String, position: CuePosition) {
+        recordChange("큐 변경", from: cue.title, to: cueTitle)
+        recordChange("트리거 변경", from: cue.trigger?.text ?? "", to: triggerText)
         cue.title = cueTitle
-        cue.position = position
-        cue.trigger?.text = triggerText
+        cue.position = position   // 위치 기록은 onChange에서 남김
+        changeTrigger(to: triggerText)
+    }
+    
+    // 글이 바뀌었으면 "이전 · 변경" 기록 남기기
+    private func recordChange(_ title: String, from before: String, to after: String) {
+        guard before != after else { return }
+        cue.addHistory(title, detail: "\(CurrentEditor.name)님의 수정", before: before, after: after)
+    }
+    
+    // 위치가 바뀌면 (카드 태그 · 수정 팝오버 둘 다) "하수 → 상수로 변경" 기록
+    private func recordPositionChange(from old: CuePosition, to new: CuePosition) {
+        cue.addHistory("위치 변경", detail: "\(CurrentEditor.name)님이 \(old.rawValue) → \(new.rawValue)로 변경")
+    }
+    
+    // 트리거 글이 바뀌었을 때: 다른 큐와 같이 쓰는 트리거면 이 큐만 새 트리거로 떼어냄
+    private func changeTrigger(to text: String) {
+        guard let trigger = cue.trigger, trigger.text != text else { return }
+        guard (trigger.cues?.count ?? 0) > 1 else {
+            trigger.text = text   // 이 큐 혼자 쓰는 트리거면 글만 바꿈
+            return
+        }
+        let newTrigger = Trigger(text: text, order: trigger.order)   // 같은 씬, 같은 순서 자리에
+        modelContext.insert(newTrigger)
+        newTrigger.scene = trigger.scene
+        cue.trigger = newTrigger
     }
 }
 

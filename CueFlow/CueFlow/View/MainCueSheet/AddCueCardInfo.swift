@@ -10,19 +10,23 @@ import SwiftUI
 struct AddCueCardInfo: View {
     // 다 입력하고 Enter를 눌렀을 때 할 일 (트리거 글, 큐 제목, 위치)
     var onSave: (String, String, CuePosition) -> Void
-    
+    var production: Production?   // 이전 트리거를 찾을 공연 (없으면 후보 없음)
     @Environment(\.dismiss) private var dismiss
     @State private var triggerText: String
     @State private var cueTitle: String
-    @State private var position: CuePosition
+    @State private var position: CuePosition?   // nil = 아직 안 고름
     @FocusState private var focusedField: InputField?
+    @State private var showPositionWarning = false   // 위치 안 고르고 저장하려 했는지
+    @State private var highlightedSuggestion: Int?   // 방향키로 고른 후보 번호 (nil = 안 고름)
     
     // 새로 만들 때는 빈 칸으로, 수정할 때는 원래 값을 채워서 연다
-    init(triggerText: String = "", cueTitle: String = "", position: CuePosition = .sangsu,
+    init(triggerText: String = "", cueTitle: String = "", position: CuePosition? = nil,
+         production: Production? = nil,
          onSave: @escaping (String, String, CuePosition) -> Void = { _, _, _ in }) {
         _triggerText = State(initialValue: triggerText)
         _cueTitle = State(initialValue: cueTitle)
         _position = State(initialValue: position)
+        self.production = production
         self.onSave = onSave
     }
     // 지금 글자를 치고 있는 칸
@@ -34,24 +38,29 @@ struct AddCueCardInfo: View {
         VStack(alignment: .leading, spacing: 0) {
             positionMenu
                 .frame(maxWidth: .infinity, alignment: .trailing)
-            inputSection(title: "트리거", text: $triggerText, field: .trigger)
+            triggerSection
                 .padding(.bottom, 16)
             inputSection(title: "큐", text: $cueTitle, field: .cue)
+            if showPositionWarning {
+                positionWarning
+                    .padding(.top, 10)
+            }
         }
         .padding(16)
         .frame(width: 240)
         .onAppear { focusedField = .trigger }
+        .onChange(of: position) { showPositionWarning = false }
     }
 }
 
 // 서브뷰
 
 extension AddCueCardInfo {
-    // 오른쪽 위 "상수 ▾" → 누르면 상수/하수/무대/콘솔 선택
+    // 오른쪽 위 "위치 ▾" → 누르면 상수/하수/무대/콘솔 선택 (꼭 골라야 저장됨)
     private var positionMenu: some View {
         Menu {
             Picker("위치", selection: $position) {
-                ForEach(CuePosition.allCases, id: \.self) { Text($0.rawValue) }
+                ForEach(CuePosition.allCases, id: \.self) { Text($0.rawValue).tag(Optional($0)) }
             }
             .pickerStyle(.inline)
             .labelsHidden()
@@ -64,17 +73,30 @@ extension AddCueCardInfo {
         .fixedSize()
     }
     
+    // 위치 버튼 생김새: 안 골랐으면 "위치", 안 고르고 저장하려 하면 빨갛게
     private var positionMenuLabel: some View {
         HStack(spacing: 4) {
-            Text(position.rawValue)
+            Text(position?.rawValue ?? "위치")
             Image(systemName: "chevron.down")
                 .font(.caption2)
         }
-        .font(.subheadline)
-        .foregroundStyle(Color.neutral700)
-        .padding(.horizontal, 10)
-        .frame(height: 22)
-        .background(Color.neutral200, in: .capsule)
+        .font(.callout)
+        .foregroundStyle(showPositionWarning ? Color.error : Color.neutral700)
+        .padding(.horizontal, 8)
+        .frame(height: 25)
+        .background(showPositionWarning ? Color.errorSubtle : Color.neutral200, in: .capsule)
+        .overlay { Capsule().strokeBorder(showPositionWarning ? Color.error : .clear, lineWidth: 1) }
+    }
+    
+    // 하단 경고: ⓘ 위치를 선택하지 않았습니다.
+    private var positionWarning: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "info.circle")
+                .font(.system(size: 14))
+            Text("위치를 선택하지 않았습니다.")
+                .font(.system(size: 10))
+        }
+        .foregroundStyle(Color.error)
     }
     
     // 제목("트리거" / "큐") + 입력칸
@@ -91,8 +113,49 @@ extension AddCueCardInfo {
     private func inputField(text: Binding<String>, field: InputField) -> some View {
         TextField("", text: text, prompt: .popoverPlaceholder)
             .focused($focusedField, equals: field)
+            .onKeyPress(.downArrow) { moveHighlight(by: 1, in: field) }
+            .onKeyPress(.upArrow) { moveHighlight(by: -1, in: field) }
             .onSubmit { handleReturn(in: field) }
             .popoverInputStyle()
+    }
+    
+    // 트리거 입력칸 + 그 아래 이전 트리거 후보
+    private var triggerSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            inputSection(title: "트리거", text: $triggerText, field: .trigger)
+            if !matchingTriggers.isEmpty { suggestionList }
+        }
+        .onChange(of: triggerText) { highlightedSuggestion = nil }
+    }
+    
+    // 후보 목록 (흰 상자)
+    private var suggestionList: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(matchingTriggers, id: \.self) { suggestionRow($0) }
+        }
+        .background(.white, in: .rect(cornerRadius: 8))
+        .clipShape(.rect(cornerRadius: 8))
+    }
+    
+    // 후보 한 줄
+    private func suggestionRow(_ text: String) -> some View {
+        Button { pickSuggestion(text) } label: {
+            Text(text)
+                .font(.callout)
+                .foregroundStyle(Color.neutral800)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .frame(height: 26)
+                .background(isHighlighted(text) ? Color.brandPrimarySubtle : Color.clear)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+    }
+    
+    // 방향키로 고른 후보인지
+    private func isHighlighted(_ text: String) -> Bool {
+        matchingTriggers.firstIndex(of: text) == highlightedSuggestion
     }
 }
 
@@ -101,6 +164,11 @@ extension AddCueCardInfo {
 extension AddCueCardInfo {
     // 트리거 칸에서 Enter → 큐 칸으로 이동, 큐 칸에서 Enter → 큐 추가
     private func handleReturn(in field: InputField) {
+        // 방향키로 고른 후보가 있으면 Enter = 그 후보로 채우기
+        if field == .trigger, let index = highlightedSuggestion, matchingTriggers.indices.contains(index) {
+            pickSuggestion(matchingTriggers[index])
+            return
+        }
         if field == .trigger {
             moveToCueField()
             return
@@ -108,10 +176,14 @@ extension AddCueCardInfo {
         addCue()
     }
     
-    // 큐 제목이 비어 있으면 아무것도 안 함
+    // 큐 제목이 비어 있으면 아무것도 안 함, 위치를 안 골랐으면 경고
     private func addCue() {
         let title = cueTitle.trimmingCharacters(in: .whitespaces)
         guard !title.isEmpty else { return }
+        guard let position else {
+            showPositionWarning = true   // 위치를 안 골랐으면 저장하지 않고 경고
+            return
+        }
         onSave(triggerText, title, position)
         dismiss()
     }
@@ -121,6 +193,29 @@ extension AddCueCardInfo {
         DispatchQueue.main.async {
             focusedField = .cue
         }
+    }
+    
+    // 이 공연에서 이미 쓴 트리거 중, 지금 친 글자가 들어 있는 것 (최대 3개)
+    private var matchingTriggers: [String] {
+        let typed = triggerText.trimmingCharacters(in: .whitespaces)
+        guard focusedField == .trigger, !typed.isEmpty else { return [] }
+        let usedTexts = (production?.scenes ?? []).flatMap { $0.triggers ?? [] }.map(\.text)
+        let matches = Set(usedTexts).filter { $0.contains(typed) && $0 != typed }
+        return Array(matches.sorted().prefix(3))
+    }
+    
+    // ↑↓: 트리거 칸에 후보가 있을 때만 후보 사이를 오르내림 (맨 위 · 맨 아래에서 멈춤)
+    private func moveHighlight(by step: Int, in field: InputField) -> KeyPress.Result {
+        guard field == .trigger, !matchingTriggers.isEmpty else { return .ignored }
+        let next = (highlightedSuggestion ?? -1) + step
+        highlightedSuggestion = min(max(next, 0), matchingTriggers.count - 1)
+        return .handled
+    }
+    
+    // 후보를 누르면: 트리거 칸에 채우기만 하고 커서는 그대로 → 필요하면 이어서 고친 뒤 Enter
+    private func pickSuggestion(_ text: String) {
+        triggerText = text
+        highlightedSuggestion = nil
     }
 }
 
