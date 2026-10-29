@@ -24,10 +24,13 @@ struct CueGrid: View {
     @State private var selectedCueIDs: Set<UUID> = []   // 선택된 큐 카드들 (shift로 여러 개)
 
     var body: some View {
-        ScrollView([.horizontal, .vertical]) {
-            cueTable
+        ScrollViewReader { proxy in
+            ScrollView([.horizontal, .vertical]) {
+                cueTable
+            }
+            .contentMargins(.vertical, 12, for: .scrollContent)
+            .onChange(of: priorityScene) { moveToColumn($1, proxy: proxy) }
         }
-        .contentMargins(.vertical, 12, for: .scrollContent)
     }
 }
 
@@ -103,6 +106,7 @@ extension CueGrid {
         .background(Color.neutral50)
         .gridCellBorder()
         .contentShape(.rect)
+        .id(scene.id)   // 사이드바에서 고른 씬 열로 스크롤할 때 찾는 이름표
         .onTapGesture(count: 2) { editingScene = scene }   // 더블클릭하면 수정 팝오버
         .onTapGesture { selectColumn(scene) }   // 한 번 누르면 이 씬 열 선택
         .overlay(alignment: .topTrailing) { selectedMark(for: scene) }
@@ -228,6 +232,13 @@ extension CueGrid {
     private func selectColumn(_ scene: ShowScene) {
         selectedScene = scene
         if priorityScene != nil { priorityScene = scene }
+    }
+    
+    // 우선순위 사이드바에서 다른 씬을 고르면: 그 열을 선택하고 화면을 그 열로 옮김
+    private func moveToColumn(_ scene: ShowScene?, proxy: ScrollViewProxy) {
+        guard let scene, scene != selectedScene else { return }   // 오른쪽 상단 버튼으로 연 경우(이미 선택된 열)는 그대로
+        selectedScene = scene
+        withAnimation { proxy.scrollTo(scene.id, anchor: .leading) }
     }
 
     // 고른 씬 머리칸 오른쪽 위 흔들리는 ⓝ 버튼 → 우선순위 사이드바 열기 / 닫기

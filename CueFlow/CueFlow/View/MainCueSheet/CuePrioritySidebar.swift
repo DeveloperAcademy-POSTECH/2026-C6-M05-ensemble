@@ -13,6 +13,7 @@ import SwiftData
 struct CuePrioritySidebar: View {
     let scene: ShowScene
     @State private var slotCount = 5   // 번호 칸 수 (+ 로 늘림)
+    var onSelectScene: (ShowScene) -> Void = { _ in }   // 위 씬 칩 목록에서 다른 씬을 골랐을 때
 
     var body: some View {
         ScrollView {
@@ -26,13 +27,12 @@ struct CuePrioritySidebar: View {
         }
         .frame(width: 329)
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(Color.neutral25, in: .rect(cornerRadius: 10))
+        .background(Color.neutral25.shadow(.drop(color: .black.opacity(0.25), radius: 2, y: 4)), in: .rect(cornerRadius: 10))   // 피그마 바깥쪽 그림자 (Y 4, 흐림 4, 검정 25%)
         .onAppear(perform: numberNewCues)
     }
 }
 
-// 위쪽: S#1 Scene ⌄ / 씬 이름
-
+// 위쪽: S#1 ⌄ / 씬 이름
 extension CuePrioritySidebar {
     private var header: some View {
         VStack(alignment: .leading, spacing: 9) {
@@ -43,9 +43,24 @@ extension CuePrioritySidebar {
         }
     }
 
+    // S#1 ⌄ 누르면 씬 단축어 목록 → 고르면 그 열로 이동
     private var sceneChip: some View {
+        Menu {
+            ForEach(sortedScenes) { option in
+                Button(option.code(in: sortedScenes)) { onSelectScene(option) }
+            }
+        } label: {
+            sceneChipLabel
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+    }
+
+    private var sceneChipLabel: some View {
         HStack(spacing: 4) {
-            Text("\(sceneCode) Scene")
+            Text(scene.code(in: sortedScenes))   // "S#1", "N#1" … 단축어만
                 .font(.body.weight(.semibold))
                 .foregroundStyle(Color.neutral900)
             Image(systemName: "chevron.down")
@@ -57,10 +72,9 @@ extension CuePrioritySidebar {
         .background(Color.neutral200, in: .capsule)
     }
 
-    // "S#1", "N#1" …
-    private var sceneCode: String {
-        let scenes = (scene.production?.scenes ?? []).sorted { $0.order < $1.order }
-        return scene.code(in: scenes)
+    // 공연의 씬들 (왼쪽부터 순서대로)
+    private var sortedScenes: [ShowScene] {
+        (scene.production?.scenes ?? []).sorted { $0.order < $1.order }
     }
 }
 

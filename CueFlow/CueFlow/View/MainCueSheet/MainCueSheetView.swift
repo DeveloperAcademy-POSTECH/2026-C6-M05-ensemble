@@ -21,12 +21,14 @@ struct MainCueSheetView: View {
             filterRow
             CueGrid(production: production, selectedPart: selectedPart, onShowHistory: { historyCue = $0 }, priorityScene: $priorityScene)
             .padding(.top, -12)   // 위 여유(12)만큼 올려서 표 위치는 피그마 그대로
+            .overlay(alignment: .trailing) { sidebar.padding(.trailing, -35) }   // 표 높이만큼만 + 창 오른쪽 끝에 붙임 (바깥 여백 35만큼)
         }
         .padding(.horizontal, 35)
         .padding(.top, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(.white)
-        .overlay(alignment: .trailing) { historySidebar }
+        .onChange(of: historyCue) { if $1 != nil { priorityScene = nil } }     // History 열면 우선순위 닫힘
+        .onChange(of: priorityScene) { if $1 != nil { historyCue = nil } }     // 우선순위 열면 History 닫힘
     }
 }
 
@@ -34,13 +36,33 @@ struct MainCueSheetView: View {
 
 extension MainCueSheetView {
     @ViewBuilder
-    private var historySidebar: some View {
+    private var sidebarContent: some View {
         if let historyCue {
-            CueHistorySidebar(cue: historyCue, onClose: { self.historyCue = nil })
+            CueHistorySidebar(cue: historyCue, onClose: closeSidebar)
         } else if let priorityScene {
-            CuePrioritySidebar(scene: priorityScene)
+            CuePrioritySidebar(scene: priorityScene, onSelectScene: { self.priorityScene = $0 })
                 .id(priorityScene)   // 다른 열로 바뀌면 새로 그림 (00 카드 번호 다시 매기기)
         }
+    }
+
+    // 오른쪽 사이드바 + 왼쪽 구분선 손잡이
+    private var sidebar: some View {
+        sidebarContent
+            .overlay(alignment: .leading) { sidebarEdge }
+    }
+
+    // 왼쪽 구분선 손잡이 (마우스를 올리면 ↔ 커서)
+    private var sidebarEdge: some View {
+        Color.clear
+            .frame(width: 8)
+            .contentShape(.rect)
+            .pointerStyle(.columnResize)
+            .gesture(DragGesture().onEnded { if $0.translation.width > 100 { closeSidebar() } })   // 오른쪽으로 100 넘게 밀면 닫힘
+    }
+
+    private func closeSidebar() {
+        historyCue = nil
+        priorityScene = nil
     }
 }
 

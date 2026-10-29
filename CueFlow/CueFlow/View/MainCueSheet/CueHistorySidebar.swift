@@ -8,7 +8,7 @@
 import SwiftUI
 import SwiftData
 
-// 큐 카드 우클릭 → History: 통합 큐시트 오른쪽에 뜨는 사이드바 (피그마 Sidebar · History, 폭 313)
+// 큐 카드 우클릭 → History: 통합 큐시트 오른쪽에 뜨는 사이드바 (피그마 Sidebar · History, 폭 329)
 struct CueHistorySidebar: View {
     let cue: Cue
     var onClose: () -> Void = {}     // ← 버튼
@@ -26,9 +26,9 @@ struct CueHistorySidebar: View {
                     .padding(.top, 21)
             }
         }
-        .frame(width: 313)
+        .frame(width: 329)   // 오른쪽 사이드바 공통 폭 (우선순위 사이드바와 같게)
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(Color.neutral25, in: .rect(cornerRadius: 10))
+        .background(Color.neutral25.shadow(.drop(color: .black.opacity(0.25), radius: 2, y: 4)), in: .rect(cornerRadius: 10))   // 사이드바 구분선 그림자 (피그마 Y 4, 흐림 4, 검정 25%)
     }
 }
 
