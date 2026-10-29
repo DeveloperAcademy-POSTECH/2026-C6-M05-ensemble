@@ -79,6 +79,7 @@ final class CloudSync {
         }
         enqueueScriptsAndPlacementsOnce()
         enqueueHistoriesOnce()
+        enqueueCommentsAndChecksOnce()
         logger.info("동기화 시작 (처음: \(savedState == nil))")
     }
 
@@ -363,23 +364,38 @@ final class CloudSync {
     private func cascadedIDs(of model: any PersistentModel) -> [UUID] {
         switch model {
         case let scene as ShowScene:
-            (scene.triggers ?? []).flatMap { [$0.id] + Self.cueAndHistoryIDs($0.cues) }
+            (scene.triggers ?? []).flatMap { [$0.id] + Self.cueTreeIDs($0.cues) }
                 + (scene.scriptLines ?? []).map(\.id)
                 + (scene.placements ?? []).map(\.id)
         case let trigger as Trigger:
-            Self.cueAndHistoryIDs(trigger.cues)
+            Self.cueTreeIDs(trigger.cues)
         case let part as Part:
-            Self.cueAndHistoryIDs(part.cues)
+            Self.cueTreeIDs(part.cues)
         case let cue as Cue:
-            (cue.histories ?? []).map(\.id)
+            Self.cueChildIDs(cue)
+        case let comment as Comment:
+            Self.replyIDs(comment)
+        case let member as Member:
+            (member.checks ?? []).map(\.id)   // 멤버가 나가면 확인은 지운다 (댓글은 남김)
         default:
             []
         }
     }
 
-    // 큐들 + 그 큐들의 기록(History) id — 큐를 지우면 기록도 같이 지워진다 (Cue.histories cascade)
-    private static func cueAndHistoryIDs(_ cues: [Cue]?) -> [UUID] {
-        (cues ?? []).flatMap { [$0.id] + ($0.histories ?? []).map(\.id) }
+    // 큐들 + 그 큐들에 딸린 것 id — 큐를 지우면 기록 · 댓글 · 확인도 같이 지워진다 (Cue cascade)
+    private static func cueTreeIDs(_ cues: [Cue]?) -> [UUID] {
+        (cues ?? []).flatMap { [$0.id] + cueChildIDs($0) }
+    }
+
+    private static func cueChildIDs(_ cue: Cue) -> [UUID] {
+        (cue.histories ?? []).map(\.id)
+            + (cue.comments ?? []).flatMap { [$0.id] + replyIDs($0) }
+            + (cue.checks ?? []).map(\.id)
+    }
+
+    // 댓글을 지우면 답글도 같이 지워진다 (답글의 답글까지)
+    private static func replyIDs(_ comment: Comment) -> [UUID] {
+        (comment.replies ?? []).flatMap { [$0.id] + replyIDs($0) }
     }
 
     // #86 전에는 대본 · 무대 배치를 안 올렸다 → 이 맥에 이미 있던 것을 한 번만 올린다
@@ -399,6 +415,19 @@ final class CloudSync {
         let recordIDs = items.compactMap(\.cloudRecordID)
         enqueue([], recordIDs.map { .saveRecord($0) })
         logger.info("대본 · 무대 배치 처음 올리기: \(recordIDs.count)개")
+    }
+
+    // 댓글 · 확인(#96)도 #98 전에는 안 올렸다 → 이 맥에 이미 있던 것을 한 번만 올린다
+    private func enqueueCommentsAndChecksOnce() {
+        let key = "didUploadCommentsAndChecks"
+        guard let context, !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
+
+        var items: [any CloudRecordConvertible] = (try? context.fetch(FetchDescriptor<Comment>())) ?? []
+        items += (try? context.fetch(FetchDescriptor<CueCheck>())) ?? []
+        let recordIDs = items.compactMap(\.cloudRecordID)
+        enqueue([], recordIDs.map { .saveRecord($0) })
+        logger.info("댓글 · 확인 처음 올리기: \(recordIDs.count)개")
     }
 
     // 큐 기록(History, #83)도 #86 전에는 안 올렸다 → 이 맥에 이미 있던 기록을 한 번만 올린다
@@ -436,6 +465,8 @@ final class CloudSync {
             items += scenes.flatMap { $0.placements ?? [] }
             items += production.initialPlacements ?? []
             items += cues.flatMap { $0.histories ?? [] }
+            items += cues.flatMap { $0.comments ?? [] }   // 답글도 큐에 붙어 있어서 여기 같이 들어온다
+            items += cues.flatMap { $0.checks ?? [] }
             recordIDs.formUnion(items.compactMap(\.cloudRecordID))
         }
 
@@ -477,6 +508,8 @@ final class CloudSync {
         if let found = try? context.fetch(FetchDescriptor<ScriptLine>(predicate: #Predicate { $0.id == id })).first { return found }
         if let found = try? context.fetch(FetchDescriptor<StagePlacement>(predicate: #Predicate { $0.id == id })).first { return found }
         if let found = try? context.fetch(FetchDescriptor<CueHistory>(predicate: #Predicate { $0.id == id })).first { return found }
+        if let found = try? context.fetch(FetchDescriptor<Comment>(predicate: #Predicate { $0.id == id })).first { return found }
+        if let found = try? context.fetch(FetchDescriptor<CueCheck>(predicate: #Predicate { $0.id == id })).first { return found }
         return nil
     }
 
@@ -604,6 +637,8 @@ final class CloudSync {
             case ScriptLine.recordType: item = ScriptLine(order: 0, speaker: nil, text: "")
             case StagePlacement.recordType: item = StagePlacement(name: "", kind: .cast, area: .stage, x: 0.5, y: 0.5)
             case CueHistory.recordType: item = CueHistory(title: "", detail: "")
+            case Comment.recordType: item = Comment(text: "")
+            case CueCheck.recordType: item = CueCheck()
             default: return nil   // 모르는 종류 (2차 대상 등)
             }
             item.id = id
@@ -658,6 +693,19 @@ final class CloudSync {
         case let history as CueHistory:
             history.cue = parent(CloudKey.cueID, as: Cue.self, found: &found)
             if let cue = history.cue { addIfMissing(history, to: &cue.histories) }
+        case let comment as Comment:
+            // 작성자 · 원래 댓글은 없을 수도 있다 (적혀 있지 않으면 부모 없음이 맞음)
+            comment.cue = parent(CloudKey.cueID, as: Cue.self, found: &found)
+            comment.author = parent(CloudKey.authorID, as: Member.self, found: &found)
+            comment.parent = parent(CloudKey.parentID, as: Comment.self, found: &found)
+            if let cue = comment.cue { addIfMissing(comment, to: &cue.comments) }
+            if let author = comment.author { addIfMissing(comment, to: &author.comments) }
+            if let original = comment.parent { addIfMissing(comment, to: &original.replies) }
+        case let check as CueCheck:
+            check.cue = parent(CloudKey.cueID, as: Cue.self, found: &found)
+            check.member = parent(CloudKey.memberID, as: Member.self, found: &found)
+            if let cue = check.cue { addIfMissing(check, to: &cue.checks) }
+            if let member = check.member { addIfMissing(check, to: &member.checks) }
         case let line as ScriptLine:
             line.scene = parent(CloudKey.sceneID, as: ShowScene.self, found: &found)
             if let scene = line.scene { addIfMissing(line, to: &scene.scriptLines) }
