@@ -4,7 +4,7 @@
 //
 //  무대 미니맵 (피그마 리허설모드_ver1 · 최초상태무대배치02).
 //  상수 | 무대(점선으로 1~9 나눔) | 하수 위에 배역(●) · 소품(▲)을 놓은 자리에 보여준다.
-//  아래에 "관객석"과 범례. 리허설 화면(보기만)과 배치 창(끌어서 옮기기)에서 같이 쓴다.
+//  아래에 "관객석"과 범례. 리허설 화면(보기만)과 배치 창(카드 고르고 칸 누르기)에서 같이 쓴다.
 //
 
 import SwiftUI
@@ -60,6 +60,15 @@ struct StageMinimap: View {
     var onDragEnded: ((StageMark, CGPoint) -> Void)?
     var hiddenMarkID: String?   // 끄는 중인 점은 제자리에서 숨긴다
 
+    // 배치 창에서만: 구역을 누르면 (구역, 누른 자리 0~1) / 놓인 점을 누르면 그 점 / 놓인 점 빼기
+    var onTapZone: ((StageArea, CGPoint) -> Void)?
+    var onTapMark: ((StageMark) -> Void)?
+    var onRemoveMark: ((StageMark) -> Void)?
+    var selectedMarkID: String?   // 고른 카드 → 그 점 둘레가 빛난다
+    var isPlacing = false         // 카드를 골랐으면 마우스를 올린 칸을 연보라로
+
+    @State private var hoveredCell: Int?   // 무대 칸 0~8
+
     var body: some View {
         VStack(spacing: 7) {
             HStack(spacing: 0) {
@@ -93,6 +102,13 @@ struct StageMinimap: View {
         GeometryReader { geometry in
             let size = geometry.size
             ZStack(alignment: .topLeading) {
+                // 카드를 고른 채 마우스를 올린 무대 칸 (피그마 1354:7972)
+                if area == .stage, isPlacing, let hoveredCell {
+                    Rectangle()
+                        .fill(Color.brandPrimarySubtle.opacity(0.8))
+                        .frame(width: size.width / 3, height: size.height / 3)
+                        .offset(x: size.width * CGFloat(hoveredCell % 3) / 3, y: size.height * CGFloat(hoveredCell / 3) / 3)
+                }
                 if area == .stage {
                     StageGridLines()
                         .stroke(Color.brandPrimaryDisabled, style: StrokeStyle(lineWidth: 1.5, dash: [8, 6]))
@@ -112,6 +128,19 @@ struct StageMinimap: View {
                 }
             }
             .frame(width: size.width, height: size.height, alignment: .topLeading)
+            .contentShape(Rectangle())
+            .onTapGesture { location in
+                onTapZone?(area, CGPoint(x: location.x / size.width, y: location.y / size.height))
+            }
+            .onContinuousHover { phase in
+                guard area == .stage, onTapZone != nil else { return }
+                switch phase {
+                case .active(let location):
+                    hoveredCell = StageCell.index(x: location.x / size.width, y: location.y / size.height)
+                case .ended:
+                    hoveredCell = nil
+                }
+            }
         }
         .background(
             area == .stage ? Color.neutral25 : Color.brandPrimarySubtle.opacity(0.1),
@@ -147,11 +176,16 @@ struct StageMinimap: View {
 
     @ViewBuilder
     private func markView(_ mark: StageMark) -> some View {
-        let view = StageMarkView(mark: mark, style: style, isHighlighted: highlightedIDs.contains(mark.id))
+        let isHighlighted = highlightedIDs.contains(mark.id) || mark.id == selectedMarkID
+        let view = StageMarkView(mark: mark, style: style, isHighlighted: isHighlighted)
             .opacity(mark.id == hiddenMarkID ? 0 : 1)
         if let onDragChanged, let onDragEnded {
             view
-                .help("끌어서 옮기기 · 미니맵 밖으로 끌면 빠져요")
+                .help("눌러서 고른 뒤 다른 칸을 누르면 옮겨져요 · 우클릭으로 빼기")
+                .onTapGesture { onTapMark?(mark) }
+                .contextMenu {
+                    Button("미니맵에서 빼기") { onRemoveMark?(mark) }
+                }
                 .gesture(
                     DragGesture(coordinateSpace: .named(StageDrag.space))
                         .onChanged { onDragChanged(mark, $0.location) }
@@ -240,6 +274,25 @@ struct StageTriangle: Shape {
         path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
         path.closeSubpath()
         return path
+    }
+}
+
+// 무대 3×3 칸 번호 (0~8, 왼쪽 위부터). 자리(0~1)로 칸 찾기 · 칸 안에 나란히 놓을 자리
+enum StageCell {
+    static let columns = 3
+
+    static func index(x: Double, y: Double) -> Int {
+        let column = min(max(Int(x * Double(columns)), 0), columns - 1)
+        let row = min(max(Int(y * Double(columns)), 0), columns - 1)
+        return row * columns + column
+    }
+
+    // 한 칸에 n개면 가로로 고르게 나눈 i번째 자리 (세로는 칸 가운데)
+    static func slot(_ i: Int, of n: Int, in cell: Int) -> CGPoint {
+        let width = 1 / Double(columns)
+        let left = Double(cell % columns) * width
+        let top = Double(cell / columns) * width
+        return CGPoint(x: left + width * Double(i + 1) / Double(n + 1), y: top + width / 2)
     }
 }
 
