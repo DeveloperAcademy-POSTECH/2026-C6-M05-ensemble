@@ -56,7 +56,7 @@ struct RehearsalCueList<SceneControls: View>: View {
 
             // 파트 필터 | 장면 이동 · 이전 큐 · 다음 큐
             HStack(spacing: 8) {
-                partFilter
+                PartFilterTabBar(parts: parts, selectedPart: $selectedPart, isCompact: true)
                 Spacer()
                 sceneControls
                 previousButton
@@ -111,34 +111,6 @@ struct RehearsalCueList<SceneControls: View>: View {
             RoundedRectangle(cornerRadius: 8)
                 .strokeBorder(Color.neutral300, lineWidth: 1)
         }
-    }
-
-    // 회색 긴 알약 안에 전체 · 파트들. 고른 것만 연보라 바탕
-    // TODO: 셀리나 PartFilterTabBar(PR #40)와 모양 · 동작 합치기
-    private var partFilter: some View {
-        HStack(spacing: 0) {
-            filterChip("전체", isSelected: selectedPart == nil) { selectedPart = nil }
-            ForEach(parts) { part in
-                filterChip(part.name, isSelected: selectedPart == part) { selectedPart = part }
-            }
-        }
-        .padding(.horizontal, 6)
-        .frame(height: 36)
-        .background(Color.neutral50, in: Capsule())
-    }
-
-    private func filterChip(_ title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Color.neutral900)
-                .padding(.horizontal, 12)
-                .frame(minWidth: 48)
-                .frame(height: 27)
-                .background(isSelected ? Color.brandPrimarySubtle : Color.clear, in: Capsule())
-                .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
     }
 
     // "< 이전 큐": 흰 바탕 + 회색 테두리

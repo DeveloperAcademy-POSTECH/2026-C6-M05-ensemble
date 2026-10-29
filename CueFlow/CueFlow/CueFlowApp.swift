@@ -35,6 +35,7 @@ struct CueFlowApp: App {
             CueCheck.self,
             ScriptLine.self,
             StagePlacement.self,
+            CueHistory.self,
         ])
         // cloudKitDatabase: .none — iCloud를 켜면 SwiftData가 자동으로 내 iCloud에 동기화하려 하는데,
         // 그 방식은 다른 사람과 공유가 안 돼서 끈다. 공유·동기화는 CKSyncEngine으로 따로 한다 (#67)

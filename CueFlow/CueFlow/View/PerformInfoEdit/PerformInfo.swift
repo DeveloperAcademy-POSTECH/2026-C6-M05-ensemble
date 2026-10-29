@@ -39,6 +39,7 @@ struct PerformInfo: View {
             formFields
                 .padding(.top, 50)
         }
+        .appPopoverHost()   // 달력 팝오버가 그려지는 곳
     }
 }
 
@@ -53,11 +54,11 @@ extension PerformInfo {
             }
             HStack(alignment: .top, spacing: 15) {
                 labeledField("공연장") { textField(text: $draft.venue) }
-                labeledField("객석 규모") { numberField(value: $draft.seatCount) }
+                labeledField("객석 규모") { numberField(value: $draft.seatCount, unit: "석") }
             }
             HStack(alignment: .top, spacing: 15) {
                 labeledField("주최") { textField(text: $draft.organizer) }
-                labeledField("러닝타임") { numberField(value: $draft.runningTime) }
+                labeledField("러닝타임") { numberField(value: $draft.runningTime, unit: "분") }
             }
         }
     }
@@ -91,11 +92,15 @@ extension PerformInfo {
             .formBox()
     }
     
-    // 숫자만 받는 입력칸 (객석 규모, 러닝타임)
-    private func numberField(value: Binding<Int?>) -> some View {
-        TextField("", value: value, format: .number)
-            .textFieldStyle(.plain)
-            .formBox()
+    // 숫자만 받는 입력칸 + 칸 안 오른쪽 끝에 고정 단위 (객석 규모 "석", 러닝타임 "분")
+    private func numberField(value: Binding<Int?>, unit: String) -> some View {
+        HStack(spacing: 4) {
+            TextField("", value: value, format: .number)
+                .textFieldStyle(.plain)
+            Text(unit)
+                .foregroundStyle(Color.neutral500)
+        }
+        .formBox()
     }
 }
 
@@ -130,7 +135,7 @@ extension PerformInfo {
     private var dateField: some View {
         Button { isPickingDate = true } label: { dateFieldLabel }
             .buttonStyle(.plain)
-            .popover(isPresented: $isPickingDate, arrowEdge: .bottom) { calendar }
+            .appPopover(isPresented: $isPickingDate, width: nil) { calendar }   // 폭은 달력 크기만큼
     }
     
     private var dateFieldLabel: some View {

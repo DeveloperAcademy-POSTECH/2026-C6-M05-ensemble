@@ -78,6 +78,7 @@ final class CloudSync {
             enqueueEverything()
         }
         enqueueScriptsAndPlacementsOnce()
+        enqueueHistoriesOnce()
         logger.info("동기화 시작 (처음: \(savedState == nil))")
     }
 
@@ -362,16 +363,23 @@ final class CloudSync {
     private func cascadedIDs(of model: any PersistentModel) -> [UUID] {
         switch model {
         case let scene as ShowScene:
-            (scene.triggers ?? []).flatMap { [$0.id] + ($0.cues ?? []).map(\.id) }
+            (scene.triggers ?? []).flatMap { [$0.id] + Self.cueAndHistoryIDs($0.cues) }
                 + (scene.scriptLines ?? []).map(\.id)
                 + (scene.placements ?? []).map(\.id)
         case let trigger as Trigger:
-            (trigger.cues ?? []).map(\.id)
+            Self.cueAndHistoryIDs(trigger.cues)
         case let part as Part:
-            (part.cues ?? []).map(\.id)
+            Self.cueAndHistoryIDs(part.cues)
+        case let cue as Cue:
+            (cue.histories ?? []).map(\.id)
         default:
             []
         }
+    }
+
+    // 큐들 + 그 큐들의 기록(History) id — 큐를 지우면 기록도 같이 지워진다 (Cue.histories cascade)
+    private static func cueAndHistoryIDs(_ cues: [Cue]?) -> [UUID] {
+        (cues ?? []).flatMap { [$0.id] + ($0.histories ?? []).map(\.id) }
     }
 
     // #86 전에는 대본 · 무대 배치를 안 올렸다 → 이 맥에 이미 있던 것을 한 번만 올린다
@@ -391,6 +399,18 @@ final class CloudSync {
         let recordIDs = items.compactMap(\.cloudRecordID)
         enqueue([], recordIDs.map { .saveRecord($0) })
         logger.info("대본 · 무대 배치 처음 올리기: \(recordIDs.count)개")
+    }
+
+    // 큐 기록(History, #83)도 #86 전에는 안 올렸다 → 이 맥에 이미 있던 기록을 한 번만 올린다
+    private func enqueueHistoriesOnce() {
+        let key = "didUploadCueHistories"
+        guard let context, !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
+
+        let histories = (try? context.fetch(FetchDescriptor<CueHistory>())) ?? []
+        let recordIDs = histories.compactMap(\.cloudRecordID)
+        enqueue([], recordIDs.map { .saveRecord($0) })
+        logger.info("큐 기록 처음 올리기: \(recordIDs.count)개")
     }
 
     // 처음 동기화할 때: 이 맥에 있는 내 공연 전부 (공유받은 공연은 공유 저장공간에서 다시 받는다)
@@ -415,6 +435,7 @@ final class CloudSync {
             items += scenes.flatMap { $0.scriptLines ?? [] }
             items += scenes.flatMap { $0.placements ?? [] }
             items += production.initialPlacements ?? []
+            items += cues.flatMap { $0.histories ?? [] }
             recordIDs.formUnion(items.compactMap(\.cloudRecordID))
         }
 
@@ -455,6 +476,7 @@ final class CloudSync {
         if let found = try? context.fetch(FetchDescriptor<Member>(predicate: #Predicate { $0.id == id })).first { return found }
         if let found = try? context.fetch(FetchDescriptor<ScriptLine>(predicate: #Predicate { $0.id == id })).first { return found }
         if let found = try? context.fetch(FetchDescriptor<StagePlacement>(predicate: #Predicate { $0.id == id })).first { return found }
+        if let found = try? context.fetch(FetchDescriptor<CueHistory>(predicate: #Predicate { $0.id == id })).first { return found }
         return nil
     }
 
@@ -581,6 +603,7 @@ final class CloudSync {
             case Member.recordType: item = Member(name: "", role: "")
             case ScriptLine.recordType: item = ScriptLine(order: 0, speaker: nil, text: "")
             case StagePlacement.recordType: item = StagePlacement(name: "", kind: .cast, area: .stage, x: 0.5, y: 0.5)
+            case CueHistory.recordType: item = CueHistory(title: "", detail: "")
             default: return nil   // 모르는 종류 (2차 대상 등)
             }
             item.id = id
@@ -632,6 +655,9 @@ final class CloudSync {
             let parts = partIDs.compactMap { findModel($0) as? Part }
             member.parts = parts
             if parts.count < partIDs.count { found = false }
+        case let history as CueHistory:
+            history.cue = parent(CloudKey.cueID, as: Cue.self, found: &found)
+            if let cue = history.cue { addIfMissing(history, to: &cue.histories) }
         case let line as ScriptLine:
             line.scene = parent(CloudKey.sceneID, as: ShowScene.self, found: &found)
             if let scene = line.scene { addIfMissing(line, to: &scene.scriptLines) }

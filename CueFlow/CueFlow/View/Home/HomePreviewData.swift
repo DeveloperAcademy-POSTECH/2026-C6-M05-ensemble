@@ -30,6 +30,10 @@ enum HomePreviewData {
                 genre: "뮤지컬",
                 firstShowDate: Date().addingTimeInterval(Double(30 + index * 20) * 86_400)
             )
+            production.lastShowDate = production.firstShowDate.addingTimeInterval(86_400)   // 이틀 공연
+            production.venue = "아트스페이스 A홀"
+            production.seatCount = 1200
+            production.runningTime = index == 0 ? 170 : nil   // 첫 카드만 러닝타임 (없을 때 줄이 숨는지 확인)
             production.lastOpenedAt = Date().addingTimeInterval(Double(-index) * 86_400)
             production.updatedAt = Date().addingTimeInterval(Double(-index) * 3_600)
             return production
