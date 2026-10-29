@@ -90,14 +90,18 @@ extension MainCueSheetView {
 // 위쪽 두 줄
 
 extension MainCueSheetView {
-    // 공연 제목 + 오른쪽 공유하기
+    // 공연 제목 + 오른쪽 멤버 캡슐
     private var titleRow: some View {
         HStack {
             Text(production.title)
                 .font(.title)
                 .foregroundStyle(Color.neutral900)
             Spacer()
-            shareButton   // 멤버 버튼(memberButton)은 일단 뺌
+            // 피그마 1349:3639: 멤버 · 공유하기
+            HStack(spacing: 20) {
+                memberButton
+                shareButton
+            }
         }
     }
     
