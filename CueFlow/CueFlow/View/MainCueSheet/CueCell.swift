@@ -56,8 +56,8 @@ extension CueCell {
         .buttonStyle(.plain)
         .font(.body.weight(.medium))
         .foregroundStyle(Color.neutral900)
-        .popover(isPresented: $isAddingCue, arrowEdge: .bottom) {
-            AddCueCardInfo(production: part.production, onSave: onAddCue)
+        .appPopover(isPresented: $isAddingCue) {
+            AddCueCardInfo(production: part.production, partName: part.name, onSave: onAddCue)
         }
     }
     

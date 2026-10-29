@@ -26,6 +26,7 @@ struct PerformSceneEdit: View {
             sceneCard
                 .padding(.top, 43)
         }
+        .appPopoverHost()   // 종류 고르기 팝오버가 그려지는 곳
     }
 }
 

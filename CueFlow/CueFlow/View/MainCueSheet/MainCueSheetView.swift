@@ -27,6 +27,7 @@ struct MainCueSheetView: View {
         .padding(.top, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(.white)
+        .appPopoverHost()   // 표 안 팝오버(파트 추가 · 수정)가 그려지는 곳
         .onChange(of: historyCue) { if $1 != nil { priorityScene = nil } }     // History 열면 우선순위 닫힘
         .onChange(of: priorityScene) { if $1 != nil { historyCue = nil } }     // 우선순위 열면 History 닫힘
     }
@@ -75,6 +76,8 @@ extension MainCueSheetView {
             Text(production.title)
                 .font(.title)
                 .foregroundStyle(Color.neutral900)
+            Spacer()
+            shareButton
         }
     }
     
@@ -97,6 +100,18 @@ extension MainCueSheetView {
         Button("리허설 모드", action: onRehearsal)
         .buttonStyle(.primary)
         .frame(width: 100, height: 36)
+    }
+    
+    private var shareButton: some View {
+        Button { } label: {
+            Text("공유하기")
+                .font(.body)                                   // Body/Regular 13
+                .foregroundStyle(Color.neutral25)
+                .frame(width: 79, height: 28)
+                .background(Color.brandPrimaryHover, in: .rect(cornerRadius: 6))
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
     }
 }
 

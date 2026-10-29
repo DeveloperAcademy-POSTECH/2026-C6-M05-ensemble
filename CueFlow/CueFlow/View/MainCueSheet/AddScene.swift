@@ -11,10 +11,11 @@ struct AddScene: View {
     // 내용을 입력하고 Enter를 눌렀을 때 할 일 (씬 내용, 종류)
     var onSave: (String, SceneKind) -> Void
 
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.closeAppPopover) private var closePopover   // 저장하면 팝오버 닫기
     @State private var title: String
     @State private var kind: SceneKind
     @FocusState private var isTitleFocused: Bool
+    @State private var isPickingKind = false   // 종류 고르는 팝오버가 열려 있는지
 
     // 새로 만들 때는 빈 칸으로, 수정할 때는 원래 값을 채워서 연다
     init(title: String = "", kind: SceneKind = .scene,
@@ -29,28 +30,19 @@ struct AddScene: View {
             kindMenu
             titleSection
         }
-        .padding(16)
-        .frame(width: 240)
         .onAppear { isTitleFocused = true }
     }
 }
 
 extension AddScene {
-    // 왼쪽 위 "씬 ▾" → 누르면 씬 / 넘버 / 전환 선택
+    // 왼쪽 위 "씬 ▾" → 누르면 씬 / 넘버 / 전환 고르는 팝오버
     private var kindMenu: some View {
-        Menu {
-            Picker("종류", selection: $kind) {
-                ForEach(SceneKind.allCases, id: \.self) { Text($0.rawValue) }
+        Button { isPickingKind = true } label: { kindMenuLabel }
+            .buttonStyle(.plain)
+            .fixedSize()
+            .appPopover(isPresented: $isPickingKind, width: nil) {
+                PopoverCheckList(items: SceneKind.allCases, selected: kind, title: \.rawValue) { kind = $0 }
             }
-            .pickerStyle(.inline)
-            .labelsHidden()
-        } label: {
-            kindMenuLabel
-        }
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .menuIndicator(.hidden)
-        .fixedSize()
     }
 
     private var kindMenuLabel: some View {
@@ -91,12 +83,12 @@ extension AddScene {
         let trimmedTitle = title.trimmingCharacters(in: .whitespaces)
         guard !trimmedTitle.isEmpty else { return }
         onSave(trimmedTitle, kind)
-        dismiss()
+        closePopover()
     }
 }
 
 #Preview {
     AddScene()
-        .padding()
-        .background(Color.neutral100)
+        .popoverStyle()
+        .padding(60)
 }

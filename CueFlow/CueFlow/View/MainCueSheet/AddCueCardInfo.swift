@@ -11,22 +11,25 @@ struct AddCueCardInfo: View {
     // 다 입력하고 Enter를 눌렀을 때 할 일 (트리거 글, 큐 제목, 위치)
     var onSave: (String, String, CuePosition) -> Void
     var production: Production?   // 이전 트리거를 찾을 공연 (없으면 후보 없음)
-    @Environment(\.dismiss) private var dismiss
+    var partName: String?   // 어느 파트의 큐인지 (입력칸 예시가 파트마다 다름)
+    @Environment(\.closeAppPopover) private var closePopover   // 저장하면 팝오버 닫기
     @State private var triggerText: String
     @State private var cueTitle: String
     @State private var position: CuePosition?   // nil = 아직 안 고름
     @FocusState private var focusedField: InputField?
     @State private var showPositionWarning = false   // 위치 안 고르고 저장하려 했는지
     @State private var highlightedSuggestion: Int?   // 방향키로 고른 후보 번호 (nil = 안 고름)
+    @State private var isPickingPosition = false   // 위치 고르는 팝오버가 열려 있는지
     
     // 새로 만들 때는 빈 칸으로, 수정할 때는 원래 값을 채워서 연다
     init(triggerText: String = "", cueTitle: String = "", position: CuePosition? = nil,
-         production: Production? = nil,
+         production: Production? = nil, partName: String? = nil,
          onSave: @escaping (String, String, CuePosition) -> Void = { _, _, _ in }) {
         _triggerText = State(initialValue: triggerText)
         _cueTitle = State(initialValue: cueTitle)
         _position = State(initialValue: position)
         self.production = production
+        self.partName = partName
         self.onSave = onSave
     }
     // 지금 글자를 치고 있는 칸
@@ -46,8 +49,6 @@ struct AddCueCardInfo: View {
                     .padding(.top, 10)
             }
         }
-        .padding(16)
-        .frame(width: 240)
         .onAppear { focusedField = .trigger }
         .onChange(of: position) { showPositionWarning = false }
     }
@@ -56,21 +57,14 @@ struct AddCueCardInfo: View {
 // 서브뷰
 
 extension AddCueCardInfo {
-    // 오른쪽 위 "위치 ▾" → 누르면 상수/하수/무대/콘솔 선택 (꼭 골라야 저장됨)
+    // 오른쪽 위 "위치 ▾" → 누르면 상수/하수/무대/콘솔 고르는 팝오버 (꼭 골라야 저장됨)
     private var positionMenu: some View {
-        Menu {
-            Picker("위치", selection: $position) {
-                ForEach(CuePosition.allCases, id: \.self) { Text($0.rawValue).tag(Optional($0)) }
+        Button { isPickingPosition = true } label: { positionMenuLabel }
+            .buttonStyle(.plain)
+            .fixedSize()
+            .appPopover(isPresented: $isPickingPosition, width: nil) {
+                PopoverCheckList(items: CuePosition.allCases, selected: position, title: \.rawValue) { position = $0 }
             }
-            .pickerStyle(.inline)
-            .labelsHidden()
-        } label: {
-            positionMenuLabel
-        }
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .menuIndicator(.hidden)
-        .fixedSize()
     }
     
     // 위치 버튼 생김새: 안 골랐으면 "위치", 안 고르고 저장하려 하면 빨갛게
@@ -111,13 +105,29 @@ extension AddCueCardInfo {
     
     // 입력칸
     private func inputField(text: Binding<String>, field: InputField) -> some View {
-        TextField("", text: text, prompt: .popoverPlaceholder)
+        TextField("", text: text, prompt: placeholder(for: field), axis: .vertical)   // 길면 아랫줄로 넘어가며 칸이 늘어남
             .focused($focusedField, equals: field)
             .onKeyPress(.downArrow) { moveHighlight(by: 1, in: field) }
             .onKeyPress(.upArrow) { moveHighlight(by: -1, in: field) }
             .onSubmit { handleReturn(in: field) }
             .popoverInputStyle()
     }
+    
+    // 입력칸 예시 글: 파트마다 다름 (없는 파트면 "내용을 입력하세요")
+    private func placeholder(for field: InputField) -> Text {
+        let example = Self.examples[partName ?? ""]
+        let text = field == .trigger ? example?.trigger : example?.cue
+        return Text(text ?? "내용을 입력하세요").foregroundStyle(Color.neutral400)
+    }
+    
+    // 파트별 예시 (피그마 무대 · 소품 · 의상 · 조명 · 음향_큐카드입력)
+    private static let examples: [String: (trigger: String, cue: String)] = [
+        "무대": ("배우 B의 \"들어오세요\" 대사 종료 시", "배우 A가 상수에서 입장해 무대 중앙 식탁 앞에 서기"),
+        "소품": ("암전 시작 시", "무대 중앙 식탁을 하수 대기 위치로 이동"),
+        "의상": ("배우 A가 하수로 퇴장 시", "배우 A의 검은 코트를 벗기고 흰 셔츠·청바지로 교체"),
+        "조명": ("배우 A가 식탁 앞 표시점에 도착 시", "식탁 앞 흰색 스폿 조명을 70%로 켜기"),
+        "음향": ("배우 A의 세 번째 노크 시", "나무문이 삐걱 열리는 효과음 재생"),
+    ]
     
     // 트리거 입력칸 + 그 아래 이전 트리거 후보
     private var triggerSection: some View {
@@ -185,7 +195,7 @@ extension AddCueCardInfo {
             return
         }
         onSave(triggerText, title, position)
-        dismiss()
+        closePopover()
     }
     
     // 한글 입력이 끝난 다음에 칸을 옮겨야 트리거 칸 글자가 남는다
@@ -220,7 +230,7 @@ extension AddCueCardInfo {
 }
 
 #Preview {
-    AddCueCardInfo()
-        .padding()
-        .background(Color.neutral100)
+    AddCueCardInfo(partName: "무대")
+        .popoverStyle()
+        .padding(60)
 }

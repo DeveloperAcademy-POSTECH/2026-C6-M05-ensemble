@@ -15,8 +15,9 @@ struct CueCard: View {
     var onShowHistory: () -> Void = {}   // 우클릭 → History
     var isSelected = false                       // 선택된 카드인지 (테두리가 파트 accent 색)
     var onSelect: (Bool) -> Void = { _ in }      // 카드를 눌렀을 때 (true = shift 누른 채)
-    @State private var isEditingNumber = false   // 번호 수정 창이 열려 있는지
     @State private var isEditingCue = false      // 큐 수정 팝오버가 열려 있는지
+    @State private var isPickingPosition = false  // 위치 고르는 팝오버가 열려 있는지
+    @State private var isShowingMenu = false      // 우클릭 메뉴 팝오버가 열려 있는지
     @Environment(\.modelContext) private var modelContext   // 큐를 지울 곳
     
     var body: some View {
@@ -32,8 +33,9 @@ struct CueCard: View {
         .onTapGesture(count: 2) { isEditingCue = true }   // 더블클릭하면 수정 팝오버
         .highPriorityGesture(TapGesture().modifiers(.shift).onEnded { onSelect(true) })   // Shift+클릭 = 선택에 추가
         .onTapGesture { onSelect(false) }                                                // 그냥 클릭 = 이 카드만 선택
-        .popover(isPresented: $isEditingCue, arrowEdge: .trailing) { cueEditor }
-        .contextMenu { cueMenu }   // 우클릭 메뉴
+        .appPopover(isPresented: $isEditingCue, edge: .trailing) { cueEditor }
+        .onRightClick { isShowingMenu = true }   // 우클릭하면 메뉴 팝오버
+        .appPopover(isPresented: $isShowingMenu, edge: .trailing, width: nil) { cueMenu }
         .onChange(of: cue.position) { recordPositionChange(from: $0, to: $1) }
     }
 }
@@ -41,34 +43,32 @@ struct CueCard: View {
 // 우클릭 메뉴: 큐 수정하기 · History / 복사하기 · 붙여넣기 / 삭제하기
 
 extension CueCard {
-    @ViewBuilder
     private var cueMenu: some View {
-        Button("큐 수정하기") { isEditingCue = true }   // 더블클릭과 같은 수정 팝오버
-        Button("History", action: onShowHistory)       // 오른쪽 History 사이드바 열기
-        Divider()
-        Button("복사하기") { }
-        Button("붙여넣기") { }
-        Divider()
-        Button("삭제하기") { modelContext.deleteCue(cue) }
+        PopoverMenu {
+            PopoverMenuItem("큐 수정하기") { isEditingCue = true }   // 더블클릭과 같은 수정 팝오버
+            PopoverMenuItem("History", action: onShowHistory)       // 오른쪽 History 사이드바 열기
+            PopoverMenuDivider()
+            PopoverMenuItem("복사하기") { }
+            PopoverMenuItem("붙여넣기") { }
+            PopoverMenuDivider()
+            PopoverMenuItem("삭제하기") { modelContext.deleteCue(cue) }
+        }
     }
 }
 
 extension CueCard {
-    // 윗부분: [01] 트리거 / 큐 제목 ……… [상수]
+    // 윗줄: [01] 트리거 ……… [상수] / 아랫줄: 큐 제목 (상수 태그 아래까지 넓게)
     private var cueHeader: some View {
-        HStack(alignment: .top, spacing: 5) {
-            cueNumberButton
-            cueTexts
-            Spacer(minLength: 0)
-            positionTag
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(alignment: .firstTextBaseline, spacing: 5) {   // 번호 · 트리거 첫 줄 · 위치 태그 글자 밑선 맞춤
+                cueNumberLabel
+                triggerText
+                Spacer(minLength: 0)
+                positionTag
+            }
+            cueTitleText
+                .padding(.leading, 28)   // 트리거 글 시작 위치에 맞춤 (번호 23 + 간격 5)
         }
-    }
-    
-    // 번호 버튼: 누르면 번호를 고치는 작은 창이 뜸
-    private var cueNumberButton: some View {
-        Button { isEditingNumber = true } label: { cueNumberLabel }
-            .buttonStyle(.plain)
-            .popover(isPresented: $isEditingNumber, arrowEdge: .bottom) { cueNumberEditor }
     }
     
     // 번호 동그라미 생김새 (01, 02 …)
@@ -79,23 +79,6 @@ extension CueCard {
             .frame(width: 23, height: 23)
             .background(partColor.background, in: .circle)
             .contentShape(.circle)
-    }
-    
-    // 번호 입력 창: 숫자를 입력하고 Enter를 누르면 저장되고 창이 닫힘
-    private var cueNumberEditor: some View {
-        TextField("번호", value: $cue.order, format: .number)
-            .textFieldStyle(.roundedBorder)
-            .frame(width: 60)
-            .padding(10)
-            .onSubmit { isEditingNumber = false }
-    }
-    
-    // 트리거(윗줄) + 큐 제목(아랫줄)
-    private var cueTexts: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            triggerText
-            cueTitleText
-        }
     }
     
     // 언제 실행하는지 (예: 코우 - "너 나가!" 대사 종료 후)
@@ -114,26 +97,14 @@ extension CueCard {
             .fixedSize(horizontal: false, vertical: true)   // 길면 다음 줄로
     }
     
-    // 위치 태그: 누르면 상수 · 하수 · 무대 · 콘솔 중에서 고르는 메뉴가 뜸
+    // 위치 태그: 누르면 상수 · 하수 · 무대 · 콘솔 고르는 팝오버 (피그마 무대위치)
     private var positionTag: some View {
-        Menu {
-            positionPicker
-        } label: {
-            positionTagLabel
-        }
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .menuIndicator(.hidden)
-        .fixedSize()
-    }
-    
-    // 메뉴 안의 선택지 (지금 고른 위치에 체크 표시가 붙음)
-    private var positionPicker: some View {
-        Picker("위치", selection: $cue.position) {
-            ForEach(CuePosition.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-        }
-        .pickerStyle(.inline)
-        .labelsHidden()
+        Button { isPickingPosition = true } label: { positionTagLabel }
+            .buttonStyle(.plain)
+            .fixedSize()
+            .appPopover(isPresented: $isPickingPosition, width: nil) {
+                PopoverCheckList(items: CuePosition.allCases, selected: cue.position, title: \.rawValue) { cue.position = $0 }
+            }
     }
     
     // 태그 생김새 (원래 positionTag에 있던 모양 그대로)
@@ -153,7 +124,7 @@ extension CueCard {
     
     // 더블클릭했을 때 뜨는 수정 팝오버 (원래 값이 채워진 채로)
     private var cueEditor: some View {
-        AddCueCardInfo(triggerText: cue.trigger?.text ?? "", cueTitle: cue.title, position: cue.position, production: cue.part?.production) {
+        AddCueCardInfo(triggerText: cue.trigger?.text ?? "", cueTitle: cue.title, position: cue.position, production: cue.part?.production, partName: cue.part?.name) {
             updateCue(triggerText: $0, cueTitle: $1, position: $2)
         }
     }

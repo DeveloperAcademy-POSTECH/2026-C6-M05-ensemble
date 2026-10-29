@@ -39,6 +39,7 @@ struct PerformInfo: View {
             formFields
                 .padding(.top, 50)
         }
+        .appPopoverHost()   // 달력 팝오버가 그려지는 곳
     }
 }
 
@@ -134,7 +135,7 @@ extension PerformInfo {
     private var dateField: some View {
         Button { isPickingDate = true } label: { dateFieldLabel }
             .buttonStyle(.plain)
-            .popover(isPresented: $isPickingDate, arrowEdge: .bottom) { calendar }
+            .appPopover(isPresented: $isPickingDate, width: nil) { calendar }   // 폭은 달력 크기만큼
     }
     
     private var dateFieldLabel: some View {
