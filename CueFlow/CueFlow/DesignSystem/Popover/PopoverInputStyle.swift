@@ -18,7 +18,8 @@ extension View {
         .font(.callout)
         .foregroundStyle(Color.neutral800)
         .padding(.horizontal, 12)
-        .frame(height: 30)
+        .padding(.vertical, 7)       // 글이 길어지면 줄이 늘어나며 칸도 같이 커짐
+        .frame(minHeight: 30)        // 한 줄일 때는 원래처럼 30
         .background(.white, in: .rect(cornerRadius: 8))
     }
 }

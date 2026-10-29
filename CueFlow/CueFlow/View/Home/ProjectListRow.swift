@@ -49,9 +49,10 @@ struct ProjectListRow: View {
     // 별표: 마우스를 올렸을 때만 보인다. 즐겨찾기한 줄은 항상 채운 별로 보인다.
     private var favoriteButton: some View {
         Button(action: onToggleFavorite) {
+            // 피그마: 빈 별 14 neutral400, 채운 별 15 연보라
             Image(systemName: isFavorite ? "star.fill" : "star")
-                .font(.system(size: 14))
-                .foregroundStyle(isFavorite ? Color.brandPrimary : Color.neutral400)
+                .font(.system(size: isFavorite ? 15 : 14))
+                .foregroundStyle(isFavorite ? Color.brandPrimaryDisabled : Color.neutral400)
         }
         .buttonStyle(.plain)
         .opacity(isFavorite || isHovering ? 1 : 0)

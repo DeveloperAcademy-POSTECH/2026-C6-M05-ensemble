@@ -145,7 +145,17 @@ struct ContentView: View {
     private var mainView: some View {
         NavigationSplitView {
             // 왼쪽: 사이드바
-            SidebarView(selectedMenu: menuSelection)
+            SidebarView(
+                selectedMenu: menuSelection,
+                productions: productions,
+                isInProduction: selectedMenu == .project && openedProduction != nil,
+                onOpenProduction: { production in
+                    // 사이드바 큐시트 목록에서 공연을 고르면 어느 화면에 있든 그 공연 큐시트로
+                    selectedMenu = .project
+                    isCreatingProduction = false
+                    openedProduction = production
+                }
+            )
                 .navigationSplitViewColumnWidth(220)
         } detail: {
             // 오른쪽: 선택된 메뉴에 따라 다른 화면
@@ -163,6 +173,7 @@ struct ContentView: View {
                     MainCueSheetView(production: openedProduction) {
                         rehearsingProduction = openedProduction
                     }
+                    .id(openedProduction.id)   // 사이드바에서 다른 공연으로 바로 옮기면 화면 상태(파트 필터 등)를 새로
                 } else if productions.isEmpty {
                     HomeEmptyView(onNewProject: { isCreatingProduction = true })
                 } else {
