@@ -75,20 +75,20 @@ struct RehearsalStageMap: View {
             HStack {
                 Text("무대 미니맵")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.neutral500)
+                    .foregroundStyle(Color.neutral900)
                 Spacer()
                 Button {
                     if let scene { editing = .scene(scene) }
                 } label: {
                     HStack(spacing: 2) {
                         Image(systemName: "square.and.pencil")
-                            .font(.system(size: 14))
+                            .font(.system(size: 16))
                         Text("수정하기")
-                            .font(.body)
+                            .font(.system(size: 15, weight: .semibold))
                     }
-                    .foregroundStyle(Color.neutral700)
+                    .foregroundStyle(Color.neutral900)
                     .padding(.horizontal, 8)
-                    .frame(height: 30)
+                    .frame(height: 36)
                     .background(Color.neutral25, in: RoundedRectangle(cornerRadius: 6))
                     .overlay {
                         RoundedRectangle(cornerRadius: 6)
@@ -108,7 +108,7 @@ struct RehearsalStageMap: View {
             StageMinimap(marks: marks, highlightedIDs: movingIDs)
                 .padding(.leading, 31)
                 .padding(.trailing, 28)
-                .padding(.top, 33)
+                .padding(.top, 18)   // 카드 높이 378 안에 범례까지 들어가게 (피그마 18)
         }
     }
 
@@ -120,15 +120,15 @@ struct RehearsalStageMap: View {
                 .tracking(-0.45)
                 .foregroundStyle(Color.neutral900)
             Text("배우와 소품을 추가하고 무대 위 원하는 위치에 배치해보세요.\n첫 무대 배치 이후 장면별 무대 구성을 한눈에 확인할 수 있어요.")
-                .font(.body)
+                .font(.system(size: 17))
                 .lineSpacing(4)
-                .foregroundStyle(Color.neutral500)
+                .foregroundStyle(Color.neutral700)
                 .multilineTextAlignment(.center)
             Button {
                 editing = .firstSetup
             } label: {
                 Text("배치하기")
-                    .font(.body.weight(.semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.brandPrimaryText)
                     .frame(width: 104, height: 35)
                     .background(Color.brandPrimarySubtle, in: RoundedRectangle(cornerRadius: 6))

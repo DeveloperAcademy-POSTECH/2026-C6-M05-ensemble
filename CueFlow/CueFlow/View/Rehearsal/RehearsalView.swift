@@ -85,7 +85,11 @@ struct RehearsalView: View {
                             canGoPrevious: !isFollowing && (sceneIndex > 0 || triggerIndex > 0),
                             canGoNext: !isFollowing && (sceneIndex < scenes.count - 1 || triggerIndex < currentTriggers.count - 1),
                             onPrevious: goToPreviousCue,
-                            onNext: goToNextCue
+                            onNext: goToNextCue,
+                            sceneControls: HStack(spacing: 8) {   // 피그마 951:9052: ‹ › 와 장면 고르기 사이 8
+                                sceneStepper
+                                scenePicker
+                            }
                         )
                 }
             }
@@ -121,7 +125,7 @@ struct RehearsalView: View {
         .padding(.top, 46)
         .padding(.bottom, 45)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.white)   // 피그마 window-background = 흰색
     }
 
     // 이전 큐 / 다음 큐로 장면을 넘어갈 때는 onChange에서 첫 큐로 되돌리지 않게
@@ -149,11 +153,11 @@ struct RehearsalView: View {
         }
     }
 
-    // 공연 이름 · 장면 이동 · 종료 버튼
+    // 공연 이름 · 동기화 모드 · 종료 버튼 (장면 이동은 큐 목록 줄에)
     private var header: some View {
         HStack(spacing: 0) {
             Text(production.title)
-                .font(.system(size: 22, weight: .semibold))   // 피그마 22pt (macOS 기본 스타일에 없음)
+                .font(.system(size: 22, weight: .regular))   // 피그마 22pt (macOS 기본 스타일에 없음)
                 .foregroundStyle(Color.neutral900)
 
             if let syncStatusText {
@@ -163,18 +167,13 @@ struct RehearsalView: View {
 
             Spacer()
 
-            HStack(spacing: 10) {
-                sceneStepper
-                scenePicker
-            }
-
             syncMenu
                 .padding(.horizontal, 8)
 
             // TODO: #41 머지 후 .buttonStyle(.tertiary)로 교체
             Button("리허설 모드 종료", action: onExit)
                 .buttonStyle(.plain)
-                .frame(width: 115, height: 36)
+                .frame(width: 130, height: 36)
                 .foregroundStyle(Color.brandPrimaryText)
                 .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
                 .overlay {
