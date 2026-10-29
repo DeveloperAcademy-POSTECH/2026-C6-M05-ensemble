@@ -15,6 +15,7 @@ struct SceneInputRow: View {
     @State private var kind: SceneKind = .scene
     @State private var title = ""
     @FocusState private var isFocused: Bool
+    @State private var isPickingKind = false   // 종류 고르는 팝오버가 열려 있는지
 
     var body: some View {
         HStack(spacing: 40) {
@@ -58,23 +59,12 @@ extension SceneInputRow {
 
 extension SceneInputRow {
     private var kindMenu: some View {
-        Menu {
-            kindPicker
-        } label: {
-            kindMenuLabel
-        }
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .menuIndicator(.hidden)
-        .fixedSize()
-    }
-
-    private var kindPicker: some View {
-        Picker("종류", selection: $kind) {
-            ForEach(SceneKind.allCases, id: \.self) { Text($0.rawValue) }
-        }
-        .pickerStyle(.inline)
-        .labelsHidden()
+        Button { isPickingKind = true } label: { kindMenuLabel }
+            .buttonStyle(.plain)
+            .fixedSize()
+            .appPopover(isPresented: $isPickingKind, width: nil) {
+                PopoverCheckList(items: SceneKind.allCases, selected: kind, title: \.rawValue) { kind = $0 }
+            }
     }
 
     private var kindMenuLabel: some View {

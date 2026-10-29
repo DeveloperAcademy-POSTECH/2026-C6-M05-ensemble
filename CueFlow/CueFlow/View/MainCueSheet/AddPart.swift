@@ -11,7 +11,7 @@ struct AddPart: View {
     // 파트 이름을 입력하고 Enter를 눌렀을 때 할 일
     var onSave: (String) -> Void
 
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.closeAppPopover) private var closePopover   // 저장하면 팝오버 닫기
     @State private var name: String
     @FocusState private var isNameFocused: Bool
 
@@ -23,8 +23,6 @@ struct AddPart: View {
 
     var body: some View {
         nameSection
-            .padding(16)
-            .frame(width: 240)
             .onAppear { isNameFocused = true }
     }
 }
@@ -55,12 +53,12 @@ extension AddPart {
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
         guard !trimmedName.isEmpty else { return }
         onSave(trimmedName)
-        dismiss()
+        closePopover()
     }
 }
 
 #Preview {
     AddPart()
-        .padding()
-        .background(Color.neutral100)
+        .popoverStyle()
+        .padding(60)
 }
