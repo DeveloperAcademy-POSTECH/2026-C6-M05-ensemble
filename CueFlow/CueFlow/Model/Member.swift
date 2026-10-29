@@ -15,6 +15,7 @@ final class Member {
     var name: String = ""               // 예: "이진환"
     var role: String = ""               // 맡은 일 (예: "무대연출", "감독")
     var iCloudUserID: String?           // 팀원 공유 단계에서 iCloud 계정과 연결할 자리
+    var lastSeenAt: Date?               // 이 공연 큐시트를 마지막으로 본 때 (참여자 현황에 씀)
 
     var production: Production?         // 어느 공연의 멤버인지
 

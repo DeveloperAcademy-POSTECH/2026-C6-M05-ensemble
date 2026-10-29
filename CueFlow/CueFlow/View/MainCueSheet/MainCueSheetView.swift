@@ -14,12 +14,16 @@ struct MainCueSheetView: View {
     @State private var selectedPart: Part?     // 파트 칩에서 고른 파트 (nil = 전체)
     @State private var historyCue: Cue?        // History 사이드바에 보여줄 큐 (nil = 닫힘)
     @State private var priorityScene: ShowScene?  // 우선순위 사이드바에 보여줄 씬 (nil = 닫힘)
-    
+    @State private var isShowingParticipants = false   // 멤버 버튼 → 참여자 현황
+    @State private var isShowingShare = false          // 임시 초대하기 버튼 → 공유하기 창
+    @State private var remoteRevision = 0              // 다른 사람이 고친 걸 받으면 +1 → 표 다시 그리기
+    @Environment(ICloudAccount.self) private var iCloudAccount
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             titleRow
             filterRow
-            CueGrid(production: production, selectedPart: selectedPart, onShowHistory: { historyCue = $0 }, priorityScene: $priorityScene)
+            CueGrid(production: production, selectedPart: selectedPart, remoteRevision: remoteRevision, onShowHistory: { historyCue = $0 }, priorityScene: $priorityScene)
             .padding(.top, -12)   // 위 여유(12)만큼 올려서 표 위치는 피그마 그대로
             .overlay(alignment: .trailing) { sidebar.padding(.trailing, -35) }   // 표 높이만큼만 + 창 오른쪽 끝에 붙임 (바깥 여백 35만큼)
         }
@@ -28,6 +32,16 @@ struct MainCueSheetView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(.white)
         .appPopoverHost()   // 표 안 팝오버(파트 추가 · 수정)가 그려지는 곳
+        .onReceive(NotificationCenter.default.publisher(for: CloudSync.didApplyRemoteNotification)) { _ in
+            remoteRevision += 1
+        }
+        // 큐시트를 보고 있는 동안 1분마다 "나 지금 보고 있음"을 남긴다 → 다른 사람 참여자 현황에 보인다
+        .task(id: production.id) {
+            while !Task.isCancelled {
+                production.markSeen(byUserID: iCloudAccount.userRecordName)
+                try? await Task.sleep(for: .seconds(60))
+            }
+        }
         .onChange(of: historyCue) { if $1 != nil { priorityScene = nil } }     // History 열면 우선순위 닫힘
         .onChange(of: priorityScene) { if $1 != nil { historyCue = nil } }     // 우선순위 열면 History 닫힘
     }
@@ -77,7 +91,11 @@ extension MainCueSheetView {
                 .font(.title)
                 .foregroundStyle(Color.neutral900)
             Spacer()
-            shareButton
+            // 피그마 1349:3639: 멤버 · 공유하기
+            HStack(spacing: 20) {
+                memberButton
+                shareButton
+            }
         }
     }
     
@@ -101,9 +119,10 @@ extension MainCueSheetView {
         .buttonStyle(.primary)
         .frame(width: 100, height: 36)
     }
-    
+
+    // 공유하기 (셀리나 #90 모양) → 공유하기 창 (초대 링크 · 메일, #68)
     private var shareButton: some View {
-        Button { } label: {
+        Button { isShowingShare = true } label: {
             Text("공유하기")
                 .font(.body)                                   // Body/Regular 13
                 .foregroundStyle(Color.neutral25)
@@ -112,6 +131,44 @@ extension MainCueSheetView {
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
+        .popover(isPresented: $isShowingShare, arrowEdge: .bottom) {
+            SharePopover(production: production)
+        }
+    }
+
+    // 멤버 이니셜 동그라미(겹쳐서) + ∨ → 누르면 참여자 현황
+    private var memberButton: some View {
+        Button { isShowingParticipants = true } label: {
+            HStack(spacing: 4) {
+                HStack(spacing: -6) {
+                    let initials = (production.members ?? []).prefix(2).map { String($0.name.prefix(1)).uppercased() }
+                    if initials.isEmpty {
+                        memberCircle(Image(systemName: "person.fill"))
+                    } else {
+                        ForEach(Array(initials.enumerated()), id: \.offset) { _, initial in
+                            memberCircle(Text(initial))
+                        }
+                    }
+                }
+                Image(systemName: "chevron.down")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Color.neutral500)
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $isShowingParticipants, arrowEdge: .bottom) {
+            ParticipantsPopover(production: production, myUserID: iCloudAccount.userRecordName)
+        }
+    }
+
+    private func memberCircle(_ content: some View) -> some View {
+        content
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Color.brandPrimary)
+            .frame(width: 25, height: 25)
+            .background(Color.brandPrimarySubtle, in: .circle)
+            .overlay(Circle().strokeBorder(.white, lineWidth: 1.5))
     }
 }
 
@@ -132,4 +189,5 @@ extension MainCueSheetView {
     return MainCueSheetView(production: production)
         .frame(width: 1300, height: 800)
         .modelContainer(container)
+        .environment(ICloudAccount())
 }

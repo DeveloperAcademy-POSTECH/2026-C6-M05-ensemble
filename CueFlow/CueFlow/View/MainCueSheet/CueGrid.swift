@@ -11,6 +11,7 @@ import SwiftData
 struct CueGrid: View {
     let production: Production                    // 어느 공연의 표인지
     var selectedPart: Part? = nil                 // 파트 탭바에서 고른 파트 (nil = 전체)
+    var remoteRevision = 0                        // iCloud에서 받을 때마다 +1 → 표를 다시 그린다
     var onShowHistory: (Cue) -> Void = { _ in }   // 큐 카드 우클릭 → History
     @Binding var priorityScene: ShowScene?        // 우선순위 사이드바에 보여줄 씬 (nil = 닫힘)
     @Environment(\.modelContext) private var modelContext   // 새 큐를 저장할 곳

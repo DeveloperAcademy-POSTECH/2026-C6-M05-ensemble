@@ -10,6 +10,9 @@ import SwiftData
 
 @main
 struct CueFlowApp: App {
+    // 초대 링크로 앱이 열리면 맥이 여기에 알려 준다 (#68)
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     // 사이드바 다크모드 스위치가 바꾸는 값
     @AppStorage("isDarkMode") private var isDarkMode = false
 
@@ -69,6 +72,10 @@ struct CueFlowApp: App {
                 Button("이 맥 데이터만 지우기 (iCloud에서 다시 받기)") {
                     NotificationCenter.default.post(name: UserTest.didResetNotification, object: nil)
                     cloudSync.resetLocalAndRefetch()
+                }
+                // 초대 링크 없이 역할 선택 화면 확인 (ContentView가 테스트용 공연을 만들어 띄운다)
+                Button("가짜 초대 수락 (역할 선택 화면)") {
+                    NotificationCenter.default.post(name: InviteRoleView.fakeAcceptNotification, object: nil)
                 }
             }
             #endif

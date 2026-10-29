@@ -16,7 +16,10 @@ final class CloudSyncStore {
     private let logger = Logger(subsystem: "Happymondayy.CueFlow", category: "CloudSync")
 
     private let folder = URL.applicationSupportDirectory.appending(path: "CloudSync", directoryHint: .isDirectory)
-    private var stateURL: URL { folder.appending(path: "state.json") }
+    // 내 iCloud(개인 저장공간)와 공유받은 공연(공유 저장공간)은 진행 상태를 따로 둔다
+    private func stateURL(shared: Bool) -> URL {
+        folder.appending(path: shared ? "state-shared.json" : "state.json")
+    }
     private var recordsURL: URL { folder.appending(path: "records.json") }
 
     // 레코드 이름(모델 id) → 꼬리표
@@ -33,14 +36,14 @@ final class CloudSyncStore {
     // MARK: 동기화 진행 상태
 
     // nil이면 이 맥에서 처음 동기화하는 것
-    func loadState() -> CKSyncEngine.State.Serialization? {
-        guard let data = try? Data(contentsOf: stateURL) else { return nil }
+    func loadState(shared: Bool) -> CKSyncEngine.State.Serialization? {
+        guard let data = try? Data(contentsOf: stateURL(shared: shared)) else { return nil }
         return try? JSONDecoder().decode(CKSyncEngine.State.Serialization.self, from: data)
     }
 
-    func saveState(_ state: CKSyncEngine.State.Serialization) {
+    func saveState(_ state: CKSyncEngine.State.Serialization, shared: Bool) {
         do {
-            try JSONEncoder().encode(state).write(to: stateURL)
+            try JSONEncoder().encode(state).write(to: stateURL(shared: shared))
         } catch {
             logger.error("동기화 상태 저장 실패: \(error)")
         }
@@ -87,7 +90,8 @@ final class CloudSyncStore {
     // 개발용: 동기화 기록을 전부 버린다 → 다음 시작 때 "처음 동기화"가 되어 iCloud에서 전부 다시 받는다
     func removeAll() {
         records = [:]
-        try? FileManager.default.removeItem(at: stateURL)
+        try? FileManager.default.removeItem(at: stateURL(shared: false))
+        try? FileManager.default.removeItem(at: stateURL(shared: true))
         try? FileManager.default.removeItem(at: recordsURL)
     }
 

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- 초대 링크(iCloud 공유 링크)를 누르면 이 앱이 열리게 한다 (#68). 나머지 항목은 빌드 설정(INFOPLIST_KEY_)에서 자동으로 채워진다 -->
+	<key>CKSharingSupported</key>
+	<true/>
+</dict>
+</plist>
