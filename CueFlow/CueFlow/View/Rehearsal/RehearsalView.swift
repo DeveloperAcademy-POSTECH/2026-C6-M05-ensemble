@@ -105,8 +105,11 @@ struct RehearsalView: View {
             if let position { follow(position) }
         }
         // 진행하던 사람이 리허설 화면을 나가면 진행도 끝
+        // 리허설 화면이 열려 있는 동안만 진행 위치를 자주 확인한다 (CloudSync)
+        .onAppear { RehearsalSync.shared.watchingProductionID = production.id }
         .onDisappear {
             if isLeading { RehearsalSync.shared.stopLeading(productionID: production.id) }
+            RehearsalSync.shared.watchingProductionID = nil
         }
         #if DEBUG
         .onReceive(NotificationCenter.default.publisher(for: RehearsalSync.fakeLeaderNotification)) { notification in
@@ -322,15 +325,15 @@ extension RehearsalView {
     private func moveFakeLeader(_ step: RehearsalSync.FakeStep) {
         let sync = RehearsalSync.shared
         guard step != .stop else {
-            sync.receiveFake(productionID: production.id, sceneID: nil, triggerID: nil)
+            sync.sendFake(productionID: production.id, sceneID: nil, triggerID: nil)
             return
         }
 
         var scene = sceneIndex
         var trigger = triggerIndex
-        if let syncPosition, let index = scenes.firstIndex(where: { $0.id == syncPosition.sceneID }) {
+        if let base = sync.fakeBase(of: production.id), let index = scenes.firstIndex(where: { $0.id == base.sceneID }) {
             scene = index
-            trigger = sortedTriggers(at: index).firstIndex { $0.id == syncPosition.triggerID } ?? 0
+            trigger = sortedTriggers(at: index).firstIndex { $0.id == base.triggerID } ?? 0
             switch step {
             case .next:
                 if trigger < sortedTriggers(at: scene).count - 1 {
@@ -353,7 +356,7 @@ extension RehearsalView {
         guard scenes.indices.contains(scene) else { return }
 
         let triggers = sortedTriggers(at: scene)
-        sync.receiveFake(
+        sync.sendFake(
             productionID: production.id,
             sceneID: scenes[scene].id,
             triggerID: triggers.indices.contains(trigger) ? triggers[trigger].id : nil
