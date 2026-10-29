@@ -30,6 +30,8 @@ struct NoticeComposeView: View {
     }
 
     var body: some View {
+        // 피그마 951:7451: 제목 · 칸 묶음(폭 1069)이 창 가로 · 세로 가운데. 창이 작으면 스크롤
+        GeometryReader { geometry in
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Text("공지사항")
@@ -100,24 +102,33 @@ struct NoticeComposeView: View {
                 }
             }
             .frame(maxWidth: 1069, alignment: .leading)
-            .padding(40)
+            .padding(.horizontal, 40)
+            // 창이 작아서 묶음이 위로 붙어도 제목이 ← (아래 끝 70) 밑에서 시작하게
+            .padding(.top, 96)
+            .padding(.bottom, 40)
+            .frame(maxWidth: .infinity, minHeight: geometry.size.height)   // 창이 크면 세로 가운데
+        }
         }
         .background(.white)
-        // 피그마: 시스템 뒤로 버튼 대신 왼쪽 위 ← (24 · neutral700)
+        // 피그마: 시스템 뒤로 버튼 대신 창 왼쪽 위 ← (24 · neutral700 · 왼쪽 44 · 제목 막대 아래 52 = 가운데 기준)
         .navigationBarBackButtonHidden(true)
         .overlay(alignment: .topLeading) {
-            Button { dismiss() } label: {
-                Image(systemName: "arrow.left")
-                    .font(.system(size: 24))
-                    .foregroundStyle(Color.neutral700)
-                    .frame(width: 36, height: 36)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .help("공지 목록으로")
-            .padding(.leading, 26)
-            .padding(.top, 34)
+            backButton
+                .padding(.leading, 26)
+                .padding(.top, 34)
         }
+    }
+
+    private var backButton: some View {
+        Button { dismiss() } label: {
+            Image(systemName: "arrow.left")
+                .font(.system(size: 24))
+                .foregroundStyle(Color.neutral700)
+                .frame(width: 36, height: 36)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("공지 목록으로")
     }
 
     // "프로젝트 선택 ⌄" (피그마 951:7460: 흰 바탕 · 회색 테두리 · 높이 50)

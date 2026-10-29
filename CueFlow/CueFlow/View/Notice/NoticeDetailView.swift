@@ -16,6 +16,7 @@ struct NoticeDetailView: View {
     @State private var notice: Notice
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @State private var isHoveringTop = false   // 위쪽에 마우스를 올리면 버튼 줄이 보인다
 
     init(notice: Notice, notices: [Notice] = []) {
         self.notices = notices
@@ -39,14 +40,22 @@ struct NoticeDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
                     // 피그마 951:7518: 위쪽 가운데 삭제 · 답장 · 전체 답장 · 전달
-                    actionBar
-                        .frame(maxWidth: .infinity)
-                        .padding(.bottom, -6)
+                    // 평소엔 숨기고, 위쪽(버튼 줄 ~ "받은 공지" 줄)에 마우스를 올리면 보인다 (공지 목록 별표처럼)
+                    VStack(alignment: .leading, spacing: 22) {
+                        actionBar
+                            .frame(maxWidth: .infinity)
+                            .opacity(isHoveringTop ? 1 : 0)
+                            .allowsHitTesting(isHoveringTop)
 
-                    Text("받은 공지")
-                        .font(.largeTitle.bold())
-                        .foregroundStyle(Color.neutral900)
-                        .id("top")
+                        Text("받은 공지")
+                            .font(.largeTitle.bold())
+                            .foregroundStyle(Color.neutral900)
+                            .id("top")
+                    }
+                    .contentShape(Rectangle())
+                    .onHover { hovering in
+                        withAnimation(.easeInOut(duration: 0.15)) { isHoveringTop = hovering }
+                    }
 
                     VStack(spacing: 28) {
                         card
