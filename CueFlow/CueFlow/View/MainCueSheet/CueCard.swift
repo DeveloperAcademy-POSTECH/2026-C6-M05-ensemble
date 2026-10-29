@@ -13,17 +13,21 @@ import SwiftData
 struct CueCard: View {
     @Bindable var cue: Cue   // 카드 안에서 cue의 값을 바꿀 수 있게 (위치 선택용)
     var onShowHistory: () -> Void = {}   // 우클릭 → History
+    var onShowUnread: () -> Void = {}    // 우클릭 → 미확인 수정사항
     var isSelected = false                       // 선택된 카드인지 (테두리가 파트 accent 색)
     var onSelect: (Bool) -> Void = { _ in }      // 카드를 눌렀을 때 (true = shift 누른 채)
     @State private var isEditingCue = false      // 큐 수정 팝오버가 열려 있는지
     @State private var isPickingPosition = false  // 위치 고르는 팝오버가 열려 있는지
     @State private var isShowingMenu = false      // 우클릭 메뉴 팝오버가 열려 있는지
+    @State private var isShowingComments = false
+    @State private var isShowingChecks = false
+    @Environment(\.myUserID) private var myUserID
     @Environment(\.modelContext) private var modelContext   // 큐를 지울 곳
     
     var body: some View {
         VStack(alignment: .leading, spacing: 17) {
             cueHeader
-            buttonSpace
+            cueButtons
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -47,9 +51,7 @@ extension CueCard {
         PopoverMenu {
             PopoverMenuItem("큐 수정하기") { isEditingCue = true }   // 더블클릭과 같은 수정 팝오버
             PopoverMenuItem("History", action: onShowHistory)       // 오른쪽 History 사이드바 열기
-            PopoverMenuDivider()
-            PopoverMenuItem("복사하기") { }
-            PopoverMenuItem("붙여넣기") { }
+            PopoverMenuItem("미확인 수정사항", action: onShowUnread)
             PopoverMenuDivider()
             PopoverMenuItem("삭제하기") { modelContext.deleteCue(cue) }
         }
@@ -117,9 +119,46 @@ extension CueCard {
             .background(partColor.background, in: .capsule)
     }
     
-    private var buttonSpace: some View {
-        Color.clear
-            .frame(height: 23)
+    // 💬 댓글 수 · ✓ 확인한 사람 수
+    private var cueButtons: some View {
+        HStack(spacing: 6) {
+            commentButton
+            checkButton
+        }
+        .frame(maxWidth: .infinity, alignment: .trailing)
+    }
+
+    private var commentButton: some View {
+        Button { isShowingComments = true } label: {
+            HStack(spacing: 2) {
+                Image(systemName: "message")
+                    .font(.system(size: 8, weight: .semibold))
+                Text("\(cue.comments?.count ?? 0)")
+            }
+            .countPill(background: Color.neutral100)
+        }
+        .buttonStyle(.plain)
+        .appPopover(isPresented: $isShowingComments, width: 260) { CueCommentPopover(cue: cue) }
+    }
+
+    // 내가 확인했으면 파트색, 아니면 회색
+    private var checkButton: some View {
+        Button { isShowingChecks = true } label: {
+            HStack(spacing: 3) {
+                checkCircle
+                Text("\(cue.checks?.count ?? 0)")
+            }
+            .countPill(background: cue.check(byUserID: myUserID) == nil ? Color.neutral100 : partColor.background)
+        }
+        .buttonStyle(.plain)
+        .appPopover(isPresented: $isShowingChecks, width: 280) { CueCheckPopover(cue: cue) }
+    }
+
+    private var checkCircle: some View {
+        Image(systemName: "checkmark")
+            .font(.system(size: 7, weight: .bold))
+            .frame(width: 13, height: 13)
+            .background(.white, in: .circle)
     }
     
     // 더블클릭했을 때 뜨는 수정 팝오버 (원래 값이 채워진 채로)
@@ -185,6 +224,19 @@ extension ModelContext {
             return
         }
         delete(trigger)   // 트리거를 지우면 큐도 같이 지워짐
+    }
+}
+
+// 큐카드 아래 숫자 캡슐
+private extension View {
+    func countPill(background: Color) -> some View {
+        self
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(Color.neutral800)
+            .padding(.horizontal, 7)
+            .frame(minWidth: 40, minHeight: 23)
+            .background(background, in: .capsule)
+            .contentShape(.capsule)
     }
 }
 
