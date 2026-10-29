@@ -38,6 +38,10 @@ struct ContentView: View {
     @Query(sort: \Production.updatedAt, order: .reverse)
     private var productions: [Production]
 
+    // 저장된 공지 전부. 최근에 보낸 순서.
+    @Query(sort: \Notice.sentAt, order: .reverse)
+    private var notices: [Notice]
+
     init(pendingInvite: PendingInvite? = nil) {
         _pendingInvite = State(initialValue: pendingInvite)
     }
@@ -185,7 +189,10 @@ struct ContentView: View {
                     )
                 }
             case .notice:
-                Text("공지사항 화면")
+                // NavigationStack: 목록 → 상세로 들어갔다가 뒤로 돌아올 수 있게
+                NavigationStack {
+                    NoticeListView(notices: notices)
+                }
             case .help:
                 Text("도움말 화면")
             }

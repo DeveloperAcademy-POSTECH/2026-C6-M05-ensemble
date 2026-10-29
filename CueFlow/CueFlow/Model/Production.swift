@@ -42,6 +42,9 @@ final class Production {
 
     @Relationship(deleteRule: .cascade, inverse: \Member.production)
     var members: [Member]? = []
+    
+    @Relationship(deleteRule: .cascade, inverse: \Notice.production)
+    var notices: [Notice]? = []
 
     // 최초 상태 무대 배치. 아직 배치하지 않은 장면은 이걸 보여준다
     @Relationship(deleteRule: .cascade, inverse: \StagePlacement.production)

@@ -33,6 +33,8 @@ struct CueFlowApp: App {
             Member.self,
             Comment.self,
             CueCheck.self,
+            Notice.self,
+            NoticeRead.self,
             ScriptLine.self,
             StagePlacement.self,
             CueHistory.self,
