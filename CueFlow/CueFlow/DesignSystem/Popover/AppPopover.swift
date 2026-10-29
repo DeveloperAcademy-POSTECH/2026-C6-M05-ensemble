@@ -33,10 +33,10 @@ extension View {
         @ViewBuilder content: () -> Content
     ) -> some View {
         let popover = content().popoverStyle(width: width, background: background)
-        return anchorPreference(key: AppPopoverKey.self, value: .bounds) { anchor in
-            guard isPresented.wrappedValue else { return [] }
+        return transformAnchorPreference(key: AppPopoverKey.self, value: .bounds) { items, anchor in   // 덮어쓰지 않고 더함 (한 뷰에 팝오버 여러 개 가능)
+            guard isPresented.wrappedValue else { return }
             let close = { isPresented.wrappedValue = false }
-            return [AppPopoverItem(anchor: anchor, edge: edge, content: AnyView(popover.environment(\.closeAppPopover, CloseAppPopoverAction(close: close))), close: close)]
+            items.append(AppPopoverItem(anchor: anchor, edge: edge, content: AnyView(popover.environment(\.closeAppPopover, CloseAppPopoverAction(close: close))), close: close))
         }
     }
 

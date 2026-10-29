@@ -99,6 +99,32 @@ struct PopoverMenuDivider: View {
     }
 }
 
+// 우클릭했을 때 할 일
+// SwiftUI는 우클릭이 시스템 메뉴(contextMenu)뿐이라, 우클릭만 AppKit으로 받음
+extension View {
+    func onRightClick(perform action: @escaping () -> Void) -> some View {
+        overlay { RightClickCatcher(action: action) }
+    }
+}
+
+// 우클릭만 받고, 왼쪽 클릭 · 드래그 · 마우스 올리기는 아래 뷰로 그대로 통과시키는 투명 판
+struct RightClickCatcher: NSViewRepresentable {
+    let action: () -> Void
+
+    func makeNSView(context: Context) -> CatcherView { CatcherView() }
+    func updateNSView(_ view: CatcherView, context: Context) { view.action = action }
+
+    final class CatcherView: NSView {
+        var action: () -> Void = {}
+
+        override func hitTest(_ point: NSPoint) -> NSView? {
+            NSApp.currentEvent?.type == .rightMouseDown ? super.hitTest(point) : nil
+        }
+
+        override func rightMouseDown(with event: NSEvent) { action() }
+    }
+}
+
 #Preview {
     VStack(alignment: .leading, spacing: 40) {
         PopoverCheckList(items: CuePosition.allCases, selected: .sangsu, title: \.rawValue) { _ in }

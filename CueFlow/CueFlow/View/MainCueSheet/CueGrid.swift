@@ -178,7 +178,7 @@ extension CueGrid {
     
     // + 파트 추가 칸
     private var addPartHeaderCell: some View {
-        Button { isAddingPart = true } label: { Image(systemName: "plus").font(.system(size: 25)) }
+        Button { isAddingPart = true } label: { Text("+").font(.system(size: 25, weight: .semibold)) }   // 씬 추가 + 와 같은 모양
             .appPopover(isPresented: $isAddingPart, edge: .trailing) { AddPart(onSave: addPart) }
             .buttonStyle(.plain)
             .foregroundStyle(Color.neutral900)

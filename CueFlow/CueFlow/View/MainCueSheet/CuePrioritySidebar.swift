@@ -14,6 +14,7 @@ struct CuePrioritySidebar: View {
     let scene: ShowScene
     @State private var slotCount = 5   // 번호 칸 수 (+ 로 늘림)
     var onSelectScene: (ShowScene) -> Void = { _ in }   // 위 씬 칩 목록에서 다른 씬을 골랐을 때
+    @State private var isPickingScene = false   // 씬 고르는 팝오버가 열려 있는지
 
     var body: some View {
         ScrollView {
@@ -45,17 +46,12 @@ extension CuePrioritySidebar {
 
     // S#1 ⌄ 누르면 씬 단축어 목록 → 고르면 그 열로 이동
     private var sceneChip: some View {
-        Menu {
-            ForEach(sortedScenes) { option in
-                Button(option.code(in: sortedScenes)) { onSelectScene(option) }
+        Button { isPickingScene = true } label: { sceneChipLabel }
+            .buttonStyle(.plain)
+            .fixedSize()
+            .appPopover(isPresented: $isPickingScene, width: nil) {
+                PopoverCheckList(items: sortedScenes, selected: scene, title: { $0.code(in: sortedScenes) }) { onSelectScene($0) }
             }
-        } label: {
-            sceneChipLabel
-        }
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .menuIndicator(.hidden)
-        .fixedSize()
     }
 
     private var sceneChipLabel: some View {
@@ -155,12 +151,11 @@ extension CuePrioritySidebar {
     }
 
     // 끌어다 놓은 카드를 이 번호로
-    private func moveCue(id: String?, to number: Int) -> Bool {
-        guard let cue = sceneCues.first(where: { $0.id.uuidString == id }), cue.order != number else { return false }
+    private func moveCue(id: String?, to number: Int) {
+        guard let cue = sceneCues.first(where: { $0.id.uuidString == id }), cue.order != number else { return }   // 없는 큐거나 같은 번호면 그대로
         cue.addHistory("순서 변경", detail: "\(CurrentEditor.name)님이 \(cue.order)번 → \(number)번으로 변경")
         cue.order = number
         closeGaps()   // 옮기고 나서 비는 번호가 생기면 당김
-        return true
     }
 
     // 빈 번호를 없애고 1번부터 차례로 당김 (예: 1, 3, 4 → 1, 2, 3)
