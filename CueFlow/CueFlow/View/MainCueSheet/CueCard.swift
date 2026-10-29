@@ -141,12 +141,12 @@ extension CueCard {
     // 글이 바뀌었으면 "이전 · 변경" 기록 남기기
     private func recordChange(_ title: String, from before: String, to after: String) {
         guard before != after else { return }
-        cue.addHistory(title, detail: "\(CurrentEditor.name)님의 수정", before: before, after: after)
+        cue.addHistory(title, detail: "\(cue.editorName)님의 수정", before: before, after: after)
     }
     
     // 위치가 바뀌면 (카드 태그 · 수정 팝오버 둘 다) "하수 → 상수로 변경" 기록
     private func recordPositionChange(from old: CuePosition, to new: CuePosition) {
-        cue.addHistory("위치 변경", detail: "\(CurrentEditor.name)님이 \(old.rawValue) → \(new.rawValue)로 변경")
+        cue.addHistory("위치 변경", detail: "\(cue.editorName)님이 \(old.rawValue) → \(new.rawValue)로 변경")
     }
     
     // 트리거 글이 바뀌었을 때: 다른 큐와 같이 쓰는 트리거면 이 큐만 새 트리거로 떼어냄

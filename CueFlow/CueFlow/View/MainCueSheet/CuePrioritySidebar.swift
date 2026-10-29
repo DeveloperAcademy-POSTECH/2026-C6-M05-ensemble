@@ -153,7 +153,7 @@ extension CuePrioritySidebar {
     // 끌어다 놓은 카드를 이 번호로
     private func moveCue(id: String?, to number: Int) {
         guard let cue = sceneCues.first(where: { $0.id.uuidString == id }), cue.order != number else { return }   // 없는 큐거나 같은 번호면 그대로
-        cue.addHistory("순서 변경", detail: "\(CurrentEditor.name)님이 \(cue.order)번 → \(number)번으로 변경")
+        cue.addHistory("순서 변경", detail: "\(cue.editorName)님이 \(cue.order)번 → \(number)번으로 변경")
         cue.order = number
         closeGaps()   // 옮기고 나서 비는 번호가 생기면 당김
     }

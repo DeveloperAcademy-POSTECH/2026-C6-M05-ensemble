@@ -27,7 +27,12 @@ final class ICloudAccount {
     private(set) var status: Status = .checking
 
     // 내 iCloud 계정 ID (CloudKit 사용자 레코드 이름). 로그인 안 됐으면 nil
-    private(set) var userRecordName: String?
+    private(set) var userRecordName: String? {
+        didSet { Self.currentUserRecordName = userRecordName }
+    }
+
+    // 화면 밖(기록 남기기 등)에서 "나"를 찾을 때 쓰는 같은 값
+    nonisolated(unsafe) static var currentUserRecordName: String?
 
     // 쓸 때 만든다 — iCloud 권한(entitlements)이 없는 미리보기에서 만들기만 해도 멈추기 때문
     private var container: CKContainer { CKContainer(identifier: Self.containerID) }
