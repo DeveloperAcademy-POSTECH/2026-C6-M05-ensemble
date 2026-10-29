@@ -77,6 +77,7 @@ final class CloudSync {
         if savedState == nil {
             enqueueEverything()
         }
+        enqueueScriptsAndPlacementsOnce()
         logger.info("동기화 시작 (처음: \(savedState == nil))")
     }
 
@@ -362,6 +363,8 @@ final class CloudSync {
         switch model {
         case let scene as ShowScene:
             (scene.triggers ?? []).flatMap { [$0.id] + ($0.cues ?? []).map(\.id) }
+                + (scene.scriptLines ?? []).map(\.id)
+                + (scene.placements ?? []).map(\.id)
         case let trigger as Trigger:
             (trigger.cues ?? []).map(\.id)
         case let part as Part:
@@ -369,6 +372,25 @@ final class CloudSync {
         default:
             []
         }
+    }
+
+    // #86 전에는 대본 · 무대 배치를 안 올렸다 → 이 맥에 이미 있던 것을 한 번만 올린다
+    // 공유받은 공연에 내가 넣은 대본도 올린다 (친구도 따로 넣었으면 두 벌이 되는데, 한쪽에서 대본을 다시 넣으면 정리된다)
+    private func enqueueScriptsAndPlacementsOnce() {
+        let key = "didUploadScriptsAndPlacements"
+        guard let context, !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
+
+        var items: [any CloudRecordConvertible] = []
+        for production in (try? context.fetch(FetchDescriptor<Production>())) ?? [] {
+            let scenes = production.scenes ?? []
+            items += scenes.flatMap { $0.scriptLines ?? [] }
+            items += scenes.flatMap { $0.placements ?? [] }
+            items += production.initialPlacements ?? []
+        }
+        let recordIDs = items.compactMap(\.cloudRecordID)
+        enqueue([], recordIDs.map { .saveRecord($0) })
+        logger.info("대본 · 무대 배치 처음 올리기: \(recordIDs.count)개")
     }
 
     // 처음 동기화할 때: 이 맥에 있는 내 공연 전부 (공유받은 공연은 공유 저장공간에서 다시 받는다)
@@ -390,6 +412,9 @@ final class CloudSync {
             items += parts
             items += cues
             items += production.members ?? []
+            items += scenes.flatMap { $0.scriptLines ?? [] }
+            items += scenes.flatMap { $0.placements ?? [] }
+            items += production.initialPlacements ?? []
             recordIDs.formUnion(items.compactMap(\.cloudRecordID))
         }
 
@@ -428,6 +453,8 @@ final class CloudSync {
         if let found = try? context.fetch(FetchDescriptor<Part>(predicate: #Predicate { $0.id == id })).first { return found }
         if let found = try? context.fetch(FetchDescriptor<Cue>(predicate: #Predicate { $0.id == id })).first { return found }
         if let found = try? context.fetch(FetchDescriptor<Member>(predicate: #Predicate { $0.id == id })).first { return found }
+        if let found = try? context.fetch(FetchDescriptor<ScriptLine>(predicate: #Predicate { $0.id == id })).first { return found }
+        if let found = try? context.fetch(FetchDescriptor<StagePlacement>(predicate: #Predicate { $0.id == id })).first { return found }
         return nil
     }
 
@@ -552,6 +579,8 @@ final class CloudSync {
             case Part.recordType: item = Part(name: "", order: 0, colorIndex: 0)
             case Cue.recordType: item = Cue(title: "", position: .stage, order: 0)
             case Member.recordType: item = Member(name: "", role: "")
+            case ScriptLine.recordType: item = ScriptLine(order: 0, speaker: nil, text: "")
+            case StagePlacement.recordType: item = StagePlacement(name: "", kind: .cast, area: .stage, x: 0.5, y: 0.5)
             default: return nil   // 모르는 종류 (2차 대상 등)
             }
             item.id = id
@@ -603,6 +632,15 @@ final class CloudSync {
             let parts = partIDs.compactMap { findModel($0) as? Part }
             member.parts = parts
             if parts.count < partIDs.count { found = false }
+        case let line as ScriptLine:
+            line.scene = parent(CloudKey.sceneID, as: ShowScene.self, found: &found)
+            if let scene = line.scene { addIfMissing(line, to: &scene.scriptLines) }
+        case let placement as StagePlacement:
+            // 최초 상태 배치면 공연 id, 장면 배치면 장면 id 하나만 적혀 있다
+            placement.production = parent(CloudKey.productionID, as: Production.self, found: &found)
+            placement.scene = parent(CloudKey.sceneID, as: ShowScene.self, found: &found)
+            if let production = placement.production { addIfMissing(placement, to: &production.initialPlacements) }
+            if let scene = placement.scene { addIfMissing(placement, to: &scene.placements) }
         default:
             break   // 공연은 부모가 없다
         }
