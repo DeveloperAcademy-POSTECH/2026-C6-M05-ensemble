@@ -15,6 +15,7 @@ struct MainCueSheetView: View {
     @State private var historyCue: Cue?        // History 사이드바에 보여줄 큐 (nil = 닫힘)
     @State private var priorityScene: ShowScene?  // 우선순위 사이드바에 보여줄 씬 (nil = 닫힘)
     @State private var isShowingParticipants = false   // 멤버 버튼 → 참여자 현황
+    @State private var isShowingUnread = false
     @State private var isShowingShare = false          // 임시 초대하기 버튼 → 공유하기 창
     @State private var remoteRevision = 0              // 다른 사람이 고친 걸 받으면 +1 → 표 다시 그리기
     @Environment(ICloudAccount.self) private var iCloudAccount
@@ -23,7 +24,7 @@ struct MainCueSheetView: View {
         VStack(alignment: .leading, spacing: 0) {
             titleRow
             filterRow
-            CueGrid(production: production, selectedPart: selectedPart, remoteRevision: remoteRevision, onShowHistory: { historyCue = $0 }, priorityScene: $priorityScene)
+            CueGrid(production: production, selectedPart: selectedPart, remoteRevision: remoteRevision, onShowHistory: { historyCue = $0 }, onShowUnread: { isShowingUnread = true }, onEscape: { isShowingUnread = false }, priorityScene: $priorityScene)
             .padding(.top, -12)   // 위 여유(12)만큼 올려서 표 위치는 피그마 그대로
             .overlay(alignment: .trailing) { sidebar.padding(.trailing, -35) }   // 표 높이만큼만 + 창 오른쪽 끝에 붙임 (바깥 여백 35만큼)
         }
@@ -32,6 +33,7 @@ struct MainCueSheetView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(.white)
         .appPopoverHost()   // 표 안 팝오버(파트 추가 · 수정)가 그려지는 곳
+        .environment(\.myUserID, iCloudAccount.userRecordName)
         .onReceive(NotificationCenter.default.publisher(for: CloudSync.didApplyRemoteNotification)) { _ in
             remoteRevision += 1
         }
@@ -42,12 +44,13 @@ struct MainCueSheetView: View {
                 try? await Task.sleep(for: .seconds(60))
             }
         }
-        .onChange(of: historyCue) { if $1 != nil { priorityScene = nil } }     // History 열면 우선순위 닫힘
-        .onChange(of: priorityScene) { if $1 != nil { historyCue = nil } }     // 우선순위 열면 History 닫힘
+        .onChange(of: historyCue) { if $1 != nil { priorityScene = nil; isShowingUnread = false } }     // 사이드바는 하나만
+        .onChange(of: priorityScene) { if $1 != nil { historyCue = nil; isShowingUnread = false } }
+        .onChange(of: isShowingUnread) { if $1 { historyCue = nil; priorityScene = nil } }
     }
 }
 
-// 오른쪽 사이드바: History (큐 카드 우클릭) · 우선순위 (씬 열 ⓝ)
+// 오른쪽 사이드바: History (큐 카드 우클릭) · 우선순위 (씬 열 ⓝ) · 미확인 수정사항
 
 extension MainCueSheetView {
     @ViewBuilder
@@ -57,6 +60,8 @@ extension MainCueSheetView {
         } else if let priorityScene {
             CuePrioritySidebar(scene: priorityScene, onSelectScene: { self.priorityScene = $0 })
                 .id(priorityScene)   // 다른 열로 바뀌면 새로 그림 (00 카드 번호 다시 매기기)
+        } else if isShowingUnread {
+            CueUnreadSidebar(production: production, onClose: closeSidebar)
         }
     }
 
@@ -78,24 +83,21 @@ extension MainCueSheetView {
     private func closeSidebar() {
         historyCue = nil
         priorityScene = nil
+        isShowingUnread = false
     }
 }
 
 // 위쪽 두 줄
 
 extension MainCueSheetView {
-    // 공연 제목 + 오른쪽 멤버 캡슐
+    // 공연 제목 + 오른쪽 공유하기
     private var titleRow: some View {
         HStack {
             Text(production.title)
                 .font(.title)
                 .foregroundStyle(Color.neutral900)
             Spacer()
-            // 피그마 1349:3639: 멤버 · 공유하기
-            HStack(spacing: 20) {
-                memberButton
-                shareButton
-            }
+            shareButton   // 멤버 버튼(memberButton)은 일단 뺌
         }
     }
     

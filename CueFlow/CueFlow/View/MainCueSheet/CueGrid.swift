@@ -13,6 +13,8 @@ struct CueGrid: View {
     var selectedPart: Part? = nil                 // 파트 탭바에서 고른 파트 (nil = 전체)
     var remoteRevision = 0                        // iCloud에서 받을 때마다 +1 → 표를 다시 그린다
     var onShowHistory: (Cue) -> Void = { _ in }   // 큐 카드 우클릭 → History
+    var onShowUnread: () -> Void = {}
+    var onEscape: () -> Void = {}                 // Esc → 미확인 사이드바 닫기
     @Binding var priorityScene: ShowScene?        // 우선순위 사이드바에 보여줄 씬 (nil = 닫힘)
     @Environment(\.modelContext) private var modelContext   // 새 큐를 저장할 곳
 
@@ -163,6 +165,7 @@ extension CueGrid {
             isHovering: hoveredSlotKey == key,
             onAddCue: { addCue(part: part, scene: scene, triggerText: $0, cueTitle: $1, position: $2) },
             onShowHistory: onShowHistory,
+            onShowUnread: onShowUnread,
             selectedCueIDs: selectedCueIDs,
             onSelectCue: { selectCue($0, isShiftPressed: $1) }
         )
@@ -285,9 +288,14 @@ extension CueGrid {
     }
     
     // 화면에는 안 보이는 버튼: Esc 키를 누르면 선택 해제
+    // Esc: 선택 해제 + 미확인 사이드바 닫기
     private var escapeShortcut: some View {
-        Button("선택 해제", action: clearSelection)            .keyboardShortcut(.cancelAction)
-            .opacity(0)
+        Button("선택 해제") {
+            clearSelection()
+            onEscape()
+        }
+        .keyboardShortcut(.cancelAction)
+        .opacity(0)
     }
 }
 
