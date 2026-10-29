@@ -70,7 +70,8 @@ struct RehearsalView: View {
                         production: production,
                         scene: currentScene,
                         triggers: currentTriggers,
-                        currentTriggerIndex: triggerIndex
+                        currentTriggerIndex: triggerIndex,
+                        onToggleExpand: { isMinimapExpanded = true }
                     )
                         .frame(height: 378)
 
@@ -126,6 +127,38 @@ struct RehearsalView: View {
         .padding(.bottom, 45)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.white)   // 피그마 window-background = 흰색
+        .overlay {
+            if isMinimapExpanded { expandedMinimap }
+        }
+    }
+
+    @State private var isMinimapExpanded = false   // 무대 미니맵 크게 보기
+
+    // 미니맵 크게 보기 (피그마 1361:9612): 같은 카드를 1.375배로 창 가운데에. 창이 작으면 들어가는 만큼만.
+    // 큐는 그대로 넘길 수 있다 (스페이스 · 따라가기) — 아래 큐 목록이 가려져 있을 뿐
+    private var expandedMinimap: some View {
+        GeometryReader { geometry in
+            let base = CGSize(width: 1009, height: 378)
+            let scale = min(1.375, (geometry.size.width - 124) / base.width, (geometry.size.height - 120) / base.height)
+            RehearsalStageMap(
+                production: production,
+                scene: currentScene,
+                triggers: currentTriggers,
+                currentTriggerIndex: triggerIndex,
+                isExpanded: true,
+                onToggleExpand: { isMinimapExpanded = false }
+            )
+            .frame(width: base.width, height: base.height)
+            .scaleEffect(scale)
+            .frame(width: geometry.size.width, height: geometry.size.height)
+        }
+        .background(Color.white)
+        // esc → 작게 보기
+        .background {
+            Button("작게 보기") { isMinimapExpanded = false }
+                .keyboardShortcut(.cancelAction)
+                .opacity(0)
+        }
     }
 
     // 이전 큐 / 다음 큐로 장면을 넘어갈 때는 onChange에서 첫 큐로 되돌리지 않게

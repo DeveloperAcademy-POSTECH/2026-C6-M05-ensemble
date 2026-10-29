@@ -6,6 +6,7 @@
 //  지금 장면의 무대 배치를 보여준다. 장면을 고친 적 없으면 최초 상태 배치.
 //  큐를 넘기면 그 큐까지 적용해서 배역 · 소품이 옮겨진다 (StageCueMoves). 지금 큐가 옮긴 것은 둘레가 빛난다.
 //  최초 상태 배치가 없으면 "첫 무대 배치를 시작해보세요" (피그마 리허설모드_무대배치01).
+//  확대 버튼 → 리허설 화면이 같은 카드를 크게 띄운다 (피그마 1361:9612 리허설모드_무대확장화면).
 //
 
 import SwiftUI
@@ -15,6 +16,8 @@ struct RehearsalStageMap: View {
     let scene: ShowScene?          // 지금 장면
     let triggers: [Trigger]        // 지금 장면의 트리거 (순서대로)
     let currentTriggerIndex: Int   // 지금 큐
+    var isExpanded = false             // 크게 보기 중이면 버튼이 "작게 보기"로
+    var onToggleExpand: (() -> Void)?  // 크게 보기 / 작게 보기 (nil이면 버튼 숨김)
 
     private enum Editing: Identifiable {
         case firstSetup             // 배치하기 → 배우 · 소품 목록부터
@@ -77,6 +80,20 @@ struct RehearsalStageMap: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.neutral900)
                 Spacer()
+                if let onToggleExpand {
+                    Button(action: onToggleExpand) {
+                        Image(systemName: isExpanded
+                              ? "arrow.down.right.and.arrow.up.left.rectangle"
+                              : "arrow.up.left.and.arrow.down.right.rectangle")
+                            .font(.system(size: 17))   // 피그마 확대 화면 24 ÷ 1.375
+                            .foregroundStyle(Color.neutral900)
+                            .frame(width: 36, height: 36)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(isExpanded ? "작게 보기 (esc)" : "크게 보기")
+                    .padding(.trailing, 4)
+                }
                 Button {
                     if let scene { editing = .scene(scene) }
                 } label: {
