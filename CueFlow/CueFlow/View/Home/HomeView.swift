@@ -49,7 +49,7 @@ struct HomeView: View {
                     .padding(.top, 45)
 
                 projectList
-                    .padding(.top, 78)
+                    .padding(.top, 73)
             }
             .padding(.horizontal, 40)
             .padding(.top, 37)
@@ -100,18 +100,19 @@ struct HomeView: View {
     }
 
     private var recentProjects: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 19) {
             Text("최근에 열어본 프로젝트")
                 .font(.system(size: 20, weight: .semibold))   // 피그마 20pt (macOS 기본 스타일에 없음)
                 .foregroundStyle(Color.neutral900)
 
-            HStack(spacing: 21) {
+            HStack(spacing: 22) {
                 ForEach(recentlyOpened) { production in
                     RecentProjectCard(
                         lastWorked: production.lastWorkedText,
-                        title: production.cardTitle,
-                        summary: production.summaryText,
+                        title: production.title,
+                        tags: [production.genre, production.summaryText],
                         members: production.memberCountText,
+                        runningTime: production.runningTimeText,
                         schedule: production.scheduleText,
                         onRehearsal: {
                             production.lastOpenedAt = .now
@@ -144,6 +145,7 @@ struct HomeView: View {
 
             // 열 제목
             HStack(spacing: 0) {
+                Text("프로젝트 이름")
                 Spacer()
                 Text("수정한 날짜")
                     .frame(width: ProjectListColumn.dateWidth, alignment: .leading)

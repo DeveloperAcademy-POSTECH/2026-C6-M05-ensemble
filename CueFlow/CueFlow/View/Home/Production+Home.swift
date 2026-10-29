@@ -9,22 +9,17 @@
 import Foundation
 
 extension Production {
-    // "뮤지컬 | 레미제라블"
-    var cardTitle: String {
-        genre.isEmpty ? title : "\(genre) | \(title)"
-    }
-
     // "뮤지컬_레미제라블"
     var listName: String {
         genre.isEmpty ? title : "\(genre)_\(title)"
     }
 
-    // "최근 작업 오늘 16:32" / "최근 작업 9월 28일"
+    // "오늘 16:32 수정" / "9월 28일 수정" (피그마 951:11299)
     var lastWorkedText: String {
-        if Calendar.current.isDateInToday(lastOpenedAt) {
-            return "최근 작업 오늘 " + Self.format(lastOpenedAt, "HH:mm")
+        if Calendar.current.isDateInToday(updatedAt) {
+            return "오늘 " + Self.format(updatedAt, "HH:mm") + " 수정"
         }
-        return "최근 작업 " + Self.format(lastOpenedAt, "M월 d일")
+        return Self.format(updatedAt, "M월 d일") + " 수정"
     }
 
     // "총 38명"
@@ -34,10 +29,31 @@ extension Production {
         "총 \(members?.count ?? 0)명"
     }
 
-    // "2026.11.14 · 아트스페이스 A홀" (공연장이 비었으면 날짜만)
+    // "2026.11.14-15 · 아트스페이스 A홀" (공연장이 비었으면 날짜만)
     var scheduleText: String {
-        let date = Self.format(firstShowDate, "yyyy.MM.dd")
-        return venue.isEmpty ? date : "\(date) · \(venue)"
+        venue.isEmpty ? showPeriodText : "\(showPeriodText) · \(venue)"
+    }
+
+    // 공연 기간. 하루면 "2026.11.14", 같은 달이면 "2026.11.14-15", 달이 다르면 "2026.11.30-12.01", 해가 다르면 둘 다 전부
+    private var showPeriodText: String {
+        let start = Self.format(firstShowDate, "yyyy.MM.dd")
+        let calendar = Calendar.current
+        guard let lastShowDate, !calendar.isDate(lastShowDate, inSameDayAs: firstShowDate) else { return start }
+
+        let end: String
+        if !calendar.isDate(lastShowDate, equalTo: firstShowDate, toGranularity: .year) {
+            end = Self.format(lastShowDate, "yyyy.MM.dd")
+        } else if !calendar.isDate(lastShowDate, equalTo: firstShowDate, toGranularity: .month) {
+            end = Self.format(lastShowDate, "MM.dd")
+        } else {
+            end = Self.format(lastShowDate, "dd")
+        }
+        return "\(start)-\(end)"
+    }
+
+    // "러닝타임 170분" (안 적었으면 nil → 카드에서 줄을 숨긴다)
+    var runningTimeText: String? {
+        runningTime.map { "러닝타임 \($0)분" }
     }
 
     // "1,200석" (객석 규모를 안 적었으면 빈칸)
