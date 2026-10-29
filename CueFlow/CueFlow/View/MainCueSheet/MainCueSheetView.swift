@@ -131,7 +131,8 @@ extension MainCueSheetView {
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .popover(isPresented: $isShowingShare, arrowEdge: .bottom) {
+        // 팀 팝오버 (셀리나 #90 · 유리 효과 없이 흰색 70%) — 피그마 951:10223 폭 420
+        .appPopover(isPresented: $isShowingShare, width: 420, background: .display) {
             SharePopover(production: production)
         }
     }
@@ -157,7 +158,8 @@ extension MainCueSheetView {
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .popover(isPresented: $isShowingParticipants, arrowEdge: .bottom) {
+        // 피그마 1618:7175 폭 426
+        .appPopover(isPresented: $isShowingParticipants, width: 426, background: .display) {
             ParticipantsPopover(production: production, myUserID: iCloudAccount.userRecordName)
         }
     }

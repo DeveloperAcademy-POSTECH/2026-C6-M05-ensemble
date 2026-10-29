@@ -50,7 +50,7 @@ struct ParticipantsPopover: View {
                 .padding(.top, 14)
 
             sectionTitle("현재 보고 있는 사람")
-                .padding(.top, 12)
+                .padding(.top, 11)   // 피그마 1618:7175
             VStack(alignment: .leading, spacing: 0) {
                 if viewing.isEmpty {
                     emptyText("지금 보고 있는 사람이 없어요")
@@ -66,7 +66,7 @@ struct ParticipantsPopover: View {
                 .padding(.top, 13)
 
             sectionTitle("최근에 본 사람")
-                .padding(.top, 11)
+                .padding(.top, 10)
             if recent.isEmpty {
                 emptyText("아직 없어요")
                     .padding(.top, 10)
@@ -82,10 +82,10 @@ struct ParticipantsPopover: View {
                 .frame(maxHeight: 260)   // 5명 넘으면 스크롤
             }
         }
-        .padding(.horizontal, 38)
-        .padding(.top, 29)
-        .padding(.bottom, 25)
-        .frame(width: 426)
+        // 팀 팝오버가 사방 20 · 폭 426 · 바탕을 넣어 준다 → 피그마 여백(좌우 38 · 위 29 · 아래 25)에서 20을 뺀 만큼만
+        .padding(.horizontal, 18)
+        .padding(.top, 9)
+        .padding(.bottom, 5)
     }
 }
 
@@ -211,5 +211,7 @@ extension Production {
         container.mainContext.insert(member)
     }
     return ParticipantsPopover(production: production, myUserID: "me")
+        .popoverStyle(width: 426, background: .display)
+        .padding(40)
         .modelContainer(container)
 }
