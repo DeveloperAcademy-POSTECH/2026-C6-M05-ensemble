@@ -6,7 +6,7 @@
 //  공연 하나 = iCloud 폴더(레코드 존) 하나. 공연을 공유하면 그 폴더 통째로 공유된다 (#68).
 //  레코드 이름 = 모델의 id(UUID) → 기기가 달라도 같은 큐는 같은 이름.
 //
-//  1차: 공연 · 씬 · 트리거 · 파트 · 큐 · 멤버. #86: 대본 · 무대 배치 · 큐 기록(History). (댓글 · 확인은 2차)
+//  1차: 공연 · 씬 · 트리거 · 파트 · 큐 · 멤버. #86: 대본 · 무대 배치 · 큐 기록(History). #98: 댓글 · 큐 확인
 //  관계(어느 씬의 트리거인지 등)는 부모의 id를 적어 두고, 받을 때(#67 ③단계) id로 찾아서 다시 잇는다.
 //
 
@@ -92,6 +92,7 @@ enum CloudKey {
     static let after = "after"
     static let isChange = "isChange"
     static let date = "date"
+    static let checkedAt = "checkedAt"
 
     // 부모 id (관계)
     static let productionID = "productionID"
@@ -99,6 +100,9 @@ enum CloudKey {
     static let triggerID = "triggerID"
     static let partID = "partID"
     static let cueID = "cueID"
+    static let authorID = "authorID"   // 댓글 쓴 멤버
+    static let parentID = "parentID"   // 답글이면 원래 댓글
+    static let memberID = "memberID"   // 확인한 멤버
     static let partIDs = "partIDs"     // 멤버가 맡은 파트들 (여러 개)
 }
 
@@ -327,5 +331,42 @@ extension CueHistory: CloudRecordConvertible {
         after = record[CloudKey.after] as? String
         isChange = record[CloudKey.isChange] as? Bool ?? true
         date = record[CloudKey.date] as? Date ?? Date()
+    }
+}
+
+extension Comment: CloudRecordConvertible {
+    static let recordType = "Comment"
+
+    var cloudProduction: Production? { cue?.cloudProduction }
+
+    func fill(_ record: CKRecord) {
+        record[CloudKey.text] = text
+        record[CloudKey.kind] = kind?.rawValue
+        record[CloudKey.createdAt] = createdAt
+        record[CloudKey.cueID] = cue?.id.uuidString
+        record[CloudKey.authorID] = author?.id.uuidString
+        record[CloudKey.parentID] = parent?.id.uuidString
+    }
+
+    func applyFields(from record: CKRecord) {
+        text = record[CloudKey.text] as? String ?? ""
+        kind = (record[CloudKey.kind] as? String).flatMap(CommentKind.init(rawValue:))
+        createdAt = record[CloudKey.createdAt] as? Date ?? Date()
+    }
+}
+
+extension CueCheck: CloudRecordConvertible {
+    static let recordType = "CueCheck"
+
+    var cloudProduction: Production? { cue?.cloudProduction ?? member?.production }
+
+    func fill(_ record: CKRecord) {
+        record[CloudKey.checkedAt] = checkedAt
+        record[CloudKey.cueID] = cue?.id.uuidString
+        record[CloudKey.memberID] = member?.id.uuidString
+    }
+
+    func applyFields(from record: CKRecord) {
+        checkedAt = record[CloudKey.checkedAt] as? Date ?? Date()
     }
 }

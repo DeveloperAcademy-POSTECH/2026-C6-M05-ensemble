@@ -211,7 +211,7 @@ extension Production {
         container.mainContext.insert(member)
     }
     return ParticipantsPopover(production: production, myUserID: "me")
-        .popoverStyle(width: 426, background: .display)
+        .popoverStyle(width: 426)
         .padding(40)
         .modelContainer(container)
 }
