@@ -2,10 +2,10 @@
 //  SharePopover.swift
 //  CueFlow
 //
-//  "공유하기" 창 (피그마 Popover · 공유하기). 사이드바의 공유하기에서 띄울 예정 (팀원 작업).
+//  "공유하기" 창 (피그마 951:10223). 큐시트 오른쪽 위 [공유하기]에서 연다.
 //  큐시트 오른쪽 위 멤버 버튼은 참여자 현황(ParticipantsPopover)을 연다.
 //  이메일 넣고 [공유하기] → 메일 앱이 초대 링크를 채운 채로 열린다 (우리 앱엔 메일 보낼 서버가 없어서).
-//  [링크 복사] → 카톡 등에 직접 붙여 넣기. (링크 복사 버튼은 피그마에 없음 — 디자이너 확인 필요)
+//  "편집 가능 ⌄" 메뉴의 [링크 복사] → 카톡 등에 직접 붙여 넣기 (피그마엔 버튼이 없어서 메뉴 안에 넣음, #93)
 //
 
 import SwiftUI
@@ -39,10 +39,9 @@ struct SharePopover: View {
             accessList
                 .padding(.top, 13)
         }
-        .padding(.horizontal, 22)
-        .padding(.top, 30)
-        .padding(.bottom, 30)
-        .frame(width: 420)
+        // 팀 팝오버가 사방 20 · 폭 420 · 바탕을 넣어 준다 → 피그마 여백(좌우 22 · 위아래 30)에서 20을 뺀 만큼만
+        .padding(.horizontal, 2)
+        .padding(.vertical, 10)
         .task { await loadShare() }
     }
 }
@@ -53,10 +52,10 @@ extension SharePopover {
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("공유하기")
-                .font(.title3.weight(.semibold))
+                .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(Color.neutral900)
             Text("팀원과 큐시트를 함께 확인하고 편집하세요")
-                .font(.caption)
+                .font(.system(size: 11.5))
                 .foregroundStyle(Color.neutral500)
         }
     }
@@ -66,11 +65,15 @@ extension SharePopover {
         HStack(spacing: 4) {
             TextField("", text: $email, prompt: Text("이메일 주소를 입력하세요").foregroundStyle(Color.neutral400))
                 .textFieldStyle(.plain)
-                .font(.callout)
+                .font(.footnote)   // 피그마 10
                 .foregroundStyle(Color.neutral800)
-                .padding(.horizontal, 15)
+                .padding(.horizontal, 14)
                 .frame(height: 30)
                 .background(.white, in: .rect(cornerRadius: 6))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(Color.neutral300, lineWidth: 1)
+                }
                 .onSubmit(sendEmail)
 
             Button("공유하기", action: sendEmail)
@@ -95,7 +98,7 @@ extension SharePopover {
                 .foregroundStyle(Color.neutral900)
             Spacer()
             Text("멤버 \(members.count)명")
-                .font(.caption)
+                .font(.system(size: 11))
                 .foregroundStyle(Color.neutral400)
         }
     }
@@ -124,12 +127,12 @@ extension SharePopover {
         }
     }
 
-    // 링크가 있는 사람 · 편집 가능 + [링크 복사]
+    // 링크가 있는 사람 · 편집 가능 ⌄ (메뉴: 링크 복사)
     private var linkRow: some View {
         HStack(spacing: 13) {
             Image(systemName: "network")
-                .font(.title3)
-                .foregroundStyle(Color.neutral700)
+                .font(.system(size: 18))
+                .foregroundStyle(Color.neutral500)
                 .frame(width: 25)
             VStack(alignment: .leading, spacing: 3) {
                 Text("링크가 있는 사람")
@@ -140,13 +143,26 @@ extension SharePopover {
                     .foregroundStyle(Color.neutral500)
             }
             Spacer()
-            Text("편집 가능")
-                .font(.callout.weight(.semibold))
-                .foregroundStyle(Color.neutral900)
-            Button(didCopy ? "복사됨" : "링크 복사", action: copyLink)
-                .buttonStyle(GrayButtonStyle())
-                .frame(width: 64, height: 24)
-                .disabled(share?.url == nil)
+            // 팀 결정: 링크가 있는 사람은 모두 편집 가능 → 권한은 고르지 않고, 메뉴에 링크 복사만
+            Menu {
+                Label("편집 가능", systemImage: "checkmark")
+                Divider()
+                Button(didCopy ? "링크 복사됨" : "링크 복사", action: copyLink)
+                    .disabled(share?.url == nil)
+            } label: {
+                HStack(spacing: 6) {
+                    Text("편집 가능")
+                        .font(.system(size: 11.5, weight: .medium))
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 9, weight: .semibold))
+                }
+                .foregroundStyle(Color.neutral700)
+                .contentShape(Rectangle())
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
+            .fixedSize()
         }
         .padding(.leading, 9)
         .frame(height: 68)
@@ -155,8 +171,8 @@ extension SharePopover {
     private func memberRow(_ member: ShareMember) -> some View {
         HStack(spacing: 11) {
             Text(member.initial)
-                .font(.callout.weight(.semibold))
-                .foregroundStyle(member.isOwner ? Color.white : Color.brandPrimary)
+                .font(.system(size: member.isOwner ? 14 : 16, weight: .medium))
+                .foregroundStyle(member.isOwner ? Color.white : Color.brandPrimaryDisabled)
                 .frame(width: 25, height: 25)
                 .background(member.isOwner ? Color.neutral300 : Color.brandPrimarySubtle, in: .circle)
             VStack(alignment: .leading, spacing: 3) {
@@ -164,13 +180,13 @@ extension SharePopover {
                     .font(.body.weight(.medium))
                     .foregroundStyle(Color.neutral900)
                 Text(member.isOwner ? "프로젝트 소유자" : "초대된 멤버")
-                    .font(.caption2)
+                    .font(.system(size: 10.5))
                     .foregroundStyle(Color.neutral500)
             }
             Spacer()
             Text(member.isOwner ? "소유자" : "편집 가능")
-                .font(.callout)
-                .foregroundStyle(Color.neutral700)
+                .font(.system(size: 11.5))
+                .foregroundStyle(Color.neutral500)
         }
         .padding(.leading, 9)
         .frame(height: 58)
@@ -211,14 +227,14 @@ extension SharePopover {
     }
 }
 
-// 회색 바탕 + 진한 글자 (피그마 공유하기 버튼)
+// 회색 바탕 + 진한 글자 (피그마 공유하기 버튼: 13 semibold neutral700)
 private struct GrayButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.callout.weight(.medium))
-            .foregroundStyle(isEnabled ? Color.neutral900 : Color.neutral400)
+            .font(.body.weight(.semibold))
+            .foregroundStyle(isEnabled ? Color.neutral700 : Color.neutral400)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
                 configuration.isPressed ? Color.neutral300 : Color.neutral200,
@@ -236,4 +252,6 @@ private struct GrayButtonStyle: ButtonStyle {
             ShareMember(id: "2", name: "곽선우", isMe: false, isOwner: false),
         ]
     )
+    .popoverStyle(width: 420, background: .display)
+    .padding(40)
 }
