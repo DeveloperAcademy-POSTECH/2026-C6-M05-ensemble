@@ -80,6 +80,7 @@ final class CloudSync {
         enqueueScriptsAndPlacementsOnce()
         enqueueHistoriesOnce()
         enqueueCommentsAndChecksOnce()
+        enqueueNoticesOnce()
         logger.info("동기화 시작 (처음: \(savedState == nil))")
     }
 
@@ -376,7 +377,10 @@ final class CloudSync {
         case let comment as Comment:
             Self.replyIDs(comment)
         case let member as Member:
-            (member.checks ?? []).map(\.id)   // 멤버가 나가면 확인은 지운다 (댓글은 남김)
+            // 멤버가 나가면 확인 · 공지 읽음은 지운다 (댓글 · 보낸 공지는 남김)
+            (member.checks ?? []).map(\.id) + (member.noticeReads ?? []).map(\.id)
+        case let notice as Notice:
+            (notice.reads ?? []).map(\.id)
         default:
             []
         }
@@ -415,6 +419,19 @@ final class CloudSync {
         let recordIDs = items.compactMap(\.cloudRecordID)
         enqueue([], recordIDs.map { .saveRecord($0) })
         logger.info("대본 · 무대 배치 처음 올리기: \(recordIDs.count)개")
+    }
+
+    // 공지 · 읽음(#33)도 #82 전에는 안 올렸다 → 이 맥에 이미 있던 것을 한 번만 올린다
+    private func enqueueNoticesOnce() {
+        let key = "didUploadNotices"
+        guard let context, !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
+
+        var items: [any CloudRecordConvertible] = (try? context.fetch(FetchDescriptor<Notice>())) ?? []
+        items += (try? context.fetch(FetchDescriptor<NoticeRead>())) ?? []
+        let recordIDs = items.compactMap(\.cloudRecordID)
+        enqueue([], recordIDs.map { .saveRecord($0) })
+        logger.info("공지 · 읽음 처음 올리기: \(recordIDs.count)개")
     }
 
     // 댓글 · 확인(#96)도 #98 전에는 안 올렸다 → 이 맥에 이미 있던 것을 한 번만 올린다
@@ -467,6 +484,8 @@ final class CloudSync {
             items += cues.flatMap { $0.histories ?? [] }
             items += cues.flatMap { $0.comments ?? [] }   // 답글도 큐에 붙어 있어서 여기 같이 들어온다
             items += cues.flatMap { $0.checks ?? [] }
+            items += production.notices ?? []
+            items += (production.notices ?? []).flatMap { $0.reads ?? [] }
             recordIDs.formUnion(items.compactMap(\.cloudRecordID))
         }
 
@@ -510,6 +529,8 @@ final class CloudSync {
         if let found = try? context.fetch(FetchDescriptor<CueHistory>(predicate: #Predicate { $0.id == id })).first { return found }
         if let found = try? context.fetch(FetchDescriptor<Comment>(predicate: #Predicate { $0.id == id })).first { return found }
         if let found = try? context.fetch(FetchDescriptor<CueCheck>(predicate: #Predicate { $0.id == id })).first { return found }
+        if let found = try? context.fetch(FetchDescriptor<Notice>(predicate: #Predicate { $0.id == id })).first { return found }
+        if let found = try? context.fetch(FetchDescriptor<NoticeRead>(predicate: #Predicate { $0.id == id })).first { return found }
         return nil
     }
 
@@ -639,6 +660,8 @@ final class CloudSync {
             case CueHistory.recordType: item = CueHistory(title: "", detail: "")
             case Comment.recordType: item = Comment(text: "")
             case CueCheck.recordType: item = CueCheck()
+            case Notice.recordType: item = Notice(title: "", body: "")
+            case NoticeRead.recordType: item = NoticeRead()
             default: return nil   // 모르는 종류 (2차 대상 등)
             }
             item.id = id
@@ -706,6 +729,19 @@ final class CloudSync {
             check.member = parent(CloudKey.memberID, as: Member.self, found: &found)
             if let cue = check.cue { addIfMissing(check, to: &cue.checks) }
             if let member = check.member { addIfMissing(check, to: &member.checks) }
+        case let notice as Notice:
+            // 보낸 사람 · 받을 파트 · 받을 사람은 없을 수도 있다 (둘 다 비면 전체 공지)
+            notice.production = parent(CloudKey.productionID, as: Production.self, found: &found)
+            notice.author = parent(CloudKey.authorID, as: Member.self, found: &found)
+            notice.targetPart = parent(CloudKey.targetPartID, as: Part.self, found: &found)
+            notice.targetMember = parent(CloudKey.targetMemberID, as: Member.self, found: &found)
+            if let production = notice.production { addIfMissing(notice, to: &production.notices) }
+            if let author = notice.author { addIfMissing(notice, to: &author.notices) }
+        case let read as NoticeRead:
+            read.notice = parent(CloudKey.noticeID, as: Notice.self, found: &found)
+            read.member = parent(CloudKey.memberID, as: Member.self, found: &found)
+            if let notice = read.notice { addIfMissing(read, to: &notice.reads) }
+            if let member = read.member { addIfMissing(read, to: &member.noticeReads) }
         case let line as ScriptLine:
             line.scene = parent(CloudKey.sceneID, as: ShowScene.self, found: &found)
             if let scene = line.scene { addIfMissing(line, to: &scene.scriptLines) }

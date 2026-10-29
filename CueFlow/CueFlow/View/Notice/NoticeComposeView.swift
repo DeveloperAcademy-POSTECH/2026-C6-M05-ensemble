@@ -127,7 +127,10 @@ struct NoticeComposeView: View {
         case .part(let part): notice.targetPart = part
         case .member(let member): notice.targetMember = member
         }
-        // TODO: "나"를 알게 되면 notice.author = 나 (지금은 "알 수 없음"으로 보임)
+        // 보낸 사람 = 이 공연의 "나" 멤버 (없으면 만든다 · CueMembers). iCloud 로그인 안 됐으면 "알 수 없음"
+        if let myID = ICloudAccount.currentUserRecordName, let production = selectedProduction {
+            notice.author = modelContext.me(in: production, userID: myID)
+        }
         dismiss()
     }
 }
