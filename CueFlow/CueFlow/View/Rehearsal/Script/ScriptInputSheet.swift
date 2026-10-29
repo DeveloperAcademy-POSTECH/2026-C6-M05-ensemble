@@ -338,9 +338,11 @@ extension View {
 
 // 무대 배치 창의 "다음으로" · "배치 완료": 연보라 바탕 + 보라 글자 (피그마 무대배치02 · 03)
 struct SheetSoftButtonStyle: ButtonStyle {
+    var fontSize: CGFloat = 13
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.body)
+            .font(.system(size: fontSize, weight: .semibold))
             .foregroundStyle(Color.brandPrimaryText)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.brandPrimarySubtle, in: RoundedRectangle(cornerRadius: 6))

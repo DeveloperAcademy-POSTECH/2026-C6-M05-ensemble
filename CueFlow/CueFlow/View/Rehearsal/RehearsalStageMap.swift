@@ -6,6 +6,7 @@
 //  지금 장면의 무대 배치를 보여준다. 장면을 고친 적 없으면 최초 상태 배치.
 //  큐를 넘기면 그 큐까지 적용해서 배역 · 소품이 옮겨진다 (StageCueMoves). 지금 큐가 옮긴 것은 둘레가 빛난다.
 //  최초 상태 배치가 없으면 "첫 무대 배치를 시작해보세요" (피그마 리허설모드_무대배치01).
+//  확대 버튼 → 리허설 화면이 같은 카드를 크게 띄운다 (피그마 1361:9612 리허설모드_무대확장화면).
 //
 
 import SwiftUI
@@ -15,6 +16,8 @@ struct RehearsalStageMap: View {
     let scene: ShowScene?          // 지금 장면
     let triggers: [Trigger]        // 지금 장면의 트리거 (순서대로)
     let currentTriggerIndex: Int   // 지금 큐
+    var isExpanded = false             // 크게 보기 중이면 버튼이 "작게 보기"로
+    var onToggleExpand: (() -> Void)?  // 크게 보기 / 작게 보기 (nil이면 버튼 숨김)
 
     private enum Editing: Identifiable {
         case firstSetup             // 배치하기 → 배우 · 소품 목록부터
@@ -75,20 +78,34 @@ struct RehearsalStageMap: View {
             HStack {
                 Text("무대 미니맵")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.neutral500)
+                    .foregroundStyle(Color.neutral900)
                 Spacer()
+                if let onToggleExpand {
+                    Button(action: onToggleExpand) {
+                        Image(systemName: isExpanded
+                              ? "arrow.down.right.and.arrow.up.left.rectangle"
+                              : "arrow.up.left.and.arrow.down.right.rectangle")
+                            .font(.system(size: 17))   // 피그마 확대 화면 24 ÷ 1.375
+                            .foregroundStyle(Color.neutral900)
+                            .frame(width: 36, height: 36)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(isExpanded ? "작게 보기 (esc)" : "크게 보기")
+                    .padding(.trailing, 4)
+                }
                 Button {
                     if let scene { editing = .scene(scene) }
                 } label: {
                     HStack(spacing: 2) {
                         Image(systemName: "square.and.pencil")
-                            .font(.system(size: 14))
+                            .font(.system(size: 16))
                         Text("수정하기")
-                            .font(.body)
+                            .font(.system(size: 15, weight: .semibold))
                     }
-                    .foregroundStyle(Color.neutral700)
+                    .foregroundStyle(Color.neutral900)
                     .padding(.horizontal, 8)
-                    .frame(height: 30)
+                    .frame(height: 36)
                     .background(Color.neutral25, in: RoundedRectangle(cornerRadius: 6))
                     .overlay {
                         RoundedRectangle(cornerRadius: 6)
@@ -108,7 +125,7 @@ struct RehearsalStageMap: View {
             StageMinimap(marks: marks, highlightedIDs: movingIDs)
                 .padding(.leading, 31)
                 .padding(.trailing, 28)
-                .padding(.top, 33)
+                .padding(.top, 18)   // 카드 높이 378 안에 범례까지 들어가게 (피그마 18)
         }
     }
 
@@ -120,15 +137,15 @@ struct RehearsalStageMap: View {
                 .tracking(-0.45)
                 .foregroundStyle(Color.neutral900)
             Text("배우와 소품을 추가하고 무대 위 원하는 위치에 배치해보세요.\n첫 무대 배치 이후 장면별 무대 구성을 한눈에 확인할 수 있어요.")
-                .font(.body)
+                .font(.system(size: 17))
                 .lineSpacing(4)
-                .foregroundStyle(Color.neutral500)
+                .foregroundStyle(Color.neutral700)
                 .multilineTextAlignment(.center)
             Button {
                 editing = .firstSetup
             } label: {
                 Text("배치하기")
-                    .font(.body.weight(.semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.brandPrimaryText)
                     .frame(width: 104, height: 35)
                     .background(Color.brandPrimarySubtle, in: RoundedRectangle(cornerRadius: 6))
