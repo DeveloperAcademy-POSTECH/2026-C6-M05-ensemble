@@ -8,6 +8,7 @@
 //  #67 ② 올리기: 추가 · 수정 · 삭제 → iCloud
 //  #67 ③ 받기: iCloud → SwiftData
 //  #68 공유받은 공연: 내 공연은 내 iCloud(개인 저장공간), 공유받은 공연은 공유 저장공간 → 엔진 두 개로 따로 주고받는다
+//  #69 리허설 동기화 모드: 공연 폴더에 "리허설 위치" 레코드도 같이 주고받는다 (SwiftData 모델 아님 → RehearsalSync)
 //
 
 import AppKit
@@ -29,9 +30,14 @@ final class CloudSync {
     private var context: ModelContext?
     private var saveObserver: NSObjectProtocol?
     private var acceptObserver: NSObjectProtocol?
+    private var rehearsalObserver: NSObjectProtocol?
     private var activeObserver: NSObjectProtocol?
     private var pollTask: Task<Void, Never>?
+    private var rehearsalPollTask: Task<Void, Never>?
     private var saveTask: Task<Void, Never>?
+    // 리허설 위치를 올리는 중인 공연 / 올리는 중에 또 넘겨서 끝나면 한 번 더 올릴 공연
+    private var sendingRehearsal: Set<UUID> = []
+    private var resendRehearsal: Set<UUID> = []
     // 공유 중인 공연 폴더를 직접 볼 때 "어디까지 받았는지" (앱을 켤 때마다 새로 시작)
     private var directTokens: [CKRecordZone.ID: CKServerChangeToken] = [:]
 
@@ -61,8 +67,10 @@ final class CloudSync {
         ))
         observeSaves(of: context)
         observeAccepts()
+        observeRehearsal()
         observeAppActive()
         startPolling()
+        startRehearsalPolling()
         startSaving()
 
         // 이 맥에서 처음 동기화 → 이미 있던 공연도 전부 올린다
@@ -90,14 +98,17 @@ final class CloudSync {
     // 동기화를 멈추고 "어디까지 주고받았는지" 기억을 지운다 (이 맥의 공연은 그대로)
     // 다음에 start하면 처음 동기화처럼 이 맥의 공연을 전부 다시 올린다 — 다른 계정과 섞이지 않게
     func stop() {
-        for observer in [saveObserver, acceptObserver, activeObserver].compactMap({ $0 }) {
+        for observer in [saveObserver, acceptObserver, rehearsalObserver, activeObserver].compactMap({ $0 }) {
             NotificationCenter.default.removeObserver(observer)
         }
         saveObserver = nil
         acceptObserver = nil
+        rehearsalObserver = nil
         activeObserver = nil
         pollTask?.cancel()
         pollTask = nil
+        rehearsalPollTask?.cancel()
+        rehearsalPollTask = nil
         saveTask?.cancel()
         saveTask = nil
         privateEngine = nil
@@ -105,6 +116,37 @@ final class CloudSync {
         unlinkedRecords = [:]
         directTokens = [:]
         store.removeAll()
+    }
+
+    // 리허설 화면이 열려 있으면 그 공연의 "리허설 위치" 한 장만 0.5초마다 직접 확인한다
+    // (2초마다 공연 폴더 전체를 보는 것만으로는 따라가기가 최대 2초 늦었다. 한 장만 보는 건 가벼워서 자주 봐도 된다)
+    private func startRehearsalPolling() {
+        rehearsalPollTask = Task { @MainActor [weak self] in
+            var lastTag: String?
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(0.5))
+                guard let self, let productionID = RehearsalSync.shared.watchingProductionID,
+                      let production = self.findModel(productionID) as? Production else { continue }
+                let zoneID = production.cloudZoneID
+                let container = CKContainer(identifier: ICloudAccount.containerID)
+                let database = zoneID.isMine ? container.privateCloudDatabase : container.sharedCloudDatabase
+                let recordID = CKRecord.ID(recordName: RehearsalSync.recordName(for: productionID), zoneID: zoneID)
+                do {
+                    let record = try await database.record(for: recordID)
+                    guard record.recordChangeTag != lastTag else { continue }
+                    lastTag = record.recordChangeTag
+                    RehearsalSync.shared.receive(record)
+                    // 따라가기가 얼마나 늦는지 (다른 맥과 시계가 조금 다를 수 있음. 가짜 진행자로 맥 한 대에서 재면 정확)
+                    if let sentAt = record["updatedAt"] as? Date {
+                        self.logger.info("리허설 위치 받음: 올린 지 \(Date.now.timeIntervalSince(sentAt), format: .fixed(precision: 2))초")
+                    }
+                } catch let error as CKError where error.code == .unknownItem {
+                    // 아직 아무도 진행한 적 없는 공연
+                } catch {
+                    self.logger.error("리허설 위치 확인 실패: \(error)")
+                }
+            }
+        }
     }
 
     // MARK: - 올릴 목록 만들기
@@ -130,6 +172,49 @@ final class CloudSync {
                     self?.logger.error("공유받은 공연 받기 실패: \(error)")
                 }
             }
+        }
+    }
+
+    // 리허설 진행 위치가 바뀌면 기다리지 않고 바로 올린다 (따라가는 사람이 늦게 넘어가지 않게)
+    private func observeRehearsal() {
+        rehearsalObserver = NotificationCenter.default.addObserver(
+            forName: RehearsalSync.didChangeNotification, object: nil, queue: nil
+        ) { [weak self] notification in
+            guard let productionID = notification.object as? UUID else { return }
+            MainActor.assumeIsolated { self?.sendRehearsalPosition(of: productionID) }
+        }
+    }
+
+    // 엔진을 거치지 않고 바로 덮어쓴다 (10/29 맥 2대 테스트: 스페이스로 빨리 넘기면 따라가는 쪽이 한참 늦었음)
+    // - 엔진으로 올리면 앞의 것이 올라가는 중에 같은 레코드를 또 올려서 "그새 바뀜"으로 거절 → 다시 올리느라 더 늦어졌다
+    // - 위치는 마지막 것만 의미 있으니 버전 확인 없이 덮어쓰고(.allKeys), 올리는 중에 또 넘기면 끝난 뒤 마지막 위치로 한 번만 더
+    private func sendRehearsalPosition(of productionID: UUID) {
+        guard !sendingRehearsal.contains(productionID) else {
+            resendRehearsal.insert(productionID)
+            return
+        }
+        guard let production = findModel(productionID) as? Production else { return }
+        let zoneID = production.cloudZoneID
+        let container = CKContainer(identifier: ICloudAccount.containerID)
+        let database = zoneID.isMine ? container.privateCloudDatabase : container.sharedCloudDatabase
+        let recordID = CKRecord.ID(recordName: RehearsalSync.recordName(for: productionID), zoneID: zoneID)
+
+        sendingRehearsal.insert(productionID)
+        Task { @MainActor [weak self] in
+            repeat {
+                self?.resendRehearsal.remove(productionID)
+                let record = CKRecord(recordType: RehearsalSync.recordType, recordID: recordID)
+                RehearsalSync.shared.fill(record, productionID: productionID)
+                do {
+                    let (saved, _) = try await database.modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys)
+                    if case .failure(let error) = saved[recordID] {
+                        self?.logger.error("리허설 위치 올리기 실패: \(error)")
+                    }
+                } catch {
+                    self?.logger.error("리허설 위치 올리기 실패: \(error)")
+                }
+            } while self?.resendRehearsal.contains(productionID) == true
+            self?.sendingRehearsal.remove(productionID)
         }
     }
 
@@ -316,6 +401,13 @@ final class CloudSync {
 
     // CKSyncEngine이 "이거 올릴게, 내용 줘" 할 때
     fileprivate func record(for recordID: CKRecord.ID) -> CKRecord? {
+        // 리허설 위치는 모델이 아니라 RehearsalSync가 들고 있는 값으로 채운다
+        if let productionID = RehearsalSync.productionID(fromRecordName: recordID.recordName) {
+            let record = store.cachedRecord(named: recordID.recordName)
+                ?? CKRecord(recordType: RehearsalSync.recordType, recordID: recordID)
+            RehearsalSync.shared.fill(record, productionID: productionID)
+            return record
+        }
         guard let id = UUID(uuidString: recordID.recordName), let item = findModel(id) else {
             // 올리기 전에 지워졌으면 목록에서 뺀다
             engine(for: recordID.zoneID)?.state.remove(pendingRecordZoneChanges: [.saveRecord(recordID)])
@@ -363,6 +455,10 @@ final class CloudSync {
         var received: [(any CloudRecordConvertible, CKRecord)] = []
         for record in records {
             store.cache(record)
+            if record.recordType == RehearsalSync.recordType {
+                RehearsalSync.shared.receive(record)
+                continue
+            }
             if let item = upsert(record) {
                 received.append((item, record))
             }

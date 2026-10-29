@@ -77,6 +77,20 @@ struct CueFlowApp: App {
                 Button("가짜 초대 수락 (역할 선택 화면)") {
                     NotificationCenter.default.post(name: InviteRoleView.fakeAcceptNotification, object: nil)
                 }
+
+                // 리허설 동기화 모드(#69) "따라가기"를 맥 한 대로 확인. 리허설 화면이 열려 있을 때만 동작
+                Divider()
+                Button("가짜 진행자: 시작 · 다음 큐") {
+                    NotificationCenter.default.post(name: RehearsalSync.fakeLeaderNotification, object: RehearsalSync.FakeStep.next)
+                }
+                .keyboardShortcut(.rightArrow, modifiers: [.command, .option])
+                Button("가짜 진행자: 이전 큐") {
+                    NotificationCenter.default.post(name: RehearsalSync.fakeLeaderNotification, object: RehearsalSync.FakeStep.previous)
+                }
+                .keyboardShortcut(.leftArrow, modifiers: [.command, .option])
+                Button("가짜 진행자: 진행 끝") {
+                    NotificationCenter.default.post(name: RehearsalSync.fakeLeaderNotification, object: RehearsalSync.FakeStep.stop)
+                }
             }
             #endif
 
