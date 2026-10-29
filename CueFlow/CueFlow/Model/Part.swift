@@ -23,6 +23,10 @@ final class Part {
 
     var members: [Member]? = []     // 이 파트를 맡은 멤버들 (Member.parts의 짝)
 
+    // 이 파트에게 보낸 공지들. 파트를 지워도 공지는 남긴다 (대상만 비어짐).
+    @Relationship(deleteRule: .nullify, inverse: \Notice.targetPart)
+    var targetedNotices: [Notice]? = []
+
     init(name: String, order: Int, colorIndex: Int) {
         self.name = name
         self.order = order
