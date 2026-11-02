@@ -161,7 +161,7 @@ struct HomeView: View {
                 ProjectListRow(
                     name: production.listName,
                     modifiedDate: production.updatedDateText,
-                    owner: "",   // TODO: 소유자 (CloudKit 공유 후)
+                    owner: production.ownerText,
                     isFavorite: production.isFavorite,
                     onToggleFavorite: { production.isFavorite.toggle() }
                 )
