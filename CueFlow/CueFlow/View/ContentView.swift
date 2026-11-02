@@ -242,13 +242,14 @@ extension ContentView {
     }
 
     // 다른 사람이 고친 큐 중 내 파트 것만 (CloudSync가 다른 사람 · 10분 안 것만 골라 보냄)
+    // 파트가 없는 사람(공연 만든 사람 · 감독 등)은 모든 파트의 큐 수정을 받는다
     private func notifyCueChanges(_ ids: [UUID]) {
         guard !ids.isEmpty, let myID = iCloudAccount.userRecordName else { return }
         let cues = (try? modelContext.fetch(FetchDescriptor<Cue>(predicate: #Predicate { ids.contains($0.id) }))) ?? []
         let mine = cues.filter { cue in
             guard let part = cue.part, let production = cue.trigger?.scene?.production else { return false }
-            let me = (production.members ?? []).first { $0.iCloudUserID == myID }
-            return (me?.parts ?? []).contains(part)
+            let myParts = production.member(withUserID: myID)?.parts ?? []
+            return myParts.isEmpty || myParts.contains(part)
         }
         SystemNotifications.shared.notifyCueChanges(mine)
     }
@@ -273,7 +274,7 @@ extension ContentView {
         notifyNotices([notice.id])
     }
 
-    // 가장 최근에 연 공연에서 앞 장면 4개의 큐를 누가 고친 척 (내 파트인지는 안 따짐). 30초 뒤에 파트마다 알림이 뜬다
+    // 가장 최근에 연 공연에서 앞 장면 4개의 큐를 누가 고친 척 (내 파트인지는 안 따짐). 10초 뒤에 파트마다 알림이 뜬다
     // 한 번 누르면 "여러 장면" 문구, 장면이 하나뿐인 공연이면 "지금 수정되었습니다" 문구
     private func showFakeCueChange() {
         guard let production = productions.max(by: { $0.lastOpenedAt < $1.lastOpenedAt }) else { return }

@@ -28,7 +28,7 @@ final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
         case production(UUID)
     }
 
-    // 큐 수정은 바로 띄우지 않고 고치는 게 30초 멈출 때까지 모았다가 공연 · 파트마다 하나로 요약한다.
+    // 큐 수정은 바로 띄우지 않고 고치는 게 10초 멈출 때까지 모았다가 공연 · 파트마다 하나로 요약한다.
     // 알림 센터에 아직 안 본 같은 알림이 있으면 쌓지 않고 그 알림 내용을 바꾼다 (지금까지 고친 것 전부로)
     private struct CueBatch {
         let production: Production
@@ -40,7 +40,7 @@ final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
         var flushTask: Task<Void, Never>?
     }
     private var cueBatches: [String: CueBatch] = [:]
-    private let cueBatchDelay: Duration = .seconds(30)
+    private let cueBatchDelay: Duration = .seconds(10)
 
     private let center = UNUserNotificationCenter.current()
 
@@ -61,7 +61,7 @@ final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
         add(id: "notice-\(notice.id.uuidString)", content: content)
     }
 
-    // 큐 수정을 모은다. 30초 동안 더 안 오면 공연 · 파트마다 알림 하나
+    // 큐 수정을 모은다. 10초 동안 더 안 오면 공연 · 파트마다 알림 하나
     func notifyCueChanges(_ cues: [Cue]) {
         for cue in cues {
             guard let part = cue.part, let scene = cue.trigger?.scene, let production = scene.production else { continue }
