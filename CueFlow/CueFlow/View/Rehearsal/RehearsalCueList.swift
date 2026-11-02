@@ -254,12 +254,14 @@ struct CueListRow: View {
         .frame(height: CueListColumn.cueHeight)
     }
 
-    // 위치 태그. 무대 큐는 눌러서 9구역 중 하나를 고른다 → 미니맵에서 그 구역으로 옮겨진다
+    // 위치 태그. 무대 큐는 눌러서 무대 칸 중 하나를 고른다 → 미니맵에서 그 칸으로 옮겨진다
+    // 칸 수는 무대 칸 설정을 따른다 (기본 = 칸 없음이면 고르지 않음)
     @ViewBuilder
     private func positionTag(_ cue: Cue) -> some View {
-        if cue.position == .stage {
+        let columns = cue.trigger?.scene?.production?.stageGridColumns ?? 3
+        if cue.position == .stage, columns > 0 {
             Menu {
-                ForEach(0..<9, id: \.self) { cell in
+                ForEach(0..<columns * columns, id: \.self) { cell in
                     Button("\(cell + 1)구역") { cue.stageCell = cell }
                 }
                 Divider()
