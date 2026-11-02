@@ -44,7 +44,7 @@ extension SceneInputRow {
 
     // 새로 추가될 줄 번호: 같은 종류 개수 + 1
     private var codeText: some View {
-        Text("\(kind.codePrefix)#\(sameKindCount + 1)")
+        Text(kind == .transition ? "" : "\(kind.codePrefix)#\(sameKindCount + 1)")   // 암전은 번호 없이 빈칸
             .font(.system(size: 17))
             .foregroundStyle(Color.neutral400)
             .frame(width: 36, alignment: .leading)
@@ -63,13 +63,13 @@ extension SceneInputRow {
             .buttonStyle(.plain)
             .fixedSize()
             .appPopover(isPresented: $isPickingKind, width: nil) {
-                PopoverCheckList(items: SceneKind.allCases, selected: kind, title: \.rawValue) { kind = $0 }
+                PopoverCheckList(items: SceneKind.allCases, selected: kind, title: \.title) { kind = $0 }
             }
     }
 
     private var kindMenuLabel: some View {
         HStack(spacing: 4) {
-            Text(kind.rawValue)
+            Text(kind.title)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Color.neutral600)
             Image(systemName: "chevron.down")
@@ -113,10 +113,10 @@ extension SceneInputRow {
         .buttonStyle(.plain)
     }
 
-    // 내용이 비어 있으면 아무것도 안 함. 등록 후 입력칸을 비우고 바로 다음 줄 입력
+    // 내용이 비어 있으면 아무것도 안 함 (암전은 비어도 등록). 등록 후 입력칸을 비우고 바로 다음 줄 입력
     private func add() {
         let trimmed = title.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return }
+        guard !trimmed.isEmpty || kind == .transition else { return }
         onAdd(trimmed, kind)
         title = ""
         isFocused = true

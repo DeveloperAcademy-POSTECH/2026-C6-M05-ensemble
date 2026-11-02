@@ -7,12 +7,12 @@
 
 import SwiftUI
 
-// 씬 · 넘버 · 전환 칩)
+// 씬 · 넘버 · 암전 칩)
 struct SceneKindChip: View {
     let kind: SceneKind
     var isSelected = false
     var body: some View {
-        Text(kind.rawValue)
+        Text(kind.title)
             .font(.system(size: 13, weight: .semibold))
             .foregroundStyle(Color.neutral900)
             .frame(width: 62, height: 36)
@@ -26,7 +26,7 @@ struct SceneKindChip: View {
     }
 }
 
-// 칩 더블클릭 팝오버: 씬 · 넘버 · 전환 중 고르기
+// 칩 더블클릭 팝오버: 씬 · 넘버 · 암전 중 고르기
 struct SceneKindPicker: View {
     let selected: SceneKind
     var onSelect: (SceneKind) -> Void
