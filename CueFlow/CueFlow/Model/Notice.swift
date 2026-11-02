@@ -14,9 +14,9 @@ final class Notice {
     var title: String = ""              // 공지 제목
     var body: String = ""               // 내용
     var sentAt: Date = Date()              // 보낸 시간
-    // 별표(중요). 원래는 "나한테 중요한 것"이라 사람마다 따로 저장해야 한다.
-    // TODO: 팀원 공유 단계에서 NoticeRead처럼 멤버별 기록으로 바꾸기 (지금은 혼자 쓰니 공지에 저장)
+    // 별표(중요) · 내 목록에서 숨김. "나한테만" 의미 있는 값이라 iCloud에 올리지 않고 이 맥에만 저장
     var isImportant: Bool = false
+    var isHiddenByMe: Bool = false      // 남이 보낸 공지를 삭제하면 지우지 않고 내 목록에서만 숨긴다
 
     var production: Production?                // 어느 공연의 공지인지
     var author: Member?                    // 누가 보냈는지

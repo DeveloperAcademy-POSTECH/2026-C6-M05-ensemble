@@ -114,14 +114,14 @@ struct NoticeDetailView: View {
             .padding(.horizontal, 2)
     }
 
-    // 목록으로 돌아간 다음 지운다 (읽음 기록도 같이 지워지고 iCloud에서도 지워진다)
+    // 목록으로 돌아간 다음 지운다 (내가 보낸 공지면 읽음 기록 · iCloud까지, 남이 보낸 공지면 내 목록에서만 숨김)
     // 먼저 지우면 닫히기 전에 지워진 공지를 한 번 더 그리다가 멈출 수 있어서 순서를 바꿈
     private func deleteNotice() {
         let target = notice
         dismiss()
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(400))   // 닫히는 동안 기다림
-            modelContext.delete(target)
+            target.removeFromMyList(in: modelContext)
         }
     }
 
