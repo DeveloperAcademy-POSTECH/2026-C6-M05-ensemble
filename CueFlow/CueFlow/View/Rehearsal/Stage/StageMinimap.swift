@@ -3,7 +3,7 @@
 //  CueFlow
 //
 //  무대 미니맵 (피그마 리허설모드_ver1 · 최초상태무대배치02).
-//  상수 | 무대(점선으로 1~9 나눔) | 하수 위에 배역(●) · 소품(▲)을 놓은 자리에 보여준다.
+//  상수 | 무대(무대 칸 설정대로 점선으로 나눔) | 하수 위에 배역(●) · 소품(▲)을 놓은 자리에 보여준다.
 //  아래에 "관객석"과 범례. 리허설 화면(보기만)과 배치 창(카드 고르고 칸 누르기)에서 같이 쓴다.
 //
 
@@ -54,6 +54,7 @@ struct StageMinimap: View {
     let marks: [StageMark]
     var style: StageMinimapStyle = .rehearsal
     var highlightedIDs: Set<String> = []   // 리허설에서 지금 큐가 옮긴 것 → 둘레가 빛난다
+    var gridColumns = 3                     // 무대 칸 설정 (Production.stageGridColumns). 0 = 구분선 없음
 
     // 배치 창에서만: 점을 끄는 중 / 놓음. nil이면 보기만
     var onDragChanged: ((StageMark, CGPoint) -> Void)?
@@ -67,7 +68,7 @@ struct StageMinimap: View {
     var selectedMarkID: String?   // 고른 카드 → 그 점 둘레가 빛난다
     var isPlacing = false         // 카드를 골랐으면 마우스를 올린 칸을 연보라로
 
-    @State private var hoveredCell: Int?   // 무대 칸 0~8
+    @State private var hoveredCell: Int?   // 무대 칸 번호 (왼쪽 위부터 0)
 
     var body: some View {
         VStack(spacing: 7) {
@@ -103,14 +104,18 @@ struct StageMinimap: View {
             let size = geometry.size
             ZStack(alignment: .topLeading) {
                 // 카드를 고른 채 마우스를 올린 무대 칸 (피그마 1354:7972)
-                if area == .stage, isPlacing, let hoveredCell {
+                if area == .stage, isPlacing, gridColumns > 0, let hoveredCell {
+                    let n = CGFloat(gridColumns)
                     Rectangle()
                         .fill(Color.brandPrimarySubtle.opacity(0.8))
-                        .frame(width: size.width / 3, height: size.height / 3)
-                        .offset(x: size.width * CGFloat(hoveredCell % 3) / 3, y: size.height * CGFloat(hoveredCell / 3) / 3)
+                        .frame(width: size.width / n, height: size.height / n)
+                        .offset(
+                            x: size.width * CGFloat(hoveredCell % gridColumns) / n,
+                            y: size.height * CGFloat(hoveredCell / gridColumns) / n
+                        )
                 }
-                if area == .stage {
-                    StageGridLines()
+                if area == .stage, gridColumns > 0 {
+                    StageGridLines(columns: gridColumns)
                         .stroke(Color.brandPrimaryDisabled, style: StrokeStyle(lineWidth: 1.5, dash: [8, 6]))
                     cellNumbers(size: size)
                 }
@@ -133,10 +138,10 @@ struct StageMinimap: View {
                 onTapZone?(area, CGPoint(x: location.x / size.width, y: location.y / size.height))
             }
             .onContinuousHover { phase in
-                guard area == .stage, onTapZone != nil else { return }
+                guard area == .stage, onTapZone != nil, gridColumns > 0 else { return }
                 switch phase {
                 case .active(let location):
-                    hoveredCell = StageCell.index(x: location.x / size.width, y: location.y / size.height)
+                    hoveredCell = StageCell.index(x: location.x / size.width, y: location.y / size.height, columns: gridColumns)
                 case .ended:
                     hoveredCell = nil
                 }
@@ -161,15 +166,17 @@ struct StageMinimap: View {
         }
     }
 
-    // 무대 칸 번호 1~9 (각 칸 왼쪽 위)
+    // 무대 칸 번호 1~n² (각 칸 왼쪽 위). 칸이 작아지면 번호도 안쪽으로 붙인다
     private func cellNumbers(size: CGSize) -> some View {
-        ForEach(0..<9, id: \.self) { index in
+        let n = CGFloat(gridColumns)
+        let inset: CGFloat = gridColumns > 3 ? 6 : 12
+        return ForEach(0..<gridColumns * gridColumns, id: \.self) { index in
             Text("\(index + 1)")
-                .font(.system(size: 12))
+                .font(.system(size: gridColumns > 4 ? 10 : 12))
                 .foregroundStyle(Color.brandPrimaryDisabled)
                 .offset(
-                    x: size.width * CGFloat(index % 3) / 3 + 12,
-                    y: size.height * CGFloat(index / 3) / 3 + 10
+                    x: size.width * CGFloat(index % gridColumns) / n + inset,
+                    y: size.height * CGFloat(index / gridColumns) / n + inset - 2
                 )
         }
     }
@@ -277,34 +284,42 @@ struct StageTriangle: Shape {
     }
 }
 
-// 무대 3×3 칸 번호 (0~8, 왼쪽 위부터). 자리(0~1)로 칸 찾기 · 칸 안에 나란히 놓을 자리
+// 무대 n×n 칸 번호 (0부터, 왼쪽 위부터). 자리(0~1)로 칸 찾기 · 칸 안에 나란히 놓을 자리 · 칸 가운데
 enum StageCell {
-    static let columns = 3
-
-    static func index(x: Double, y: Double) -> Int {
+    static func index(x: Double, y: Double, columns: Int) -> Int {
         let column = min(max(Int(x * Double(columns)), 0), columns - 1)
         let row = min(max(Int(y * Double(columns)), 0), columns - 1)
         return row * columns + column
     }
 
     // 한 칸에 n개면 가로로 고르게 나눈 i번째 자리 (세로는 칸 가운데)
-    static func slot(_ i: Int, of n: Int, in cell: Int) -> CGPoint {
+    static func slot(_ i: Int, of n: Int, in cell: Int, columns: Int) -> CGPoint {
         let width = 1 / Double(columns)
         let left = Double(cell % columns) * width
         let top = Double(cell / columns) * width
         return CGPoint(x: left + width * Double(i + 1) / Double(n + 1), y: top + width / 2)
     }
+
+    static func center(of cell: Int, columns: Int) -> CGPoint {
+        CGPoint(
+            x: (Double(cell % columns) + 0.5) / Double(columns),
+            y: (Double(cell / columns) + 0.5) / Double(columns)
+        )
+    }
 }
 
-// 무대를 3×3으로 나누는 점선 (세로 2줄 + 가로 2줄)
-private struct StageGridLines: Shape {
+// 무대를 n×n으로 나누는 점선 (세로 n-1줄 + 가로 n-1줄). 무대 칸 설정 창 미리보기에서도 쓴다
+struct StageGridLines: Shape {
+    let columns: Int
+
     func path(in rect: CGRect) -> Path {
         var path = Path()
-        for step in 1...2 {
-            let x = rect.width * CGFloat(step) / 3
+        guard columns > 1 else { return path }
+        for step in 1..<columns {
+            let x = rect.width * CGFloat(step) / CGFloat(columns)
             path.move(to: CGPoint(x: x, y: 1))
             path.addLine(to: CGPoint(x: x, y: rect.height - 1))
-            let y = rect.height * CGFloat(step) / 3
+            let y = rect.height * CGFloat(step) / CGFloat(columns)
             path.move(to: CGPoint(x: 1, y: y))
             path.addLine(to: CGPoint(x: rect.width - 1, y: y))
         }

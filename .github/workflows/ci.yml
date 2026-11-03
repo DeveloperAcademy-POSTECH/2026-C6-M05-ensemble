@@ -1,0 +1,50 @@
+#
+#  ci.yml — #111
+#  develop으로 PR이 올라오거나 develop에 머지되면 GitHub 맥에서 빌드해 본다.
+#  서명은 끈다 (인증서·프로파일을 GitHub에 안 올려도 됨). 테스트·TestFlight 업로드는 다음 단계.
+#
+
+name: CI
+
+on:
+  pull_request:
+    branches: [develop]
+  push:
+    branches: [develop]
+  workflow_dispatch:        # Actions 탭에서 손으로 돌리기
+
+# 같은 PR에 새로 push하면 이전 빌드는 취소 (맥 시간 아끼기)
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: macOS 빌드
+    # macos-26 맥에는 Xcode 26.x까지만 있음 → Xcode 27이 들어 있는 xcode-27 맥(macOS 27, Apple Silicon)을 쓴다
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - name: 코드 받기
+        uses: actions/checkout@v5   # v4는 Node 20이라 경고 뜸
+
+      # 기본 Xcode가 27이면 그대로, 아니면 깔린 Xcode 27 중 정식판(없으면 베타)을 고른다
+      - name: Xcode 27 고르기
+        run: |
+          echo "깔려 있는 Xcode:"; ls -d /Applications/Xcode*.app
+          if ! xcodebuild -version | grep -q "^Xcode 27"; then
+            XCODE=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | grep -vi beta | sort -V | tail -1)
+            [ -z "$XCODE" ] && XCODE=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | sort -V | tail -1)
+            if [ -z "$XCODE" ]; then echo "::error::GitHub 맥에 Xcode 27이 없어요"; exit 1; fi
+            sudo xcode-select -s "$XCODE"
+          fi
+          xcodebuild -version
+
+      - name: 빌드
+        working-directory: CueFlow
+        run: |
+          xcodebuild build \
+            -project CueFlow.xcodeproj \
+            -scheme CueFlow \
+            -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO

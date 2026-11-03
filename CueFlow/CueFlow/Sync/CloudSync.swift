@@ -24,6 +24,8 @@ final class CloudSync {
 
     // 이 맥에 처음 들어온 공지가 있으면 보낸다 (object = 공지 id들) → 알림 카드 (#82)
     static let didReceiveNoticesNotification = Notification.Name("CloudSync.didReceiveNotices")
+    // 다른 사람이 고친 큐가 왔다 → 내 파트면 시스템 알림 (#103). object = [UUID] 큐 id
+    static let didReceiveCueChangesNotification = Notification.Name("CloudSync.didReceiveCueChanges")
 
     private let logger = Logger(subsystem: "Happymondayy.CueFlow", category: "CloudSync")
     private let store = CloudSyncStore()
@@ -560,6 +562,7 @@ final class CloudSync {
         // 1) 글자 · 숫자 먼저 넣고 (없으면 새로 만들고)
         var received: [(any CloudRecordConvertible, CKRecord)] = []
         var newNoticeIDs: [UUID] = []
+        var changedCueIDs: [UUID] = []
         for record in records {
             store.cache(record)
             if record.recordType == RehearsalSync.recordType {
@@ -569,6 +572,10 @@ final class CloudSync {
             if record.recordType == Notice.recordType,
                let id = UUID(uuidString: record.recordID.recordName), findModel(id) == nil {
                 newNoticeIDs.append(id)
+            }
+            if record.recordType == Cue.recordType, isRecentChangeByOther(record),
+               let id = UUID(uuidString: record.recordID.recordName) {
+                changedCueIDs.append(id)
             }
             if let item = upsert(record) {
                 received.append((item, record))
@@ -610,11 +617,26 @@ final class CloudSync {
                 NotificationCenter.default.post(name: CloudSync.didReceiveNoticesNotification, object: newNoticeIDs)
             }
         }
+        if !changedCueIDs.isEmpty {
+            Task { @MainActor in
+                NotificationCenter.default.post(name: CloudSync.didReceiveCueChangesNotification, object: changedCueIDs)
+            }
+        }
 
         if !records.isEmpty || !deletedIDs.isEmpty {
             let kinds = records.map(\.recordType).joined(separator: ", ")
             logger.info("받음: 저장 \(records.count)개 [\(kinds)], 삭제 \(deletedIDs.count)개")
         }
+    }
+
+    // 다른 사람이 10분 안에 고친 레코드인지 (새 맥에서 처음 받을 때 예전 것까지 알림이 뜨지 않게)
+    // 내가 고친 건 "__defaultOwner__"(공연 주인일 때) 또는 내 계정 ID로 온다
+    private func isRecentChangeByOther(_ record: CKRecord) -> Bool {
+        guard let modifier = record.lastModifiedUserRecordID?.recordName,
+              modifier != CKCurrentUserDefaultName,
+              modifier != ICloudAccount.currentUserRecordName,
+              let modified = record.modificationDate else { return false }
+        return Date.now.timeIntervalSince(modified) < 10 * 60
     }
 
     // 공유 중인 공연 폴더를 엔진을 거치지 않고 직접 확인한다
