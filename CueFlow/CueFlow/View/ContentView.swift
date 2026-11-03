@@ -44,6 +44,7 @@ struct ContentView: View {
 
     // 시스템 알림을 눌러 연 공지 → 공지사항 상세로 (#103)
     @State private var noticeToOpen: Notice?
+    @State private var cueFocus: SystemNotifications.CueFocus?   // 큐 수정 알림을 눌렀을 때 큐시트가 찾아갈 큐들
 
     init(pendingInvite: PendingInvite? = nil) {
         _pendingInvite = State(initialValue: pendingInvite)
@@ -198,7 +199,7 @@ struct ContentView: View {
                         }
                     )
                 } else if let openedProduction {
-                    MainCueSheetView(production: openedProduction) {
+                    MainCueSheetView(production: openedProduction, cueFocus: $cueFocus) {
                         rehearsingProduction = openedProduction
                     }
                     .id(openedProduction.id)   // 사이드바에서 다른 공연으로 바로 옮기면 화면 상태(파트 필터 등)를 새로
@@ -274,10 +275,10 @@ extension ContentView {
         notifyNotices([notice.id])
     }
 
-    // 가장 최근에 연 공연에서 앞 장면 4개의 큐를 누가 고친 척 (내 파트인지는 안 따짐). 10초 뒤에 파트마다 알림이 뜬다
-    // 한 번 누르면 "여러 장면" 문구, 장면이 하나뿐인 공연이면 "지금 수정되었습니다" 문구
+    // 지금 연 공연(없으면 가장 최근에 연 공연)에서 앞 장면 4개의 큐를 누가 고친 척 (내 파트인지는 안 따짐). 3초 뒤에 파트마다 알림이 뜬다
+    // 한 번 누르면 "여러 장면" 문구, 장면이 하나뿐인 공연이면 "지금 수정되었습니다" 문구. 앞 장면 4개에 큐가 없으면 알림 없음
     private func showFakeCueChange() {
-        guard let production = productions.max(by: { $0.lastOpenedAt < $1.lastOpenedAt }) else { return }
+        guard let production = openedProduction ?? productions.max(by: { $0.lastOpenedAt < $1.lastOpenedAt }) else { return }
         let cues = (production.scenes ?? [])
             .sorted { $0.order < $1.order }
             .prefix(4)
@@ -287,17 +288,18 @@ extension ContentView {
     }
     #endif
 
-    // 알림을 누르면 → 공지면 공지사항 상세, 큐 수정이면 그 공연 큐시트
+    // 알림을 누르면 → 공지면 공지사항 상세, 큐 수정이면 그 공연 큐시트에서 수정된 큐로
     private func open(_ target: SystemNotifications.Target?) {
         switch target {
         case .notice(let id):
             if let notice = notices.first(where: { $0.id == id }) { openNotice(notice) }
-        case .production(let id):
-            guard let production = productions.first(where: { $0.id == id }) else { return }
+        case .cues(let focus):
+            guard let production = productions.first(where: { $0.id == focus.productionID }) else { return }
             rehearsingProduction = nil
             isCreatingProduction = false
             selectedMenu = .project
             openedProduction = production
+            cueFocus = focus
         case nil:
             break
         }

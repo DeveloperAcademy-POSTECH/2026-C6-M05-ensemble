@@ -25,10 +25,18 @@ final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
 
     enum Target {
         case notice(UUID)
-        case production(UUID)
+        case cues(CueFocus)
     }
 
-    // 큐 수정은 바로 띄우지 않고 고치는 게 10초 멈출 때까지 모았다가 공연 · 파트마다 하나로 요약한다.
+    // 큐 수정 알림을 눌렀을 때 보여줄 큐들 → 큐시트가 그 큐로 스크롤하고 선택(테두리)해 둔다
+    struct CueFocus: Equatable {
+        let id = UUID()            // 같은 알림을 또 눌러도 다시 움직이게
+        let productionID: UUID
+        let cueIDs: Set<UUID>
+    }
+
+    // 큐 수정은 바로 띄우지 않고 고치는 게 3초 멈출 때까지 모았다가 공연 · 파트마다 하나로 요약한다.
+    // 계속 고치고 있어도 첫 수정부터 10초가 지나면 한 번은 띄운다 (안 그러면 손을 뗄 때까지 안 옴).
     // 알림 센터에 아직 안 본 같은 알림이 있으면 쌓지 않고 그 알림 내용을 바꾼다 (지금까지 고친 것 전부로)
     private struct CueBatch {
         let production: Production
@@ -37,10 +45,12 @@ final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
         var shownCueIDs: Set<UUID> = []     // 지금 떠 있는 알림에 들어간 것
         var shownSceneIDs: Set<UUID> = []
         var pendingSceneIDs: Set<UUID> = []
+        var firstPendingAt: ContinuousClock.Instant?   // 아직 안 띄운 것 중 첫 수정이 온 때
         var flushTask: Task<Void, Never>?
     }
     private var cueBatches: [String: CueBatch] = [:]
-    private let cueBatchDelay: Duration = .seconds(10)
+    private let cueQuietDelay: Duration = .seconds(3)    // 수정이 이만큼 안 오면 띄움
+    private let cueMaxDelay: Duration = .seconds(10)     // 그래도 첫 수정부터 이만큼 지나면 띄움
 
     private let center = UNUserNotificationCenter.current()
 
@@ -50,28 +60,39 @@ final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
         center.requestAuthorization(options: [.alert, .sound]) { _, _ in }
     }
 
-    // 제목 "전체공지 · 레미제라블" / 부제목 = 공지 제목 / 내용 = 공지 앞부분 (길면 맥이 자름)
+    // 다른 앱(카톡 · 슬랙 · GitHub)처럼 제목 = 어디서(공연), 그 아래 = 무엇
+    // 제목 "레미제라블" / 부제목 "전체공지 · 공지 제목" / 내용 = 공지 앞부분 (길면 맥이 자름)
     func notifyNotice(_ notice: Notice) {
         let content = UNMutableNotificationContent()
-        content.title = notice.productionTitle.isEmpty ? notice.targetTag : "\(notice.targetTag) · \(notice.productionTitle)"
-        content.subtitle = notice.title
+        if notice.productionTitle.isEmpty {
+            content.title = notice.targetTag
+            content.subtitle = notice.title
+        } else {
+            content.title = notice.productionTitle
+            content.subtitle = "\(notice.targetTag) · \(notice.title)"
+        }
         content.body = notice.body
         content.sound = .default
         content.userInfo = ["notice": notice.id.uuidString]
         add(id: "notice-\(notice.id.uuidString)", content: content)
     }
 
-    // 큐 수정을 모은다. 10초 동안 더 안 오면 공연 · 파트마다 알림 하나
+    // 큐 수정을 모은다. 3초 동안 더 안 오면(길어도 첫 수정부터 10초) 공연 · 파트마다 알림 하나
     func notifyCueChanges(_ cues: [Cue]) {
         for cue in cues {
             guard let part = cue.part, let scene = cue.trigger?.scene, let production = scene.production else { continue }
             let key = "\(production.id.uuidString)-\(part.id.uuidString)"
             var batch = cueBatches[key] ?? CueBatch(production: production, part: part)
+            let now = ContinuousClock.now
+            let firstAt = batch.firstPendingAt ?? now
+            batch.firstPendingAt = firstAt
             batch.pendingCueIDs.insert(cue.id)
             batch.pendingSceneIDs.insert(scene.id)
+            let untilMax = firstAt + cueMaxDelay - now
+            let delay = max(.zero, min(cueQuietDelay, untilMax))
             batch.flushTask?.cancel()
-            batch.flushTask = Task { [weak self, cueBatchDelay] in
-                try? await Task.sleep(for: cueBatchDelay)
+            batch.flushTask = Task { [weak self] in
+                try? await Task.sleep(for: delay)
                 guard !Task.isCancelled else { return }
                 await self?.flushCueBatch(key)
             }
@@ -79,7 +100,7 @@ final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    // 1개 장면: "무대팀 S#1 지금 수정되었습니다" (피그마 문구)
+    // 제목 = 공연 이름. 1개 장면: "무대팀 S#1 큐가 수정되었습니다" (피그마 "지금 수정되었습니다"에서 바꿈)
     // 여러 장면: "무대팀 S#1 · S#3 외 2개 장면에서 큐 12개가 수정되었습니다"
     private func flushCueBatch(_ key: String) async {
         guard var batch = cueBatches[key] else { return }
@@ -95,6 +116,7 @@ final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
         batch.shownSceneIDs.formUnion(batch.pendingSceneIDs)
         batch.pendingCueIDs = []
         batch.pendingSceneIDs = []
+        batch.firstPendingAt = nil
         batch.flushTask = nil
         cueBatches[key] = batch
 
@@ -104,16 +126,21 @@ final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
         let teamName = "\(batch.part.name)팀"
 
         let content = UNMutableNotificationContent()
-        content.title = "알림"
+        // 제목 = 공연 이름 (다른 앱처럼 "어디서"). 공연 이름이 비었으면 "알림"
+        let productionTitle = batch.production.title
+        content.title = productionTitle.isEmpty ? "알림" : productionTitle
         if codes.count == 1 {
-            content.body = "\(teamName) \(first) 지금 수정되었습니다"
+            content.body = "\(teamName) \(first) 큐가 수정되었습니다"
         } else {
             let shown = codes.prefix(2).joined(separator: " · ")
             let more = codes.count > 2 ? " 외 \(codes.count - 2)개 장면" : ""
             content.body = "\(teamName) \(shown)\(more)에서 큐 \(batch.shownCueIDs.count)개가 수정되었습니다"
         }
         content.sound = .default
-        content.userInfo = ["production": batch.production.id.uuidString]
+        content.userInfo = [
+            "production": batch.production.id.uuidString,
+            "cues": batch.shownCueIDs.map(\.uuidString),
+        ]
         add(id: id, content: content)
     }
 
@@ -128,7 +155,7 @@ final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
         [.banner, .sound, .list]
     }
 
-    // 알림을 누르면 앱을 앞으로 + 그 공지 / 공연으로
+    // 알림을 누르면 앱을 앞으로 + 그 공지 / 공연의 수정된 큐로
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse
     ) async {
@@ -137,7 +164,8 @@ final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
         if let id = (info["notice"] as? String).flatMap(UUID.init(uuidString:)) {
             target = .notice(id)
         } else if let id = (info["production"] as? String).flatMap(UUID.init(uuidString:)) {
-            target = .production(id)
+            let cueIDs = (info["cues"] as? [String] ?? []).compactMap(UUID.init(uuidString:))
+            target = .cues(CueFocus(productionID: id, cueIDs: Set(cueIDs)))
         } else {
             target = nil
         }

@@ -16,6 +16,7 @@ struct CueGrid: View {
     var onShowUnread: () -> Void = {}
     var onEscape: () -> Void = {}                 // Esc → 미확인 사이드바 닫기
     @Binding var priorityScene: ShowScene?        // 우선순위 사이드바에 보여줄 씬 (nil = 닫힘)
+    var focus: SystemNotifications.CueFocus? = nil   // 큐 수정 알림을 눌렀을 때 → 그 큐로 스크롤 + 선택
     @Environment(\.modelContext) private var modelContext   // 새 큐를 저장할 곳
 
     @State private var hoveredSlotKey: String?    // 마우스가 올라가 있는 칸 (파트id-씬id)
@@ -33,6 +34,7 @@ struct CueGrid: View {
             }
             .contentMargins(.vertical, 12, for: .scrollContent)
             .onChange(of: priorityScene) { moveToColumn($1, proxy: proxy) }
+            .onChange(of: focus) { showFocusedCues($1, proxy: proxy) }
         }
     }
 }
@@ -243,6 +245,22 @@ extension CueGrid {
         guard let scene, scene != selectedScene else { return }   // 오른쪽 상단 버튼으로 연 경우(이미 선택된 열)는 그대로
         selectedScene = scene
         withAnimation { proxy.scrollTo(scene.id, anchor: .leading) }
+    }
+
+    // 큐 수정 알림을 눌러서 왔을 때: 수정된 큐들을 선택(파트 accent 테두리)하고, 공연 흐름에서 가장 앞 큐로 스크롤
+    // 선택은 그대로 남아서 표의 다른 곳을 누르거나 Esc를 누르면 풀린다
+    private func showFocusedCues(_ focus: SystemNotifications.CueFocus?, proxy: ScrollViewProxy) {
+        guard let focus else { return }
+        let focusedCues = sortedScenes
+            .flatMap { ($0.triggers ?? []).sorted { $0.order < $1.order } }
+            .flatMap { $0.cues ?? [] }
+            .filter { focus.cueIDs.contains($0.id) }
+        guard let first = focusedCues.first else { return }
+        selectedCueIDs = Set(focusedCues.map(\.id))
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))   // 방금 연 큐시트면 표가 다 그려진 뒤에
+            withAnimation { proxy.scrollTo(first.id, anchor: .center) }
+        }
     }
 
     // 고른 씬 머리칸 오른쪽 위 흔들리는 ⓝ 버튼 → 우선순위 사이드바 열기 / 닫기
