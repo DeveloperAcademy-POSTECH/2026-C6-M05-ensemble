@@ -75,9 +75,13 @@ struct CueFlowApp: App {
                     NotificationCenter.default.post(name: UserTest.didResetNotification, object: nil)
                     cloudSync.resetLocalAndRefetch()
                 }
-                // 다른 맥 없이 새 공지 알림 카드 확인 (#82). 가장 최근 공연에 다른 사람이 보낸 척 공지를 하나 넣는다
-                Button("가짜 새 공지 (알림 카드)") {
-                    NotificationCenter.default.post(name: NoticeToastCard.fakeNoticeNotification, object: nil)
+                // 다른 맥 없이 시스템 알림 확인 (#103). 가장 최근 공연에 다른 사람이 보낸 척 공지를 하나 넣는다
+                Button("가짜 새 공지 (시스템 알림)") {
+                    NotificationCenter.default.post(name: SystemNotifications.fakeNoticeNotification, object: nil)
+                }
+                // 가장 최근 공연의 첫 큐를 다른 사람이 고친 척 (내 파트인지는 안 따짐)
+                Button("가짜 큐 수정 (시스템 알림)") {
+                    NotificationCenter.default.post(name: SystemNotifications.fakeCueChangeNotification, object: nil)
                 }
                 // 초대 링크 없이 역할 선택 화면 확인 (ContentView가 테스트용 공연을 만들어 띄운다)
                 Button("가짜 초대 수락 (역할 선택 화면)") {

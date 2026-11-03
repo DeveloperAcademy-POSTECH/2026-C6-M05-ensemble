@@ -42,9 +42,9 @@ struct ContentView: View {
     @Query(sort: \Notice.sentAt, order: .reverse)
     private var notices: [Notice]
 
-    // 새 공지 알림 카드 (#82) / 카드에서 [공지 자세히 보기] 누른 공지 → 공지사항 상세로
-    @State private var toastNotice: Notice?
+    // 시스템 알림을 눌러 연 공지 → 공지사항 상세로 (#103)
     @State private var noticeToOpen: Notice?
+    @State private var cueFocus: SystemNotifications.CueFocus?   // 큐 수정 알림을 눌렀을 때 큐시트가 찾아갈 큐들
 
     init(pendingInvite: PendingInvite? = nil) {
         _pendingInvite = State(initialValue: pendingInvite)
@@ -97,14 +97,23 @@ struct ContentView: View {
                     }
             }
         }
-        // 다른 사람이 보낸 새 공지가 iCloud로 오면 창 오른쪽 위에 알림 카드 (어느 화면이든)
+        // 다른 사람이 보낸 새 공지 · 내 파트 큐 수정이 iCloud로 오면 맥 시스템 알림 (#103)
         .onReceive(NotificationCenter.default.publisher(for: CloudSync.didReceiveNoticesNotification)) { notification in
-            showToast(for: notification.object as? [UUID] ?? [])
+            notifyNotices(notification.object as? [UUID] ?? [])
         }
-        .overlay(alignment: .topTrailing) { noticeToast }
+        .onReceive(NotificationCenter.default.publisher(for: CloudSync.didReceiveCueChangesNotification)) { notification in
+            notifyCueChanges(notification.object as? [UUID] ?? [])
+        }
+        // 알림을 누르면 그 공지 / 그 공연 큐시트로
+        .onReceive(NotificationCenter.default.publisher(for: SystemNotifications.openNotification)) { notification in
+            open(notification.object as? SystemNotifications.Target)
+        }
         #if DEBUG
-        .onReceive(NotificationCenter.default.publisher(for: NoticeToastCard.fakeNoticeNotification)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: SystemNotifications.fakeNoticeNotification)) { _ in
             showFakeNotice()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: SystemNotifications.fakeCueChangeNotification)) { _ in
+            showFakeCueChange()
         }
         #endif
         // UT 진행자 메뉴로 예시 공연을 넣거나 전부 지우면 → 열린 화면을 닫고 홈으로
@@ -190,7 +199,7 @@ struct ContentView: View {
                         }
                     )
                 } else if let openedProduction {
-                    MainCueSheetView(production: openedProduction) {
+                    MainCueSheetView(production: openedProduction, cueFocus: $cueFocus) {
                         rehearsingProduction = openedProduction
                     }
                     .id(openedProduction.id)   // 사이드바에서 다른 공연으로 바로 옮기면 화면 상태(파트 필터 등)를 새로
@@ -216,43 +225,38 @@ struct ContentView: View {
     }
 }
 
-// 새 공지 알림 카드 (#82 · 피그마 951:7387)
+// 새 공지 · 내 파트 큐 수정 → 맥 시스템 알림 (#103 · 피그마 951:11334 · 951:11335)
 
 extension ContentView {
-    @ViewBuilder
-    private var noticeToast: some View {
-        if let toastNotice {
-            NoticeToastCard(tag: toastNotice.targetTag, title: toastNotice.title, preview: toastNotice.body) {
-                openNotice(toastNotice)
-            }
-            .onTapGesture { withAnimation { self.toastNotice = nil } }   // 카드를 누르면 닫힘
-            .padding(.top, 12)   // 제목 막대 바로 아래
-            .padding(.trailing, 20)
-            .transition(.move(edge: .top).combined(with: .opacity))   // 위에서 내려온다
-            // 8초 뒤 저절로 닫힘 (피그마에 닫기 버튼이 없어서)
-            .task(id: toastNotice.id) {
-                try? await Task.sleep(for: .seconds(8))
-                withAnimation { self.toastNotice = nil }
-            }
-        }
-    }
-
-    // 막 들어온 공지 중 다른 사람이 보낸 · 나한테 온 · 안 읽은 · 10분 안에 보낸 것 중 가장 최근 것
+    // 막 들어온 공지 중 다른 사람이 보낸 · 나한테 온 · 안 읽은 · 10분 안에 보낸 것
     // (10분: 새 맥에서 처음 받을 때 예전 공지가 줄줄이 뜨지 않게)
-    private func showToast(for ids: [UUID]) {
+    private func notifyNotices(_ ids: [UUID]) {
         guard !ids.isEmpty else { return }
         let myID = iCloudAccount.userRecordName
         let received = (try? modelContext.fetch(FetchDescriptor<Notice>(predicate: #Predicate { ids.contains($0.id) }))) ?? []
-        let fresh = received.filter {
-            Date.now.timeIntervalSince($0.sentAt) < 10 * 60
-                && !$0.isSent(byUserID: myID) && $0.isForMe(userID: myID) && !$0.isRead(byUserID: myID)
+        received
+            .filter {
+                Date.now.timeIntervalSince($0.sentAt) < 10 * 60
+                    && !$0.isSent(byUserID: myID) && $0.isForMe(userID: myID) && !$0.isRead(byUserID: myID)
+            }
+            .forEach(SystemNotifications.shared.notifyNotice)
+    }
+
+    // 다른 사람이 고친 큐 중 내 파트 것만 (CloudSync가 다른 사람 · 10분 안 것만 골라 보냄)
+    // 파트가 없는 사람(공연 만든 사람 · 감독 등)은 모든 파트의 큐 수정을 받는다
+    private func notifyCueChanges(_ ids: [UUID]) {
+        guard !ids.isEmpty, let myID = iCloudAccount.userRecordName else { return }
+        let cues = (try? modelContext.fetch(FetchDescriptor<Cue>(predicate: #Predicate { ids.contains($0.id) }))) ?? []
+        let mine = cues.filter { cue in
+            guard let part = cue.part, let production = cue.trigger?.scene?.production else { return false }
+            let myParts = production.member(withUserID: myID)?.parts ?? []
+            return myParts.isEmpty || myParts.contains(part)
         }
-        guard let latest = fresh.max(by: { $0.sentAt < $1.sentAt }) else { return }
-        withAnimation { toastNotice = latest }
+        SystemNotifications.shared.notifyCueChanges(mine)
     }
 
     #if DEBUG
-    // 가장 최근에 연 공연에 "다른 사람(테스트)"이 보낸 전체 공지를 하나 넣고 카드를 띄운다.
+    // 가장 최근에 연 공연에 "다른 사람(테스트)"이 보낸 전체 공지를 하나 넣고 알림을 띄운다.
     // iCloud에서 온 것처럼 조건(다른 사람 · 나한테 옴 · 안 읽음)을 그대로 거친다 — 실제로 공지 목록에도 남고 iCloud에도 올라간다
     private func showFakeNotice() {
         guard let production = productions.max(by: { $0.lastOpenedAt < $1.lastOpenedAt }) else { return }
@@ -268,13 +272,41 @@ extension ContentView {
         notice.production = production
         notice.author = sender
         try? modelContext.save()
-        showToast(for: [notice.id])
+        notifyNotices([notice.id])
+    }
+
+    // 지금 연 공연(없으면 가장 최근에 연 공연)에서 앞 장면 4개의 큐를 누가 고친 척 (내 파트인지는 안 따짐). 3초 뒤에 파트마다 알림이 뜬다
+    // 한 번 누르면 "여러 장면" 문구, 장면이 하나뿐인 공연이면 "지금 수정되었습니다" 문구. 앞 장면 4개에 큐가 없으면 알림 없음
+    private func showFakeCueChange() {
+        guard let production = openedProduction ?? productions.max(by: { $0.lastOpenedAt < $1.lastOpenedAt }) else { return }
+        let cues = (production.scenes ?? [])
+            .sorted { $0.order < $1.order }
+            .prefix(4)
+            .flatMap { ($0.triggers ?? []).flatMap { $0.cues ?? [] } }
+            .filter { $0.part != nil }
+        SystemNotifications.shared.notifyCueChanges(cues)
     }
     #endif
 
-    // [공지 자세히 보기] → 리허설 · 큐시트에 있어도 공지사항으로 가서 그 공지를 연다
+    // 알림을 누르면 → 공지면 공지사항 상세, 큐 수정이면 그 공연 큐시트에서 수정된 큐로
+    private func open(_ target: SystemNotifications.Target?) {
+        switch target {
+        case .notice(let id):
+            if let notice = notices.first(where: { $0.id == id }) { openNotice(notice) }
+        case .cues(let focus):
+            guard let production = productions.first(where: { $0.id == focus.productionID }) else { return }
+            rehearsingProduction = nil
+            isCreatingProduction = false
+            selectedMenu = .project
+            openedProduction = production
+            cueFocus = focus
+        case nil:
+            break
+        }
+    }
+
+    // 리허설 · 큐시트에 있어도 공지사항으로 가서 그 공지를 연다
     private func openNotice(_ notice: Notice) {
-        toastNotice = nil
         rehearsingProduction = nil
         openedProduction = nil
         isCreatingProduction = false

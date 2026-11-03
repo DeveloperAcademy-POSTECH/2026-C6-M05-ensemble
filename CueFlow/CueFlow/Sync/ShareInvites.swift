@@ -33,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // (맥 앱은 이걸 직접 신청해야 알림이 온다)
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApplication.shared.registerForRemoteNotifications()
+        SystemNotifications.shared.start()   // 새 공지 · 큐 수정 시스템 알림 (#103)
     }
 
     func application(_ application: NSApplication, userDidAcceptCloudKitShareWith metadata: CKShare.Metadata) {
