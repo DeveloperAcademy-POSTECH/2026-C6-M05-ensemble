@@ -94,7 +94,7 @@ extension CueGrid {
             .gridCellBorder()
     }
     
-    // 씬 머리칸: 윗줄은 S#1 / N#1 / 전환, 아랫줄은 입력한 내용
+    // 씬 머리칸: 윗줄은 S#1 / N#1 / 암전, 아랫줄은 입력한 내용
     private func sceneHeaderCell(_ scene: ShowScene) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(sceneLabel(for: scene))
@@ -403,13 +403,13 @@ extension CueGrid {
         (part.cues ?? []).filter { $0.trigger?.scene == scene }
     }
     
-    // 씬 머리칸 윗줄: 씬 → S#1, 넘버 → N#1, 전환 → 전환
+    // 씬 머리칸 윗줄: 씬 → S#1, 넘버 → N#1, 암전 → 암전
     private func sceneLabel(for scene: ShowScene) -> String {
         let number = kindNumber(of: scene)
         switch scene.kind {
         case .scene: return "S#\(number)"
         case .number: return "N#\(number)"
-        case .transition: return "전환"
+        case .blackout: return "암전"
         }
     }
     

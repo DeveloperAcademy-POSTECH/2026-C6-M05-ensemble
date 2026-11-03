@@ -454,7 +454,7 @@ private struct PreviewLineRow: View {
             if canSplit {
                 Menu("여기서 나누기") {
                     ForEach(SceneKind.allCases, id: \.self) { kind in
-                        Button("새 \(kind.rawValue)으로") { onSplit(kind) }
+                        Button("새 \(kind.title)으로") { onSplit(kind) }
                     }
                 }
                 .menuStyle(.borderlessButton)

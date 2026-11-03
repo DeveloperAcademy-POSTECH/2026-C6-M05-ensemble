@@ -24,7 +24,7 @@ enum RehearsalPreviewData {
         let scenes: [(String, SceneKind)] = [
             ("시장 등장", .scene),
             ("At the End of the Day", .number),
-            ("공장 앞 거리", .transition),
+            ("공장 앞 거리", .blackout),
             ("판틴의 몰락", .scene),
             ("I Dreamed a Dream", .number),
         ]
