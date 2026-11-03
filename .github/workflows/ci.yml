@@ -21,20 +21,23 @@ concurrency:
 jobs:
   build:
     name: macOS 빌드
-    runs-on: macos-26
+    # macos-26 맥에는 Xcode 26.x까지만 있음 → Xcode 27이 들어 있는 xcode-27 맥(macOS 27, Apple Silicon)을 쓴다
+    runs-on: xcode-27
     timeout-minutes: 30
     steps:
       - name: 코드 받기
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5   # v4는 Node 20이라 경고 뜸
 
-      # GitHub 맥 기본 Xcode는 26.x일 수 있어서 27을 직접 고른다 (정식판 우선, 없으면 베타)
+      # 기본 Xcode가 27이면 그대로, 아니면 깔린 Xcode 27 중 정식판(없으면 베타)을 고른다
       - name: Xcode 27 고르기
         run: |
           echo "깔려 있는 Xcode:"; ls -d /Applications/Xcode*.app
-          XCODE=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | grep -vi beta | sort -V | tail -1)
-          [ -z "$XCODE" ] && XCODE=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | sort -V | tail -1)
-          if [ -z "$XCODE" ]; then echo "::error::GitHub 맥에 Xcode 27이 없어요"; exit 1; fi
-          sudo xcode-select -s "$XCODE"
+          if ! xcodebuild -version | grep -q "^Xcode 27"; then
+            XCODE=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | grep -vi beta | sort -V | tail -1)
+            [ -z "$XCODE" ] && XCODE=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | sort -V | tail -1)
+            if [ -z "$XCODE" ]; then echo "::error::GitHub 맥에 Xcode 27이 없어요"; exit 1; fi
+            sudo xcode-select -s "$XCODE"
+          fi
           xcodebuild -version
 
       - name: 빌드
