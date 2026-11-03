@@ -139,13 +139,17 @@ extension CuePrioritySidebar {
         sceneCues.filter { $0.order == number }.sorted { $0.createdAt < $1.createdAt }
     }
 
-    // 처음 열 때: 번호가 없는(00) 큐에 1번부터 차례로 번호를 붙이고, 칸 수를 맞춤 (최소 5칸)
+    // 처음 열 때: 번호가 없는(00) 큐에 번호를 붙이고, 칸 수를 맞춤 (최소 5칸)
+    // 같은 트리거의 큐는 같은 번호. 트리거 순서대로 다음 번호를 준다 (트리거에 이미 번호 있는 큐가 있으면 그 번호)
     private func numberNewCues() {
-        closeGaps()   // 처음 열 때도 빈 번호부터 정리
+        closeGaps()   // 처음 열 때도 빈 번호부터 정리 → 열마다 1번부터
         var next = (sceneCues.map(\.order).max() ?? 0) + 1
-        for cue in sceneCues.filter({ $0.order == 0 }).sorted(by: { $0.createdAt < $1.createdAt }) {
-            cue.order = next
-            next += 1
+        for trigger in (scene.triggers ?? []).sorted(by: { $0.order < $1.order }) {
+            let newCues = (trigger.cues ?? []).filter { $0.order == 0 }
+            guard !newCues.isEmpty else { continue }
+            let number = (trigger.cues ?? []).first { $0.order > 0 }?.order ?? next
+            for cue in newCues { cue.order = number }
+            if number == next { next += 1 }
         }
         slotCount = max(5, next - 1)
     }
