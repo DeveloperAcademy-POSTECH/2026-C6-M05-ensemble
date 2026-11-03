@@ -35,19 +35,19 @@ struct AddScene: View {
 }
 
 extension AddScene {
-    // 왼쪽 위 "씬 ▾" → 누르면 씬 / 넘버 / 전환 고르는 팝오버
+    // 왼쪽 위 "씬 ▾" → 누르면 씬 / 넘버 / 암전 고르는 팝오버
     private var kindMenu: some View {
         Button { isPickingKind = true } label: { kindMenuLabel }
             .buttonStyle(.plain)
             .fixedSize()
             .appPopover(isPresented: $isPickingKind, width: nil) {
-                PopoverCheckList(items: SceneKind.allCases, selected: kind, title: \.rawValue) { kind = $0 }
+                PopoverCheckList(items: SceneKind.allCases, selected: kind, title: \.title) { kind = $0 }
             }
     }
 
     private var kindMenuLabel: some View {
         HStack(spacing: 4) {
-            Text(kind.rawValue)
+            Text(kind.title)
             Image(systemName: "chevron.down")
                 .font(.caption2)
         }
@@ -78,10 +78,10 @@ extension AddScene {
 }
 
 extension AddScene {
-    // 내용이 비어 있으면 아무것도 안 함
+    // 내용이 비어 있으면 아무것도 안 함 (암전은 비어도 등록)
     private func addScene() {
         let trimmedTitle = title.trimmingCharacters(in: .whitespaces)
-        guard !trimmedTitle.isEmpty else { return }
+        guard !trimmedTitle.isEmpty || kind == .blackout else { return }
         onSave(trimmedTitle, kind)
         closePopover()
     }

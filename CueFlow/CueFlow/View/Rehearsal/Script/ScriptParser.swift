@@ -29,7 +29,7 @@ struct ParsedScene: Identifiable {
 
     var code: String {
         guard let kind else { return "" }
-        return "\(kind.codePrefix)#\(number)"
+        return kind == .blackout ? kind.title : "\(kind.codePrefix)#\(number)"   // 암전은 번호 없이
     }
 }
 
@@ -73,9 +73,9 @@ enum ScriptParser {
         (/(?:S|씬|scene|#)\s?#?\s?(\d+)[.:]?(\s+.*)?/.ignoresCase(), SceneKind.scene),
         (/(?:제\s?)?(\d+)\s?장[.:]?(\s+.*)?/, SceneKind.scene),
         (/(?:N|M|넘버|number)\s?#?\s?(\d+)[.:]?(\s+.*)?/.ignoresCase(), SceneKind.number),
-        (/(?:D|전환)\s?#?\s?(\d+)[.:]?(\s+.*)?/.ignoresCase(), SceneKind.transition),
+        (/(?:D|전환)\s?#?\s?(\d+)[.:]?(\s+.*)?/.ignoresCase(), SceneKind.blackout),
         // 번호 없는 "암전" (캡처 1은 늘 비어 있음). 뒤에는 괄호 지문만 — "암전 속에서 ~" 같은 지문 줄을 장면으로 잘못 나누지 않게
-        (/(?:암전|전환)()[.:]?(\s*\(.*)?/, SceneKind.transition),
+        (/(?:암전|전환)()[.:]?(\s*\(.*)?/, SceneKind.blackout),
     ]
 
     // "S15 장면 설명" → (씬, 15, "장면 설명"). 장면 표시가 아니면 nil. 번호 없이 쓴 "암전"은 number가 nil

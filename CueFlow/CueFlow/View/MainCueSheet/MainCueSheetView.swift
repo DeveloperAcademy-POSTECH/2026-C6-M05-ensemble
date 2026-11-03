@@ -10,6 +10,7 @@ import SwiftData
 
 struct MainCueSheetView: View {
     let production: Production                 // 어느 공연의 큐시트인지
+    var cueFocus: Binding<SystemNotifications.CueFocus?> = .constant(nil)   // 큐 수정 알림을 누르면 들어옴 → 표에 넘기고 비운다
     var onRehearsal: () -> Void = {}           // "리허설 모드" 버튼
     @State private var selectedPart: Part?     // 파트 칩에서 고른 파트 (nil = 전체)
     @State private var historyCue: Cue?        // History 사이드바에 보여줄 큐 (nil = 닫힘)
@@ -18,13 +19,14 @@ struct MainCueSheetView: View {
     @State private var isShowingUnread = false
     @State private var isShowingShare = false          // 임시 초대하기 버튼 → 공유하기 창
     @State private var remoteRevision = 0              // 다른 사람이 고친 걸 받으면 +1 → 표 다시 그리기
+    @State private var gridFocus: SystemNotifications.CueFocus?   // 표가 스크롤 · 선택할 큐들
     @Environment(ICloudAccount.self) private var iCloudAccount
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             titleRow
             filterRow
-            CueGrid(production: production, selectedPart: selectedPart, remoteRevision: remoteRevision, onShowHistory: { historyCue = $0 }, onShowUnread: { isShowingUnread = true }, onEscape: { isShowingUnread = false }, priorityScene: $priorityScene)
+            CueGrid(production: production, selectedPart: selectedPart, remoteRevision: remoteRevision, onShowHistory: { historyCue = $0 }, onShowUnread: { isShowingUnread = true }, onEscape: { isShowingUnread = false }, priorityScene: $priorityScene, focus: gridFocus)
             .padding(.top, -12)   // 위 여유(12)만큼 올려서 표 위치는 피그마 그대로
             .overlay(alignment: .trailing) { sidebar.padding(.trailing, -35) }   // 표 높이만큼만 + 창 오른쪽 끝에 붙임 (바깥 여백 35만큼)
         }
@@ -44,6 +46,7 @@ struct MainCueSheetView: View {
                 try? await Task.sleep(for: .seconds(60))
             }
         }
+        .onChange(of: cueFocus.wrappedValue, initial: true) { _, focus in showFocusedCues(focus) }
         .onChange(of: historyCue) { if $1 != nil { priorityScene = nil; isShowingUnread = false } }     // 사이드바는 하나만
         .onChange(of: priorityScene) { if $1 != nil { historyCue = nil; isShowingUnread = false } }
         .onChange(of: isShowingUnread) { if $1 { historyCue = nil; priorityScene = nil } }
@@ -78,6 +81,16 @@ extension MainCueSheetView {
             .contentShape(.rect)
             .pointerStyle(.columnResize)
             .gesture(DragGesture().onEnded { if $0.translation.width > 100 { closeSidebar() } })   // 오른쪽으로 100 넘게 밀면 닫힘
+    }
+
+    // 큐 수정 알림을 눌러서 왔을 때: 다른 파트만 보고 있었으면 "전체"로 풀고, 표에 그 큐들을 넘긴다
+    private func showFocusedCues(_ focus: SystemNotifications.CueFocus?) {
+        guard let focus, focus.productionID == production.id else { return }
+        if let selectedPart, !(selectedPart.cues ?? []).contains(where: { focus.cueIDs.contains($0.id) }) {
+            self.selectedPart = nil
+        }
+        gridFocus = focus
+        cueFocus.wrappedValue = nil   // 한 번 썼으면 비운다 (다시 열 때 또 움직이지 않게)
     }
 
     private func closeSidebar() {

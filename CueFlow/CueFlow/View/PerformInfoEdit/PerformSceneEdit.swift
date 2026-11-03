@@ -18,7 +18,7 @@ struct PerformSceneEdit: View {
     var body: some View {
         CreateStepLayout(
             title: "씬/넘버 구성해주세요",
-            subtitle: "공연의 흐름을 워드처럼 입력하되, 각 줄을 씬 넘버 및 전환으로 구분합니다.",
+            subtitle: "공연의 흐름을 워드처럼 입력하되, 각 줄을 씬 넘버 및 암전으로 구분합니다.",
             currentStep: 3,
             onPrevious: onPrevious,
             onNext: onNext
@@ -51,7 +51,7 @@ extension PerformSceneEdit {
             .strokeBorder(Color.neutral200, lineWidth: 1)
     }
 
-    // 공연 흐름                    씬3 넘버2 전환1
+    // 공연 흐름                    씬3 넘버2 암전1
     private var cardHeader: some View {
         HStack {
             Text("공연 흐름")
@@ -68,7 +68,7 @@ extension PerformSceneEdit {
     }
 
     private var countSummary: String {
-        "씬\(count(of: .scene)) 넘버\(count(of: .number)) 전환\(count(of: .transition))"
+        "씬\(count(of: .scene)) 넘버\(count(of: .number)) 암전\(count(of: .blackout))"
     }
 
     private var divider: some View {
@@ -77,7 +77,7 @@ extension PerformSceneEdit {
     }
 
     private func row(_ scene: ShowScene) -> some View {
-        SceneRow(scene: scene, code: scene.code(in: scenes)) { delete(scene) }
+        SceneRow(scene: scene, code: scene.kind == .blackout ? "" : scene.code(in: scenes)) { delete(scene) }   // 암전은 번호 없이 빈칸
             .background(dropHighlight(for: scene))
             .dropDestination(for: String.self) { items, _ in
                 moveScene(id: items.first, to: scene)
@@ -147,7 +147,7 @@ extension PerformSceneEdit {
             scenes = [
                 ShowScene(title: "프롤로그 : 툴롱 노역장", kind: .scene, order: 0),
                 ShowScene(title: "Look Down", kind: .number, order: 1),
-                ShowScene(title: "장면 전환 : 디뉴로 가는 길", kind: .transition, order: 2),
+                ShowScene(title: "암전 : 디뉴로 가는 길", kind: .blackout, order: 2),
                 ShowScene(title: "What Have I Done?", kind: .number, order: 3),
             ]
         }

@@ -9,11 +9,11 @@
 import Foundation
 import SwiftData
 
-// 공연 흐름의 한 줄이 무엇인지. 씬 구성 화면의 씬 / 넘버 / 전환.
+// 공연 흐름의 한 줄이 무엇인지. 씬 구성 화면의 씬 / 넘버 / 암전.
 enum SceneKind: String, Codable, CaseIterable {
     case scene = "씬"         // S1, S2 …
     case number = "넘버"      // N1, N2 … (노래)
-    case transition = "전환"  // D1, D2 … (장면 전환)
+    case blackout = "암전"  // D1, D2 … (장면 사이 암전)
 }
 
 @Model

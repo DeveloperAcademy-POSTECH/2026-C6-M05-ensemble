@@ -48,6 +48,7 @@ extension CueCell {
             isSelected: selectedCueIDs.contains(cue.id),
             onSelect: { onSelectCue(cue, $0) }
         )
+        .id(cue.id)   // 큐 수정 알림을 누르면 이 카드로 스크롤 (CueGrid.showFocusedCues)
     }
     
     // + Add new
