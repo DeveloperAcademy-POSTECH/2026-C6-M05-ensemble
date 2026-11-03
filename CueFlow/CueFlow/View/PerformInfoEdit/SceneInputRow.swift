@@ -44,7 +44,7 @@ extension SceneInputRow {
 
     // 새로 추가될 줄 번호: 같은 종류 개수 + 1
     private var codeText: some View {
-        Text(kind == .transition ? "" : "\(kind.codePrefix)#\(sameKindCount + 1)")   // 암전은 번호 없이 빈칸
+        Text(kind == .blackout ? "" : "\(kind.codePrefix)#\(sameKindCount + 1)")   // 암전은 번호 없이 빈칸
             .font(.system(size: 17))
             .foregroundStyle(Color.neutral400)
             .frame(width: 36, alignment: .leading)
@@ -116,7 +116,7 @@ extension SceneInputRow {
     // 내용이 비어 있으면 아무것도 안 함 (암전은 비어도 등록). 등록 후 입력칸을 비우고 바로 다음 줄 입력
     private func add() {
         let trimmed = title.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty || kind == .transition else { return }
+        guard !trimmed.isEmpty || kind == .blackout else { return }
         onAdd(trimmed, kind)
         title = ""
         isFocused = true

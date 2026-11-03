@@ -68,7 +68,7 @@ extension PerformSceneEdit {
     }
 
     private var countSummary: String {
-        "씬\(count(of: .scene)) 넘버\(count(of: .number)) 암전\(count(of: .transition))"
+        "씬\(count(of: .scene)) 넘버\(count(of: .number)) 암전\(count(of: .blackout))"
     }
 
     private var divider: some View {
@@ -77,7 +77,7 @@ extension PerformSceneEdit {
     }
 
     private func row(_ scene: ShowScene) -> some View {
-        SceneRow(scene: scene, code: scene.kind == .transition ? "" : scene.code(in: scenes)) { delete(scene) }   // 암전은 번호 없이 빈칸
+        SceneRow(scene: scene, code: scene.kind == .blackout ? "" : scene.code(in: scenes)) { delete(scene) }   // 암전은 번호 없이 빈칸
             .background(dropHighlight(for: scene))
             .dropDestination(for: String.self) { items, _ in
                 moveScene(id: items.first, to: scene)
@@ -147,7 +147,7 @@ extension PerformSceneEdit {
             scenes = [
                 ShowScene(title: "프롤로그 : 툴롱 노역장", kind: .scene, order: 0),
                 ShowScene(title: "Look Down", kind: .number, order: 1),
-                ShowScene(title: "암전 : 디뉴로 가는 길", kind: .transition, order: 2),
+                ShowScene(title: "암전 : 디뉴로 가는 길", kind: .blackout, order: 2),
                 ShowScene(title: "What Have I Done?", kind: .number, order: 3),
             ]
         }

@@ -391,7 +391,7 @@ extension CueGrid {
         switch scene.kind {
         case .scene: return "S#\(number)"
         case .number: return "N#\(number)"
-        case .transition: return "암전"
+        case .blackout: return "암전"
         }
     }
     

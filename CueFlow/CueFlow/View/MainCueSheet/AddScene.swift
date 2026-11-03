@@ -81,7 +81,7 @@ extension AddScene {
     // 내용이 비어 있으면 아무것도 안 함 (암전은 비어도 등록)
     private func addScene() {
         let trimmedTitle = title.trimmingCharacters(in: .whitespaces)
-        guard !trimmedTitle.isEmpty || kind == .transition else { return }
+        guard !trimmedTitle.isEmpty || kind == .blackout else { return }
         onSave(trimmedTitle, kind)
         closePopover()
     }

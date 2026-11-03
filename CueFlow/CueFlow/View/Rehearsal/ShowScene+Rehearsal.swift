@@ -13,7 +13,7 @@ extension SceneKind {
         switch self {
         case .scene: "S"
         case .number: "N"
-        case .transition: "D"
+        case .blackout: "D"
         }
     }
 }

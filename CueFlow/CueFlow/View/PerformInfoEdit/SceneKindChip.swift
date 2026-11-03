@@ -52,7 +52,7 @@ extension SceneKind {
         switch self {
         case .scene: .brandPrimarySubtle
         case .number: .brandPrimaryDisabled
-        case .transition: .brandPrimaryHover
+        case .blackout: .brandPrimaryHover
         }
     }
 }
