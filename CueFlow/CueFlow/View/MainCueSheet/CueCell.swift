@@ -12,6 +12,7 @@ import SwiftData
 struct CueCell: View {
     let part: Part                      // 이 칸이 속한 파트 (칸 색을 정함)
     let cues: [Cue]                     // 이 칸에 들어갈 큐들
+    var scene: ShowScene?               // 이 칸이 속한 열 (자동완성 후보를 이 열 트리거에서만 찾음)
     var isHovering = false              // 마우스가 이 칸 위에 있는지 (CueGrid가 알려줌)
     var onAddCue: (String, String, CuePosition) -> Void = { _, _, _ in }   // 팝오버에서 입력을 마치면 할 일
     var onShowHistory: (Cue) -> Void = { _ in }   // 카드 우클릭 → History
@@ -60,7 +61,7 @@ extension CueCell {
         .font(.body.weight(.medium))
         .foregroundStyle(Color.neutral900)
         .appPopover(isPresented: $isAddingCue) {
-            AddCueCardInfo(production: part.production, partName: part.name, onSave: onAddCue)
+            AddCueCardInfo(scene: scene, partName: part.name, onSave: onAddCue)
         }
     }
     
