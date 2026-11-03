@@ -25,13 +25,13 @@ extension StageArea {
 }
 
 enum StageCueMoves {
-    // 지금 큐(트리거)까지 적용한 미니맵
+    // 지금 큐(우선순위 번호 묶음)까지 적용한 미니맵
     static func marks(
-        start: [StageMark], triggers: [Trigger], through currentIndex: Int, production: Production
+        start: [StageMark], steps: [[Cue]], through currentIndex: Int, production: Production
     ) -> [StageMark] {
         var marks = start
-        for trigger in triggers.prefix(currentIndex + 1) {
-            for cue in (trigger.cues ?? []).sorted(by: { $0.order < $1.order }) {
+        for step in steps.prefix(currentIndex + 1) {
+            for cue in step {
                 apply(cue, to: &marks, production: production)
             }
         }

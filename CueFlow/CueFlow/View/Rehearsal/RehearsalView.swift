@@ -17,7 +17,7 @@ struct RehearsalView: View {
     // 지금 보고 있는 장면 (공연 흐름 순서에서 몇 번째인지)
     @State private var sceneIndex = 0
 
-    // 지금 큐 = 지금 장면에서 몇 번째 트리거인지 (같은 트리거의 큐는 동시에 실행)
+    // 지금 큐 = 지금 장면에서 몇 번째 우선순위 번호 묶음인지 (같은 번호의 큐는 동시에 실행)
     @State private var triggerIndex = 0
 
     // 공연 흐름 순서대로 정렬한 장면들
@@ -34,13 +34,28 @@ struct RehearsalView: View {
         (currentScene?.triggers ?? []).sorted { $0.order < $1.order }
     }
 
-    // 지금 큐에 해당하는 대본 줄 (트리거 글로 찾음)
+    // 지금 장면의 큐를 우선순위 번호끼리 묶음 (번호 순, 번호 없는 00은 맨 뒤)
+    private var currentSteps: [[Cue]] {
+        cueSteps(of: currentScene)
+    }
+
+    private func cueSteps(of scene: ShowScene?) -> [[Cue]] {
+        let cues = (scene?.triggers ?? []).flatMap { $0.cues ?? [] }
+        let grouped = Dictionary(grouping: cues, by: \.order)
+        let numbers = grouped.keys.sorted { ($0 == 0 ? Int.max : $0) < ($1 == 0 ? Int.max : $1) }
+        return numbers.map { number in
+            (grouped[number] ?? []).sorted { $0.createdAt < $1.createdAt }
+        }
+    }
+
+    // 지금 큐에 해당하는 대본 줄 (지금 큐의 트리거 글로 찾음)
     private var highlightedLineID: UUID? {
-        guard currentTriggers.indices.contains(triggerIndex) else { return nil }
+        guard currentSteps.indices.contains(triggerIndex),
+              let trigger = currentSteps[triggerIndex].first?.trigger else { return nil }
         let matches = ScriptCueMatcher.match(
             triggers: currentTriggers, lines: currentScriptLines, castNames: production.castNames
         )
-        return matches[currentTriggers[triggerIndex].id]
+        return matches[trigger.id]
     }
 
     // 지금 장면의 대본 (순서대로)
@@ -69,22 +84,22 @@ struct RehearsalView: View {
                     RehearsalStageMap(
                         production: production,
                         scene: currentScene,
-                        triggers: currentTriggers,
-                        currentTriggerIndex: triggerIndex,
+                        steps: currentSteps,
+                        currentStep: triggerIndex,
                         onToggleExpand: { isMinimapExpanded = true }
                     )
                         .frame(height: 378)
 
                     RehearsalCueList(
                             sceneCode: currentScene?.code(in: scenes) ?? "",
-                            triggers: currentTriggers,
+                            steps: currentSteps,
                             parts: parts,
                             currentIndex: Binding(
                                 get: { triggerIndex },
                                 set: { if !isFollowing { triggerIndex = $0 } }   // 따라가는 중엔 줄을 눌러도 안 넘어감
                             ),
                             canGoPrevious: !isFollowing && (sceneIndex > 0 || triggerIndex > 0),
-                            canGoNext: !isFollowing && (sceneIndex < scenes.count - 1 || triggerIndex < currentTriggers.count - 1),
+                            canGoNext: !isFollowing && (sceneIndex < scenes.count - 1 || triggerIndex < currentSteps.count - 1),
                             onPrevious: goToPreviousCue,
                             onNext: goToNextCue,
                             sceneControls: HStack(spacing: 8) {   // 피그마 951:9052: ‹ › 와 장면 고르기 사이 8
@@ -143,8 +158,8 @@ struct RehearsalView: View {
             RehearsalStageMap(
                 production: production,
                 scene: currentScene,
-                triggers: currentTriggers,
-                currentTriggerIndex: triggerIndex,
+                steps: currentSteps,
+                currentStep: triggerIndex,
                 isExpanded: true,
                 onToggleExpand: { isMinimapExpanded = false }
             )
@@ -171,13 +186,13 @@ struct RehearsalView: View {
         } else if sceneIndex > 0 {
             isMovingByCue = true
             sceneIndex -= 1
-            triggerIndex = max(currentTriggers.count - 1, 0)
+            triggerIndex = max(currentSteps.count - 1, 0)
         }
     }
 
     // 다음 큐: 장면 마지막 큐에서 누르면 다음 장면의 첫 큐로
     private func goToNextCue() {
-        if triggerIndex < currentTriggers.count - 1 {
+        if triggerIndex < currentSteps.count - 1 {
             triggerIndex += 1
         } else if sceneIndex < scenes.count - 1 {
             isMovingByCue = true
@@ -329,7 +344,7 @@ extension RehearsalView {
         guard let myID, let scene = currentScene else { return }
         RehearsalSync.shared.lead(
             productionID: production.id, leaderID: myID, leaderName: myName,
-            sceneID: scene.id, triggerID: currentTriggers.indices.contains(triggerIndex) ? currentTriggers[triggerIndex].id : nil
+            sceneID: scene.id, triggerID: currentSteps.indices.contains(triggerIndex) ? currentSteps[triggerIndex].first?.id : nil   // 지금 큐 묶음의 첫 큐
         )
     }
 
@@ -340,16 +355,16 @@ extension RehearsalView {
     // 받은 위치로 넘어가기. 장면이나 큐가 아직 이 맥에 안 왔으면 갈 수 있는 데까지만
     private func follow(_ position: RehearsalPosition) {
         guard let newSceneIndex = scenes.firstIndex(where: { $0.id == position.sceneID }) else { return }
-        let triggers = sortedTriggers(at: newSceneIndex)
+        let steps = cueSteps(at: newSceneIndex)
         if newSceneIndex != sceneIndex {
             isMovingByCue = true   // 장면이 바뀌어도 첫 큐로 되돌리지 않게
             sceneIndex = newSceneIndex
         }
-        triggerIndex = triggers.firstIndex { $0.id == position.triggerID } ?? 0
+        triggerIndex = steps.firstIndex { $0.first?.id == position.triggerID } ?? 0
     }
 
-    private func sortedTriggers(at index: Int) -> [Trigger] {
-        (scenes[index].triggers ?? []).sorted { $0.order < $1.order }
+    private func cueSteps(at index: Int) -> [[Cue]] {
+        cueSteps(of: scenes[index])
     }
 
     #if DEBUG
@@ -365,10 +380,10 @@ extension RehearsalView {
         var trigger = triggerIndex
         if let base = sync.fakeBase(of: production.id), let index = scenes.firstIndex(where: { $0.id == base.sceneID }) {
             scene = index
-            trigger = sortedTriggers(at: index).firstIndex { $0.id == base.triggerID } ?? 0
+            trigger = cueSteps(at: index).firstIndex { $0.first?.id == base.triggerID } ?? 0
             switch step {
             case .next:
-                if trigger < sortedTriggers(at: scene).count - 1 {
+                if trigger < cueSteps(at: scene).count - 1 {
                     trigger += 1
                 } else if scene < scenes.count - 1 {
                     scene += 1
@@ -379,7 +394,7 @@ extension RehearsalView {
                     trigger -= 1
                 } else if scene > 0 {
                     scene -= 1
-                    trigger = max(sortedTriggers(at: scene).count - 1, 0)
+                    trigger = max(cueSteps(at: scene).count - 1, 0)
                 }
             case .stop:
                 break
@@ -387,11 +402,11 @@ extension RehearsalView {
         }
         guard scenes.indices.contains(scene) else { return }
 
-        let triggers = sortedTriggers(at: scene)
+        let steps = cueSteps(at: scene)
         sync.sendFake(
             productionID: production.id,
             sceneID: scenes[scene].id,
-            triggerID: triggers.indices.contains(trigger) ? triggers[trigger].id : nil
+            triggerID: steps.indices.contains(trigger) ? steps[trigger].first?.id : nil
         )
     }
     #endif

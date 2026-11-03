@@ -14,8 +14,8 @@ import SwiftUI
 struct RehearsalStageMap: View {
     let production: Production
     let scene: ShowScene?          // 지금 장면
-    let triggers: [Trigger]        // 지금 장면의 트리거 (순서대로)
-    let currentTriggerIndex: Int   // 지금 큐
+    let steps: [[Cue]]             // 지금 장면의 큐를 우선순위 번호끼리 묶은 것 (번호 순)
+    let currentStep: Int           // 지금 큐 = 몇 번째 번호 묶음
     var isExpanded = false             // 크게 보기 중이면 버튼이 "작게 보기"로
     var onToggleExpand: (() -> Void)?  // 크게 보기 / 작게 보기 (nil이면 버튼 숨김)
 
@@ -36,16 +36,16 @@ struct RehearsalStageMap: View {
     private var marks: [StageMark] {
         StageCueMoves.marks(
             start: production.stagePlacements(for: scene).map(\.mark),
-            triggers: triggers,
-            through: currentTriggerIndex,
+            steps: steps,
+            through: currentStep,
             production: production
         )
     }
 
     // 지금 큐가 옮긴 배역 · 소품
     private var movingIDs: Set<String> {
-        guard triggers.indices.contains(currentTriggerIndex) else { return [] }
-        let cues = triggers[currentTriggerIndex].cues ?? []
+        guard steps.indices.contains(currentStep) else { return [] }
+        let cues = steps[currentStep]
         return Set(cues.flatMap { cue in
             StageArea(cue.position) == nil ? [] :
                 StageCueMoves.movedNames(by: cue, production: production).map { "\($0.1.rawValue)-\($0.0)" }
@@ -161,8 +161,8 @@ struct RehearsalStageMap: View {
 #Preview("미니맵") {
     let production = RehearsalPreviewData.production
     let scene = production.scenes?.first
-    let triggers = (scene?.triggers ?? []).sorted { $0.order < $1.order }
-    RehearsalStageMap(production: production, scene: scene, triggers: triggers, currentTriggerIndex: 2)
+    let steps = (scene?.triggers ?? []).sorted { $0.order < $1.order }.map { $0.cues ?? [] }
+    RehearsalStageMap(production: production, scene: scene, steps: steps, currentStep: 2)
         .frame(width: 1009, height: 384)
         .padding()
 }
@@ -170,7 +170,7 @@ struct RehearsalStageMap: View {
 #Preview("빈 화면") {
     let production = RehearsalPreviewData.production
     production.initialPlacements = []
-    return RehearsalStageMap(production: production, scene: production.scenes?.first, triggers: [], currentTriggerIndex: 0)
+    return RehearsalStageMap(production: production, scene: production.scenes?.first, steps: [], currentStep: 0)
         .frame(width: 1009, height: 378)
         .padding()
 }
