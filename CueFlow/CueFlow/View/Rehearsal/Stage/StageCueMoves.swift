@@ -7,7 +7,7 @@
 //  - 소품 파트 큐: 제목에 있는 소품 이름 → 그 큐 위치로
 //  - 무대 파트 큐: 제목에 있는 배역 이름 → 그 큐 위치로 (등장 · 퇴장)
 //  - 의상 · 조명 · 음향 큐는 옮기지 않는다 ("판틴 공장복 착용 확인"은 판틴을 안 옮김)
-//  무대 큐는 9구역(Cue.stageCell)을 정했으면 그 구역 가운데로, 안 정했으면 무대 가운데로.
+//  무대 큐는 무대 칸(Cue.stageCell, 무대 칸 설정 기준)을 정했으면 그 칸 가운데로, 안 정했으면 무대 가운데로.
 //
 
 import Foundation
@@ -57,9 +57,11 @@ enum StageCueMoves {
             // 한 큐에 여럿이면 옆으로 조금씩 비켜 놓는다
             let shift = (Double(index) - Double(moved.count - 1) / 2) * 0.07
 
-            if area == .stage, let cell = cue.stageCell {
-                mark.x = (Double(cell % 3) + 0.5) / 3 + shift
-                mark.y = (Double(cell / 3) + 0.5) / 3
+            let columns = production.stageGridColumns
+            if area == .stage, let cell = cue.stageCell, columns > 0, cell < columns * columns {
+                let center = StageCell.center(of: cell, columns: columns)
+                mark.x = center.x + shift
+                mark.y = center.y
             } else if mark.area != area || existing == nil {
                 // 다른 구역에서 들어오면 구역 가운데. 같은 구역 안이면 자리 그대로
                 mark.x = 0.5 + shift

@@ -33,6 +33,9 @@ final class Production {
     var castNames: [String] = []
     var propNames: [String] = []
 
+    // 무대 칸 설정: 3 · 4 · 5 = 무대를 n×n으로 나눔, 0 = 기본(구분선 없음). 무대 큐의 Cue.stageCell은 이 칸 번호
+    var stageGridColumns: Int = 3
+
     // 공연을 지우면 그 안의 씬·파트(와 그 아래 전부)도 같이 지운다.
     @Relationship(deleteRule: .cascade, inverse: \ShowScene.production)
     var scenes: [ShowScene]? = []

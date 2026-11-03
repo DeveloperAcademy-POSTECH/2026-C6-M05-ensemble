@@ -3,8 +3,8 @@
 //  CueFlow
 //
 //  무대 배치 창.
-//  처음("배치하기"): 배우 · 소품 목록 → 다음으로 → 최초 상태 무대 배치 → 배치 완료
-//  장면에서("수정하기"): 배우 · 소품 목록(이름 고치기) → 다음으로 → 그 장면의 무대 배치
+//  처음("배치하기"): 배우 · 소품 목록 → 다음으로 → 무대 칸 설정 → 적용 완료 → 최초 상태 무대 배치 → 배치 완료
+//  장면에서("수정하기"): 배우 · 소품 목록(이름 고치기) → 다음으로 → 무대 칸 설정 → 그 장면의 무대 배치
 //  위쪽 이름 카드를 눌러 고른 뒤 놓을 무대 칸을 누른다 (피그마 1354:7896 — 끌기는 불편하다는 의견으로 바꿈).
 //  놓인 점도 눌러서 고른 뒤 다른 칸을 누르면 옮겨진다. 빼기는 점 우클릭 또는 미니맵 밖으로 끌기.
 //  배치 완료를 눌러야 저장된다.
@@ -20,7 +20,7 @@ struct StageSetupSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
-    private enum Step { case names, placement }
+    private enum Step { case names, grid, placement }
     @State private var step: Step = .names
 
     init(production: Production, scene: ShowScene? = nil) {
@@ -32,6 +32,10 @@ struct StageSetupSheet: View {
         switch step {
         case .names:
             CastPropListSheet(production: production, onBack: { dismiss() }) {
+                step = .grid
+            }
+        case .grid:
+            StageGridSheet(production: production, onBack: { step = .names }) {
                 step = .placement
             }
         case .placement:
@@ -42,7 +46,7 @@ struct StageSetupSheet: View {
                     : "이 장면에서 배역과 소품이 있는 자리로 옮겨주세요.\n배역이나 소품 카드를 선택한 뒤, 놓을 해당 무대 칸을 클릭해주세요.",
                 production: production,
                 startMarks: startMarks,
-                onBack: { step = .names },
+                onBack: { step = .grid },
                 onDone: save
             )
         }
@@ -91,7 +95,7 @@ private struct StagePlacementEditor: View {
     let title: String
     let subtitle: String
     let production: Production
-    let onBack: () -> Void   // "<" → 배우 · 소품 목록으로
+    let onBack: () -> Void   // "<" → 무대 칸 설정으로
     let onDone: ([StageMark]) -> Void
 
     @State private var marks: [StageMark]
@@ -133,6 +137,7 @@ private struct StagePlacementEditor: View {
                         StageMinimap(
                             marks: marks,
                             style: .setup,
+                            gridColumns: production.stageGridColumns,
                             onDragChanged: { mark, location in dragging = (mark, location) },
                             onDragEnded: drop,
                             hiddenMarkID: dragging?.mark.id,
@@ -205,7 +210,7 @@ private struct StagePlacementEditor: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // 고른 카드를 누른 구역에 놓는다. 무대면 그 칸에 (같은 칸 것들과 나란히), 상수 · 하수면 누른 자리에
+    // 고른 카드를 누른 구역에 놓는다. 무대면 그 칸에 (같은 칸 것들과 나란히), 상수 · 하수 · 칸 없는 무대면 누른 자리에
     private func place(in area: StageArea, at point: CGPoint) {
         guard let mark = selected else { return }
         selected = nil
@@ -213,15 +218,18 @@ private struct StagePlacementEditor: View {
 
         var placed = mark
         placed.area = area
-        if area == .stage {
-            let cell = StageCell.index(x: point.x, y: point.y)
+        let columns = production.stageGridColumns
+        if area == .stage, columns > 0 {
+            let cell = StageCell.index(x: point.x, y: point.y, columns: columns)
             placed.x = point.x
             placed.y = point.y
             marks.append(placed)
             // 같은 칸에 있는 것들을 가로로 고르게 다시 놓는다 (놓은 순서대로)
-            let sameCell = marks.indices.filter { marks[$0].area == .stage && StageCell.index(x: marks[$0].x, y: marks[$0].y) == cell }
+            let sameCell = marks.indices.filter {
+                marks[$0].area == .stage && StageCell.index(x: marks[$0].x, y: marks[$0].y, columns: columns) == cell
+            }
             for (i, index) in sameCell.enumerated() {
-                let slot = StageCell.slot(i, of: sameCell.count, in: cell)
+                let slot = StageCell.slot(i, of: sameCell.count, in: cell, columns: columns)
                 marks[index].x = slot.x
                 marks[index].y = slot.y
             }

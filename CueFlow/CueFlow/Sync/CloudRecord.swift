@@ -72,6 +72,7 @@ enum CloudKey {
     static let updatedAt = "updatedAt"
     static let castNames = "castNames"
     static let propNames = "propNames"
+    static let stageGridColumns = "stageGridColumns"
     static let kind = "kind"
     static let order = "order"
     static let hasOwnPlacements = "hasOwnPlacements"
@@ -149,6 +150,7 @@ extension Production: CloudRecordConvertible {
         record[CloudKey.updatedAt] = updatedAt
         record[CloudKey.castNames] = castNames.cloudList
         record[CloudKey.propNames] = propNames.cloudList
+        record[CloudKey.stageGridColumns] = stageGridColumns
     }
 
     func applyFields(from record: CKRecord) {
@@ -164,6 +166,7 @@ extension Production: CloudRecordConvertible {
         updatedAt = record[CloudKey.updatedAt] as? Date ?? Date()
         castNames = record[CloudKey.castNames] as? [String] ?? []
         propNames = record[CloudKey.propNames] as? [String] ?? []
+        stageGridColumns = record[CloudKey.stageGridColumns] as? Int ?? 3
     }
 }
 
