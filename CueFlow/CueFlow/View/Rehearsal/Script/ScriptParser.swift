@@ -29,7 +29,7 @@ struct ParsedScene: Identifiable {
 
     var code: String {
         guard let kind else { return "" }
-        return "\(kind.codePrefix)#\(number)"
+        return kind == .blackout ? kind.title : "\(kind.codePrefix)#\(number)"   // 암전은 번호 없이
     }
 }
 
