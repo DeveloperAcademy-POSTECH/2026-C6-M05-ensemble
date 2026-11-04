@@ -40,12 +40,20 @@ struct RehearsalView: View {
     }
 
     private func cueSteps(of scene: ShowScene?) -> [[Cue]] {
-        let cues = (scene?.triggers ?? []).flatMap { $0.cues ?? [] }
-        let grouped = Dictionary(grouping: cues, by: \.order)
-        let numbers = grouped.keys.sorted { ($0 == 0 ? Int.max : $0) < ($1 == 0 ? Int.max : $1) }
-        return numbers.map { number in
-            (grouped[number] ?? []).sorted { $0.createdAt < $1.createdAt }
+        let triggers = (scene?.triggers ?? []).sorted { $0.order < $1.order }
+        let cues = triggers.flatMap { $0.cues ?? [] }
+
+        // 번호를 붙인 큐: 번호끼리 묶어 번호 순으로
+        let numbered = Dictionary(grouping: cues.filter { $0.order > 0 }, by: \.order)
+            .sorted { $0.key < $1.key }
+            .map { $0.value.sorted { $0.createdAt < $1.createdAt } }
+
+        // 번호가 없는 큐: 트리거별로 묶어 그 뒤에 (같은 트리거 = 동시에 실행)
+        let unnumbered = triggers.compactMap { trigger -> [Cue]? in
+            let cues = (trigger.cues ?? []).filter { $0.order == 0 }.sorted { $0.createdAt < $1.createdAt }
+            return cues.isEmpty ? nil : cues
         }
+        return numbered + unnumbered
     }
 
     // 지금 큐에 해당하는 대본 줄 (지금 큐의 트리거 글로 찾음)
