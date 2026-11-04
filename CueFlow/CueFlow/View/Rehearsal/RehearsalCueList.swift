@@ -75,19 +75,20 @@ struct RehearsalCueList<SceneControls: View>: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
-                            let rowCues = cues(in: step)
-                            // 필터로 큐가 하나도 없는 번호는 숨긴다 (지금 큐는 남긴다)
-                            if !rowCues.isEmpty || index == currentIndex {
-                                CueListRow(
-                                    code: "\(sceneCode) - \(step.first?.order ?? 0)",
-                                    cues: rowCues,
-                                    isCurrent: index == currentIndex,
-                                    isPast: index < currentIndex
-                                )
-                                .id(index)
-                                .onTapGesture { currentIndex = index }
-                                Divider()
+                            // 같은 번호의 큐를 한 줄씩. 누르면 그 번호 전체가 지금 큐 (필터로 큐가 없으면 안 보임)
+                            VStack(spacing: 0) {
+                                ForEach(cues(in: step)) { cue in
+                                    CueListRow(
+                                        code: "\(sceneCode) - \(cue.order)",
+                                        cue: cue,
+                                        isCurrent: index == currentIndex,
+                                        isPast: index < currentIndex
+                                    )
+                                    Divider()
+                                }
                             }
+                            .id(index)
+                            .onTapGesture { currentIndex = index }
                         }
                     }
                     .frame(maxWidth: .infinity)   // 큐가 0개여도 표 폭을 꽉 채워서 세로선이 열 제목과 맞게
@@ -187,10 +188,10 @@ struct RehearsalCueList<SceneControls: View>: View {
     }
 }
 
-// 표 한 줄 = 우선순위 번호 하나 (같은 번호 = 동시에 실행). 큐가 여러 개면 큐 · 위치 · 파트가 한 줄(42pt)씩 아래로 쌓이고 사이에 가로선.
+// 표 한 줄 = 큐 하나 (피그마 리허설모드_무대배치01). 같은 우선순위 번호의 큐는 번호 · 트리거를 줄마다 반복
 struct CueListRow: View {
     let code: String       // "S#3 - 1" (씬 단축어 - 큐카드 우선순위 번호)
-    let cues: [Cue]
+    let cue: Cue
     let isCurrent: Bool
     var isPast = false     // 이미 지나간 큐 → 흐리게
 
@@ -202,19 +203,14 @@ struct CueListRow: View {
                 .padding(.leading, 20)
                 .frame(width: CueListColumn.scene, height: CueListColumn.cueHeight, alignment: .leading)
 
-            Text(cues.first?.trigger?.text ?? "")
+            Text(cue.trigger?.text ?? "")
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(Color.neutral900)
                 .lineLimit(1)
                 .padding(.leading, 20)
                 .frame(width: CueListColumn.trigger, height: CueListColumn.cueHeight, alignment: .leading)
 
-            VStack(spacing: 0) {
-                ForEach(Array(cues.enumerated()), id: \.element.id) { index, cue in
-                    if index > 0 { Divider() }
-                    cueLine(cue)
-                }
-            }
+            cueLine(cue)
         }
         .opacity(isPast ? 0.4 : 1)   // 글자 · 태그만 흐리게 (줄 바탕 · 가로선은 그대로)
         .frame(maxWidth: .infinity, minHeight: CueListColumn.cueHeight, alignment: .topLeading)
