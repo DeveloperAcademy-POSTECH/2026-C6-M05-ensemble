@@ -20,9 +20,9 @@ private enum CueListColumn {
 
 struct RehearsalCueList<SceneControls: View>: View {
     let sceneCode: String          // "S#3"
-    let triggers: [Trigger]        // 지금 장면의 트리거 (순서대로)
+    let steps: [[Cue]]             // 지금 장면의 큐를 우선순위 번호끼리 묶은 것 (번호 순)
     let parts: [Part]              // 파트 필터 칩
-    @Binding var currentIndex: Int // 지금 큐 = 몇 번째 트리거
+    @Binding var currentIndex: Int // 지금 큐 = 몇 번째 번호 묶음
     let canGoPrevious: Bool
     let canGoNext: Bool
     let onPrevious: () -> Void
@@ -31,15 +31,13 @@ struct RehearsalCueList<SceneControls: View>: View {
 
     @State private var selectedPart: Part?   // nil = 전체
 
-    // 고른 파트의 큐만 (트리거 안 순서대로)
-    private func cues(of trigger: Trigger) -> [Cue] {
-        (trigger.cues ?? [])
-            .filter { selectedPart == nil || $0.part == selectedPart }
-            .sorted { $0.order < $1.order }
+    // 고른 파트의 큐만
+    private func cues(in step: [Cue]) -> [Cue] {
+        step.filter { selectedPart == nil || $0.part == selectedPart }
     }
 
     private var cueCount: Int {
-        triggers.reduce(0) { $0 + cues(of: $1).count }
+        steps.reduce(0) { $0 + cues(in: $1).count }
     }
 
     var body: some View {
@@ -76,21 +74,21 @@ struct RehearsalCueList<SceneControls: View>: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 0) {
-                        ForEach(Array(triggers.enumerated()), id: \.element.id) { index, trigger in
-                            let rowCues = cues(of: trigger)
-                            // 필터로 큐가 하나도 없는 트리거는 숨긴다 (지금 큐는 남긴다)
-                            if !rowCues.isEmpty || index == currentIndex {
-                                CueListRow(
-                                    code: "\(sceneCode) - \(index + 1)",
-                                    trigger: trigger,
-                                    cues: rowCues,
-                                    isCurrent: index == currentIndex,
-                                    isPast: index < currentIndex
-                                )
-                                .id(index)
-                                .onTapGesture { currentIndex = index }
-                                Divider()
+                        ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
+                            // 같은 번호의 큐를 한 줄씩. 누르면 그 번호 전체가 지금 큐 (필터로 큐가 없으면 안 보임)
+                            VStack(spacing: 0) {
+                                ForEach(cues(in: step)) { cue in
+                                    CueListRow(
+                                        code: "\(sceneCode) - \(cue.order)",
+                                        cue: cue,
+                                        isCurrent: index == currentIndex,
+                                        isPast: index < currentIndex
+                                    )
+                                    Divider()
+                                }
                             }
+                            .id(index)
+                            .onTapGesture { currentIndex = index }
                         }
                     }
                     .frame(maxWidth: .infinity)   // 큐가 0개여도 표 폭을 꽉 채워서 세로선이 열 제목과 맞게
@@ -190,11 +188,10 @@ struct RehearsalCueList<SceneControls: View>: View {
     }
 }
 
-// 표 한 줄 = 트리거 하나. 큐가 여러 개면 큐 · 위치 · 파트가 한 줄(42pt)씩 아래로 쌓이고 사이에 가로선.
+// 표 한 줄 = 큐 하나 (피그마 리허설모드_무대배치01). 같은 우선순위 번호의 큐는 번호 · 트리거를 줄마다 반복
 struct CueListRow: View {
-    let code: String       // "S#3 - 1"
-    let trigger: Trigger
-    let cues: [Cue]
+    let code: String       // "S#3 - 1" (씬 단축어 - 큐카드 우선순위 번호)
+    let cue: Cue
     let isCurrent: Bool
     var isPast = false     // 이미 지나간 큐 → 흐리게
 
@@ -206,19 +203,14 @@ struct CueListRow: View {
                 .padding(.leading, 20)
                 .frame(width: CueListColumn.scene, height: CueListColumn.cueHeight, alignment: .leading)
 
-            Text(trigger.text)
+            Text(cue.trigger?.text ?? "")
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(Color.neutral900)
                 .lineLimit(1)
                 .padding(.leading, 20)
                 .frame(width: CueListColumn.trigger, height: CueListColumn.cueHeight, alignment: .leading)
 
-            VStack(spacing: 0) {
-                ForEach(Array(cues.enumerated()), id: \.element.id) { index, cue in
-                    if index > 0 { Divider() }
-                    cueLine(cue)
-                }
-            }
+            cueLine(cue)
         }
         .opacity(isPast ? 0.4 : 1)   // 글자 · 태그만 흐리게 (줄 바탕 · 가로선은 그대로)
         .frame(maxWidth: .infinity, minHeight: CueListColumn.cueHeight, alignment: .topLeading)
