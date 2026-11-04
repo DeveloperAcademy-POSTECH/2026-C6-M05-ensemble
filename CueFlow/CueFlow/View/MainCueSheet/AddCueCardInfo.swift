@@ -12,6 +12,7 @@ struct AddCueCardInfo: View {
     var onSave: (String, String, CuePosition) -> Void
     var scene: ShowScene?   // 이전 트리거를 찾을 열(씬) (없으면 후보 없음)
     var partName: String?   // 어느 파트의 큐인지 (입력칸 예시가 파트마다 다름)
+    var closeRequest = 0    // 바깥 클릭 · Esc 할 때마다 +1 (연 쪽에서 넘겨줌) → 저장 · 경고 · 닫기를 여기서 정함
     @Environment(\.closeAppPopover) private var closePopover   // 저장하면 팝오버 닫기
     @State private var triggerText: String
     @State private var cueTitle: String
@@ -19,11 +20,12 @@ struct AddCueCardInfo: View {
     @FocusState private var focusedField: InputField?
     @State private var showPositionWarning = false   // 위치 안 고르고 저장하려 했는지
     @State private var highlightedSuggestion: Int?   // 방향키로 고른 후보 번호 (nil = 안 고름)
+    @State private var showCueWarning = false   // 큐를 안 쓰고 저장하려 했는지 (큐 · * 빨강 + 경고 문구)
     @State private var isPickingPosition = false   // 위치 고르는 팝오버가 열려 있는지
     
     // 새로 만들 때는 빈 칸으로, 수정할 때는 원래 값을 채워서 연다
     init(triggerText: String = "", cueTitle: String = "", position: CuePosition? = nil,
-         scene: ShowScene? = nil, partName: String? = nil,
+         scene: ShowScene? = nil, partName: String? = nil, closeRequest: Int = 0,
          onSave: @escaping (String, String, CuePosition) -> Void = { _, _, _ in }) {
         _triggerText = State(initialValue: triggerText)
         _cueTitle = State(initialValue: cueTitle)
@@ -31,6 +33,7 @@ struct AddCueCardInfo: View {
         self.scene = scene
         self.partName = partName
         self.onSave = onSave
+        self.closeRequest = closeRequest
     }
     // 지금 글자를 치고 있는 칸
     private enum InputField {
@@ -43,14 +46,20 @@ struct AddCueCardInfo: View {
                 .frame(maxWidth: .infinity, alignment: .trailing)
             triggerSection
                 .padding(.bottom, 16)
-            inputSection(title: "큐", text: $cueTitle, field: .cue)
+            inputSection(title: "큐", text: $cueTitle, field: .cue, isRequired: true)
+            if showCueWarning {
+                warning("큐 내용을 입력하지 않았습니다.")
+                    .padding(.top, 10)
+            }
             if showPositionWarning {
-                positionWarning
+                warning("위치를 선택하지 않았습니다.")
                     .padding(.top, 10)
             }
         }
         .onAppear { focusedField = .trigger }
         .onChange(of: position) { showPositionWarning = false }
+        .onChange(of: cueTitle) { showCueWarning = false }   // 큐를 쓰기 시작하면 * 다시 회색
+        .onChange(of: closeRequest) { closeOrWarn() }   // 바깥 클릭 · Esc
     }
 }
 
@@ -82,25 +91,35 @@ extension AddCueCardInfo {
         .overlay { Capsule().strokeBorder(showPositionWarning ? Color.error : .clear, lineWidth: 1) }
     }
     
-    // 하단 경고: ⓘ 위치를 선택하지 않았습니다.
-    private var positionWarning: some View {
+    // 하단 경고: ⓘ 위치를 선택하지 않았습니다. / ⓘ 큐 내용을 입력하지 않았습니다.
+    private func warning(_ text: String) -> some View {
         HStack(spacing: 4) {
             Image(systemName: "info.circle")
                 .font(.system(size: 14))
-            Text("위치를 선택하지 않았습니다.")
+            Text(text)
                 .font(.system(size: 10))
         }
         .foregroundStyle(Color.error)
     }
     
-    // 제목("트리거" / "큐") + 입력칸
-    private func inputSection(title: String, text: Binding<String>, field: InputField) -> some View {
+    // 제목("트리거" / "큐*") + 입력칸. 필수 칸은 제목 옆에 *
+    private func inputSection(title: String, text: Binding<String>, field: InputField, isRequired: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.body.weight(.semibold))
-                .foregroundStyle(Color.neutral800)
+            HStack(alignment: .top, spacing: 0) {
+                Text(title)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(isRequired && showCueWarning ? Color.error : Color.neutral800)   // 필수 칸을 비우고 저장하려 하면 빨강
+                if isRequired { requiredMark }
+            }
             inputField(text: text, field: field)
         }
+    }
+
+    // 필수 표시 * (피그마: SemiBold 16, 평소 neutral400 · 비우고 저장하려 하면 error)
+    private var requiredMark: some View {
+        Text("*")
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundStyle(showCueWarning ? Color.error : Color.neutral400)
     }
     
     // 입력칸
@@ -186,16 +205,22 @@ extension AddCueCardInfo {
         addCue()
     }
     
-    // 큐 제목이 비어 있으면 아무것도 안 함, 위치를 안 골랐으면 경고
+    // 저장: 큐 · 위치가 다 있으면 저장하고 닫기, 빠진 게 있으면 경고만 (트리거는 선택)
     private func addCue() {
         let title = cueTitle.trimmingCharacters(in: .whitespaces)
-        guard !title.isEmpty else { return }
-        guard let position else {
-            showPositionWarning = true   // 위치를 안 골랐으면 저장하지 않고 경고
-            return
-        }
+        showCueWarning = title.isEmpty
+        showPositionWarning = position == nil
+        guard !title.isEmpty, let position else { return }
         onSave(triggerText, title, position)
         closePopover()
+    }
+    
+    // 바깥 클릭 · Esc: 아무것도 안 썼으면 그냥 닫기, 아니면 Enter와 같이 (저장하고 닫기 / 경고 띄우고 남기)
+    private func closeOrWarn() {
+        let trigger = triggerText.trimmingCharacters(in: .whitespaces)
+        let title = cueTitle.trimmingCharacters(in: .whitespaces)
+        guard !trigger.isEmpty || !title.isEmpty else { return closePopover() }
+        addCue()
     }
     
     // 한글 입력이 끝난 다음에 칸을 옮겨야 트리거 칸 글자가 남는다
