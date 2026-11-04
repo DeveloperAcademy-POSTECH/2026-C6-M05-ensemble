@@ -123,7 +123,7 @@ struct NoticeListView: View {
         }
         .buttonStyle(.plain)
         .font(.title3)
-        .foregroundStyle(Color.neutral500)
+        .foregroundStyle(Color.noticeSecondaryText)
         .disabled(checkedIDs.isEmpty)
     }
 
@@ -147,18 +147,18 @@ struct NoticeListView: View {
                     HStack(spacing: 8) {
                         Text(item.rawValue)
                         Text("\(count(of: item))")
-                            .foregroundStyle(Color.brandPrimaryText)   // .primary는 바깥 흰 글자를 따라가서 안 보였음
+                            .foregroundStyle(isSelected ? Color.noticeCountSelectedText : Color.brandPrimaryText)   // .primary는 바깥 흰 글자를 따라가서 안 보였음
                             .frame(width: 22, height: 22)
-                            .background(isSelected ? Color.neutral25 : Color.brandPrimarySubtle, in: Circle())
+                            .background(isSelected ? Color.noticeCountSelected : Color.noticeCountIdle, in: Circle())
                     }
                     .font(.body.weight(.semibold))
-                    .foregroundStyle(isSelected ? Color.neutral25 : Color.brandPrimaryText)
+                    .foregroundStyle(isSelected ? Color.onPrimaryText : Color.brandPrimaryText)
                     .padding(.leading, 14)
                     .padding(.trailing, 10)
                     .frame(height: 36)
-                    .background(isSelected ? Color.brandPrimaryHover : Color.neutral25, in: Capsule())
+                    .background(isSelected ? Color.noticeFilterSelected : Color.noticeFilterIdle, in: Capsule())
                     .overlay {
-                        Capsule().strokeBorder(isSelected ? Color.clear : Color.brandPrimaryHover, lineWidth: 1)
+                        Capsule().strokeBorder(isSelected ? Color.clear : Color.noticeFilterIdleBorder, lineWidth: 1)
                     }
                 }
                 .buttonStyle(.plain)

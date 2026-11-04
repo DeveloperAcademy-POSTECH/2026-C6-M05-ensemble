@@ -39,7 +39,7 @@ extension PartFilterTabBar {
         }
         .padding(.horizontal, 6)
         .padding(.vertical, isCompact ? 4.5 : 5.5)
-        .background(Color.neutral50, in: .capsule)
+        .background(Color.filterBar, in: .capsule)
         .animation(.snappy, value: selectedPart)   // 선택이 바뀌면 캡슐이 미끄러지듯 이동
     }
     
@@ -86,7 +86,7 @@ extension PartFilterTabBar {
     private func selectedBackground(_ isSelected: Bool) -> some View {
         if isSelected {
             Capsule()
-                .fill(Color.brandPrimarySubtle)
+                .fill(Color.filterSelected)
                 .matchedGeometryEffect(id: "selectedChip", in: chipNamespace)
         }
     }

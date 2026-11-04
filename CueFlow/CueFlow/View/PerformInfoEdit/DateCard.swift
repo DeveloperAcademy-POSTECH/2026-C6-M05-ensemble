@@ -39,7 +39,7 @@ struct DateCard: View {
                 ForEach(weekdays.indices, id: \.self) { index in
                     Text(weekdays[index])
                         .font(.system(size: 11))
-                        .foregroundStyle(Color.neutral400)
+                        .foregroundStyle(Color.noticePlaceholder)
                         .frame(width: 32)
                 }
             }
@@ -75,11 +75,11 @@ struct DateCard: View {
     private func band(for date: Date) -> some View {
         if pickedStart == nil, let end = endDate, !isSame(startDate, end) {
             if isSame(date, startDate) {
-                HStack(spacing: 0) { Color.clear; Color.brandPrimarySubtle }
+                HStack(spacing: 0) { Color.clear; Color.dateBand }
             } else if isSame(date, end) {
-                HStack(spacing: 0) { Color.brandPrimarySubtle; Color.clear }
+                HStack(spacing: 0) { Color.dateBand; Color.clear }
             } else if date > startDate && date < end {
-                Color.brandPrimarySubtle
+                Color.dateBand
             }
         }
     }
@@ -98,7 +98,7 @@ struct DateCard: View {
             month = calendar.date(byAdding: .month, value: value, to: month)!
         } label: {
             Image(systemName: icon)
-                .foregroundStyle(Color.neutral500)
+                .foregroundStyle(Color.noticeSecondaryText)
         }
         .buttonStyle(.plain)
     }

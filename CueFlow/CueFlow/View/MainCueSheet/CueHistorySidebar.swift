@@ -28,7 +28,7 @@ struct CueHistorySidebar: View {
         }
         .frame(width: 329)   // 오른쪽 사이드바 공통 폭 (우선순위 사이드바와 같게)
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(Color.neutral25.shadow(.drop(color: .black.opacity(0.25), radius: 2, y: 4)), in: .rect(cornerRadius: 10))   // 사이드바 구분선 그림자 (피그마 Y 4, 흐림 4, 검정 25%)
+        .background(Color.gridHeader.shadow(.drop(color: .black.opacity(0.25), radius: 2, y: 4)), in: .rect(cornerRadius: 10))   // 사이드바 구분선 그림자 (피그마 Y 4, 흐림 4, 검정 25%)
     }
 }
 
@@ -50,7 +50,7 @@ extension CueHistorySidebar {
         Button(action: onClose) {
             Image(systemName: "arrow.left")
                 .font(.system(size: 14))
-                .foregroundStyle(Color.neutral700)
+                .foregroundStyle(Color.sidebarBackIcon)
                 .frame(width: 17, height: 17)
         }
         .buttonStyle(.plain)
@@ -67,7 +67,7 @@ extension CueHistorySidebar {
         }
         .padding(.leading, 8)
         .frame(height: 24)
-        .background(Color.neutral25, in: .capsule)
+        .background(Color.sidebarSearch, in: .capsule)
         .overlay(Capsule().strokeBorder(.black.opacity(0.08)))
         .padding(.horizontal, 15)
     }
@@ -89,7 +89,7 @@ extension CueHistorySidebar {
         .padding(.top, 22)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 111, alignment: .top)
-        .background(Color.neutral50)
+        .background(Color.sheetField)
         .overlay(alignment: .topTrailing) { positionTag }
         .overlay(alignment: .bottomTrailing) { currentVersionLabel }
     }
@@ -101,7 +101,7 @@ extension CueHistorySidebar {
                 .frame(width: 8, height: 8)
             Text(sceneText)
                 .font(.subheadline)
-                .foregroundStyle(Color.neutral600)
+                .foregroundStyle(Color.noticeIconText)
         }
     }
 
@@ -115,17 +115,17 @@ extension CueHistorySidebar {
     private var triggerText: some View {
         Text(cue.trigger?.text ?? "")
             .font(.subheadline)
-            .foregroundStyle(Color.neutral600)
+            .foregroundStyle(Color.noticeIconText)
             .lineLimit(1)
     }
 
     private var positionTag: some View {
         Text(cue.position.rawValue)
             .font(.subheadline)
-            .foregroundStyle(Color.neutral600)
+            .foregroundStyle(Color.noticeIconText)
             .padding(.horizontal, 8)
             .frame(height: 20)
-            .background(Color.neutral200, in: .capsule)
+            .background(Color.noticeSeparator, in: .capsule)
             .padding(.top, 21)
             .padding(.trailing, 11)
     }
@@ -133,7 +133,7 @@ extension CueHistorySidebar {
     private var currentVersionLabel: some View {
         Text("현재 버전")
             .font(.caption)
-            .foregroundStyle(Color.neutral400)
+            .foregroundStyle(Color.noticePlaceholder)
             .padding(.bottom, 21)
             .padding(.trailing, 11)
     }
@@ -161,7 +161,7 @@ extension CueHistorySidebar {
         VStack(alignment: .leading, spacing: 19) {
             Text(date)
                 .font(.caption)
-                .foregroundStyle(Color.neutral500)
+                .foregroundStyle(Color.noticeSecondaryText)
                 .padding(.leading, 3)
             historyList(histories(on: date))
         }
@@ -176,7 +176,7 @@ extension CueHistorySidebar {
 
     // 첫 점 가운데부터 내려오는 세로선
     private var timelineLine: some View {
-        Color.neutral200
+        Color.noticeSeparator
             .frame(width: 1)
             .padding(.leading, 5)
             .padding(.top, 5.5)
@@ -203,7 +203,7 @@ extension CueHistorySidebar {
             Spacer(minLength: 0)
             Text(timeText(history.date))
                 .font(.caption)
-                .foregroundStyle(Color.neutral400)
+                .foregroundStyle(Color.noticePlaceholder)
         }
         .frame(width: 270)
     }
@@ -215,37 +215,37 @@ extension CueHistorySidebar {
                 .foregroundStyle(Color.neutral900)
             Text(history.detail)
                 .font(.caption)
-                .foregroundStyle(Color.neutral500)
+                .foregroundStyle(Color.noticeSecondaryText)
         }
     }
 
     // 흰 원(11) 안에 점(5): 변경이면 진한 점, 추가 · 생성이면 연한 점
     private func timelineNode(isChange: Bool) -> some View {
         Circle()
-            .fill(isChange ? Color.neutral600 : Color.neutral200)
+            .fill(isChange ? Color.historyDotChange : Color.noticeSeparator)
             .frame(width: 5, height: 5)
             .frame(width: 11, height: 11)
-            .background(.white, in: .circle)
-            .overlay(Circle().strokeBorder(Color.neutral300))
+            .background(Color.surfaceWhite, in: .circle)
+            .overlay(Circle().strokeBorder(Color.noticeFieldBorder))
     }
 
     // 이전 · 변경 상자
     private func changeBox(before: String, after: String) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            changeLine(label: "이전", value: before, valueColor: .neutral400)
-            changeLine(label: "변경", value: after, valueColor: .neutral700)
+            changeLine(label: "이전", value: before, valueColor: .noticePlaceholder)
+            changeLine(label: "변경", value: after, valueColor: .noticeMetaText)
         }
         .padding(.leading, 16)
         .padding(.vertical, 18)
         .frame(width: 268, alignment: .leading)
-        .background(Color.neutral50)
+        .background(Color.sheetField)
         .padding(.leading, 15)
     }
 
     private func changeLine(label: String, value: String, valueColor: Color) -> some View {
         HStack(spacing: 9) {
             Text(label)
-                .foregroundStyle(Color.neutral500)
+                .foregroundStyle(Color.noticeSecondaryText)
             Text(value)
                 .foregroundStyle(valueColor)
                 .lineLimit(1)

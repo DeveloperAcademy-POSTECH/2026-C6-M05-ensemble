@@ -20,7 +20,7 @@ struct ProjectListRow: View {
         HStack(spacing: 31) {
             // 썸네일 자리 (이미지는 아직 없음)
             RoundedRectangle(cornerRadius: 10)
-                .fill(Color.neutral100)
+                .fill(Color.thumbnailBackground)
                 .frame(width: 50, height: 50)
 
             Text(name)
@@ -52,7 +52,7 @@ struct ProjectListRow: View {
             // 피그마: 빈 별 14 neutral400, 채운 별 15 연보라
             Image(systemName: isFavorite ? "star.fill" : "star")
                 .font(.system(size: isFavorite ? 15 : 14))
-                .foregroundStyle(isFavorite ? Color.brandPrimaryDisabled : Color.neutral400)
+                .foregroundStyle(isFavorite ? Color.favoriteStar : Color.neutral400)
         }
         .buttonStyle(.plain)
         .opacity(isFavorite || isHovering ? 1 : 0)

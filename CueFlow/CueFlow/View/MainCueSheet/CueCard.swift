@@ -31,7 +31,7 @@ struct CueCard: View {
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.white, in: .rect(cornerRadius: 6))
+        .background(Color.cueCardBackground, in: .rect(cornerRadius: 6))
         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(isSelected ? partColor.accent : partColor.background, lineWidth: isSelected ? 1.5 : 1))
         .contentShape(.rect)
         .onTapGesture(count: 2) { isEditingCue = true }   // 더블클릭하면 수정 팝오버
@@ -87,7 +87,7 @@ extension CueCard {
     private var triggerText: some View {
         Text(cue.trigger?.text ?? "")
             .font(.body)
-            .foregroundStyle(Color.neutral700)
+            .foregroundStyle(Color.cueTriggerText)
             .fixedSize(horizontal: false, vertical: true)   // 길면 다음 줄로
     }
     
@@ -135,7 +135,7 @@ extension CueCard {
                     .font(.system(size: 8, weight: .semibold))
                 Text("\(cue.comments?.count ?? 0)")
             }
-            .countPill(background: Color.neutral100)
+            .countPill(background: Color.tagBackground)
         }
         .buttonStyle(.plain)
         .appPopover(isPresented: $isShowingComments, width: 260) { CueCommentPopover(cue: cue) }
@@ -148,7 +148,7 @@ extension CueCard {
                 checkCircle
                 Text("\(cue.checks?.count ?? 0)")
             }
-            .countPill(background: cue.check(byUserID: myUserID) == nil ? Color.neutral100 : partColor.background)
+            .countPill(background: cue.check(byUserID: myUserID) == nil ? Color.tagBackground : partColor.check)
         }
         .buttonStyle(.plain)
         .appPopover(isPresented: $isShowingChecks, width: 280) { CueCheckPopover(cue: cue) }
@@ -158,7 +158,8 @@ extension CueCard {
         Image(systemName: "checkmark")
             .font(.system(size: 7, weight: .bold))
             .frame(width: 13, height: 13)
-            .background(.white, in: .circle)
+            .foregroundStyle(Color.checkCircleMark)
+            .background(Color.checkCircleBackground, in: .circle)
     }
     
     // 더블클릭했을 때 뜨는 수정 팝오버 (원래 값이 채워진 채로)

@@ -20,7 +20,8 @@ extension View {
         .padding(.horizontal, 12)
         .padding(.vertical, 7)       // 글이 길어지면 줄이 늘어나며 칸도 같이 커짐
         .frame(minHeight: 30)        // 한 줄일 때는 원래처럼 30
-        .background(.white, in: .rect(cornerRadius: 8))
+        .background(Color.surfaceWhite, in: .rect(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.popoverFieldBorder, lineWidth: 1))
     }
 }
 
@@ -28,6 +29,6 @@ extension Text {
     // 입력칸이 비어 있을 때 보이는 회색 안내 글씨
     static var popoverPlaceholder: Text {
         Text("내용을 입력하세요")
-            .foregroundStyle(Color.neutral400)
+            .foregroundStyle(Color.noticePlaceholder)
     }
 }

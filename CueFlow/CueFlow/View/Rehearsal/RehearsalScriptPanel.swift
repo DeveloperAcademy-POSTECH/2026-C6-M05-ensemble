@@ -63,7 +63,7 @@ struct RehearsalScriptPanel: View {
         // 아래쪽이 흐려지며 사라지는 효과 (피그마 Fade)
         .overlay(alignment: .bottom) {
             LinearGradient(
-                colors: [Color(nsColor: .textBackgroundColor).opacity(0), Color(nsColor: .textBackgroundColor)],
+                colors: [Color.surfaceWhite.opacity(0), Color.surfaceWhite],
                 startPoint: .top,
                 endPoint: .bottom
             )

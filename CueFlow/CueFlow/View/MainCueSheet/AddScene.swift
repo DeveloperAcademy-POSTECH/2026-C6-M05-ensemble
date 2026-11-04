@@ -52,10 +52,10 @@ extension AddScene {
                 .font(.caption2)
         }
         .font(.subheadline)
-        .foregroundStyle(Color.neutral700)
+        .foregroundStyle(Color.noticeMetaText)
         .padding(.horizontal, 10)
         .frame(height: 22)
-        .background(Color.neutral200, in: .capsule)
+        .background(Color.noticeSeparator, in: .capsule)
     }
 
     // "내용" 제목 + 입력칸

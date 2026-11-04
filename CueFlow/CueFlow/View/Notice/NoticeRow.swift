@@ -29,9 +29,9 @@ struct NoticeRow: View {
             // 보낸 사람 첫 글자 동그라미
             Text(String(sender.prefix(1)))
                 .font(.body.weight(.semibold))
-                .foregroundStyle(Color.neutral500)
+                .foregroundStyle(Color.noticeSecondaryText)
                 .frame(width: 40, height: 40)
-                .background(Color.neutral100, in: Circle())
+                .background(Color.noticeNeighborHover, in: Circle())
 
             // 제목 + 미리보기 (위아래로 쌓기)
             VStack(alignment: .leading, spacing: 4) {
@@ -39,7 +39,7 @@ struct NoticeRow: View {
                     .font(.body.weight(.semibold))
                     .foregroundStyle(Color.neutral900)
                 Text(preview)
-                    .foregroundStyle(Color.neutral500)
+                    .foregroundStyle(Color.noticeSecondaryText)
             }
             .frame(maxWidth: 370, alignment: .leading)
 
@@ -61,7 +61,7 @@ struct NoticeRow: View {
                 Text(sender)
                     .frame(width: 60, alignment: .leading)
             }
-            .foregroundStyle(Color.neutral700)
+            .foregroundStyle(Color.noticeMetaText)
         }
         .font(.body)
         .lineLimit(1)
@@ -71,7 +71,7 @@ struct NoticeRow: View {
 
     private var checkbox: some View {
         RoundedRectangle(cornerRadius: 3)
-            .strokeBorder(isChecked ? Color.brandPrimary : Color.neutral400, lineWidth: 2)
+            .strokeBorder(isChecked ? Color.brandPrimary : Color.noticeCheckBorder, lineWidth: 2)
             .background(isChecked ? Color.brandPrimary : Color.clear, in: RoundedRectangle(cornerRadius: 3))
             .overlay {
                 if isChecked {

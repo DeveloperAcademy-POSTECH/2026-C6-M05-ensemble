@@ -80,13 +80,13 @@ extension CueCommentPopover {
                     .foregroundStyle(Color.neutral900)
                 Text(date.commentText)
                     .font(.system(size: 10))
-                    .foregroundStyle(Color.neutral600)
+                    .foregroundStyle(Color.noticeIconText)
             }
         }
     }
 
     private func avatar(_ name: String) -> some View {
-        MemberAvatar(name: name, size: 26, background: .neutral200, letterColor: .neutral500, fontSize: 11)
+        MemberAvatar(name: name, size: 26, background: .noticeSeparator, letterColor: .noticeSecondaryText, fontSize: 11)
     }
 
     @ViewBuilder
@@ -95,7 +95,7 @@ extension CueCommentPopover {
         if count > 0 {
             Text("답글 \(count)개")
                 .font(.system(size: 10))
-                .foregroundStyle(Color.neutral600)
+                .foregroundStyle(Color.noticeIconText)
         }
     }
 
@@ -131,10 +131,10 @@ extension CueCommentPopover {
         Button(action: action) {
             Text(title)
                 .font(.callout.weight(.semibold))
-                .foregroundStyle(Color.neutral700)
+                .foregroundStyle(isFilled ? Color.noticeMetaText : Color.commentButtonIdleText)
                 .frame(width: 56, height: 26)
-                .background(isFilled ? Color.neutral200 : Color.neutral25, in: .rect(cornerRadius: 6))
-                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(isFilled ? .clear : Color.neutral300))
+                .background(isFilled ? Color.commentButtonFilled : Color.neutral25, in: .rect(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(isFilled ? Color.commentButtonFilledBorder : Color.commentButtonBorder))
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)

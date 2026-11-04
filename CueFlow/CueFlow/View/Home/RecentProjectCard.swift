@@ -38,7 +38,7 @@ struct RecentProjectCard: View {
                                 .foregroundStyle(Color.neutral500)
                                 .padding(.horizontal, 6)
                                 .frame(height: 25)
-                                .background(Color.neutral100, in: RoundedRectangle(cornerRadius: 4))
+                                .background(Color.tagBackground, in: RoundedRectangle(cornerRadius: 4))
                         }
                     }
                 }
@@ -110,7 +110,7 @@ private struct ProjectCardButtonStyle: ButtonStyle {
 
     private func background(isPressed: Bool) -> Color {
         if isFilled {
-            return isPressed ? Color.brandPrimaryHover : Color.brandPrimaryDisabled
+            return isPressed ? Color.brandPrimaryHover : Color.projectCardFilled
         }
         return isPressed ? Color.brandPrimarySubtle : Color.neutral25
     }

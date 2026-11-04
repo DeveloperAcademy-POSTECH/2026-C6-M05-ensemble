@@ -59,7 +59,7 @@ struct StageGridSheet: View {
         .padding(.top, 52)
         .padding(.bottom, 50)
         .frame(width: 1049, height: 800)
-        .background(Color.white)
+        .background(Color.surfaceWhite)
         .alert("무대 칸을 바꿀까요?", isPresented: $isConfirmingReset) {
             Button("취소", role: .cancel) { }
             Button("바꾸기", role: .destructive) {
@@ -96,16 +96,21 @@ private struct StageGridOption: View {
     let isSelected: Bool
 
     @State private var isHovered = false
+    @Environment(\.colorScheme) private var colorScheme
+
+    // 다크 피그마(2054:4440): 테두리 2 · 모서리 10
+    private var cornerRadius: CGFloat { colorScheme == .dark ? 10 : 6 }
+    private var borderWidth: CGFloat { colorScheme == .dark ? 2 : (isSelected ? 1.5 : 1) }
 
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.brandPrimarySubtle.opacity(0.5))
+                    .fill(isSelected ? Color.gridPreviewSelected : Color.gridPreview)
                 StageGridLines(columns: columns)
-                    .stroke(Color.brandPrimary.opacity(0.7), style: StrokeStyle(lineWidth: 0.8, dash: [3, 3]))
+                    .stroke(Color.gridPreviewLine, style: StrokeStyle(lineWidth: 0.8, dash: [3, 3]))
                 RoundedRectangle(cornerRadius: 4)
-                    .strokeBorder(Color.brandPrimary, lineWidth: 0.8)
+                    .strokeBorder(Color.gridPreviewBorder, lineWidth: 0.8)
             }
             .frame(width: 133, height: 82)
 
@@ -121,14 +126,14 @@ private struct StageGridOption: View {
         .padding(.top, 38)
         .frame(width: 210, height: 240, alignment: .top)
         .background(
-            isSelected ? Color.brandPrimarySubtle.opacity(0.3) : Color.white,
-            in: RoundedRectangle(cornerRadius: 6)
+            isSelected ? Color.stageOptionSelected : Color.surfaceWhite,
+            in: RoundedRectangle(cornerRadius: cornerRadius)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 6)
+            RoundedRectangle(cornerRadius: cornerRadius)
                 .strokeBorder(
-                    isSelected || isHovered ? Color.brandPrimary : Color.brandPrimaryDisabled,
-                    lineWidth: isSelected ? 1.5 : 1
+                    isSelected || isHovered ? Color.stageOptionSelectedBorder : Color.stageOptionBorder,
+                    lineWidth: borderWidth
                 )
         }
         .contentShape(Rectangle())

@@ -42,7 +42,7 @@ extension PerformSceneEdit {
             SceneInputRow(scenes: scenes, onAdd: addScene)
         }
         .frame(width: 799)
-        .background(.white, in: .rect(cornerRadius: 10))
+        .background(Color.surfaceWhite, in: .rect(cornerRadius: 10))
         .overlay(cardBorder)
     }
 
@@ -60,7 +60,7 @@ extension PerformSceneEdit {
             Spacer()
             Text(countSummary)
                 .font(.system(size: 15))
-                .foregroundStyle(Color.neutral400)
+                .foregroundStyle(Color.sceneCodeText)
         }
         .padding(.leading, 26)
         .padding(.trailing, 46)

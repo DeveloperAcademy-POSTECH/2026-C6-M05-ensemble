@@ -126,7 +126,7 @@ struct RehearsalView: View {
         .padding(.top, 46)
         .padding(.bottom, 45)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.white)   // 피그마 window-background = 흰색
+        .background(Color.appBackground)   // 피그마 window-background = 흰색
         .overlay {
             if isMinimapExpanded { expandedMinimap }
         }
@@ -152,7 +152,7 @@ struct RehearsalView: View {
             .scaleEffect(scale)
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
-        .background(Color.white)
+        .background(Color.appBackground)
         // esc → 작게 보기
         .background {
             Button("작게 보기") { isMinimapExpanded = false }
@@ -208,11 +208,11 @@ struct RehearsalView: View {
                 .buttonStyle(.plain)
                 .frame(width: 130, height: 36)
                 .foregroundStyle(Color.brandPrimaryText)
-                .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
+                .background(Color.surfaceWhite, in: RoundedRectangle(cornerRadius: 6))
                 .overlay {
                     // 피그마 #2B2476 → 색상 표에서 가장 가까운 brandPrimaryText
                     RoundedRectangle(cornerRadius: 6)
-                        .strokeBorder(Color.brandPrimaryText, lineWidth: 1)
+                        .strokeBorder(Color.rehearsalExitBorder, lineWidth: 1)
                 }
         }
     }
@@ -229,10 +229,10 @@ struct RehearsalView: View {
             }
         }
         .frame(height: 36)
-        .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
+        .background(Color.surfaceWhite, in: RoundedRectangle(cornerRadius: 6))
         .overlay {
             RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(Color.neutral300, lineWidth: 1)
+                .strokeBorder(Color.noticeFieldBorder, lineWidth: 1)
         }
     }
 
@@ -274,10 +274,10 @@ struct RehearsalView: View {
             .padding(.leading, 14)
             .padding(.trailing, 10)
             .frame(width: 170, height: 36)
-            .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
+            .background(Color.surfaceWhite, in: RoundedRectangle(cornerRadius: 6))
             .overlay {
                 RoundedRectangle(cornerRadius: 6)
-                    .strokeBorder(Color.neutral300, lineWidth: 1)
+                    .strokeBorder(Color.noticeFieldBorder, lineWidth: 1)
             }
             .contentShape(Rectangle())
         }

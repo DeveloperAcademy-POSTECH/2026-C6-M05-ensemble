@@ -165,7 +165,7 @@ private struct StagePlacementEditor: View {
         .padding(.top, 47)
         .padding(.bottom, 47)
         .frame(width: 1049, height: 800, alignment: .top)
-        .background(Color.white)   // 피그마 window-background = 흰색
+        .background(Color.appBackground)   // 피그마 window-background = 흰색
         .coordinateSpace(.named(StageDrag.space))
         .onPreferenceChange(StageZoneFramesKey.self) { zoneFrames = $0 }
         // 끄는 중인 점 · 카드는 손가락(마우스)을 따라다닌다
@@ -262,6 +262,7 @@ private struct StageNameCard: View {
     var isSelected = false
 
     @State private var isHovered = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Text(name)
@@ -272,13 +273,13 @@ private struct StageNameCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .frame(height: 37)
             .background(
-                isSelected ? Color.brandPrimarySubtle.opacity(0.5)
+                isSelected ? Color.stageCardSelected
                     : isHovered ? Color.brandPrimarySubtle.opacity(0.2) : Color.neutral25,
                 in: RoundedRectangle(cornerRadius: 3)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 3)
-                    .strokeBorder(isSelected || isHovered ? Color.brandPrimary : Color.brandPrimaryDisabled, lineWidth: 0.5)
+                    .strokeBorder(isSelected || isHovered ? Color.stageOptionSelectedBorder : Color.stageOptionBorder, lineWidth: colorScheme == .dark && !isSelected ? 1 : 0.5)
             }
             .contentShape(Rectangle())
             .onHover { isHovered = $0 }

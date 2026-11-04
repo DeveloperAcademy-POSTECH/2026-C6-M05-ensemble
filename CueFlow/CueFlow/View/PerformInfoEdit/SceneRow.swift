@@ -50,7 +50,7 @@ extension SceneRow {
 
     private var handleLine: some View {
         Capsule()
-            .fill(Color.neutral500)
+            .fill(Color.sceneHandle)
             .frame(width: 12.5, height: 2)
     }
 
@@ -64,7 +64,7 @@ extension SceneRow {
         }
         .padding(.horizontal, 16)
         .frame(height: 56)
-        .background(.white, in: .rect(cornerRadius: 10))
+        .background(Color.surfaceWhite, in: .rect(cornerRadius: 10))
     }
 
     private func updateCursor(isHovering: Bool) {
@@ -92,7 +92,7 @@ extension SceneRow {
     private var codeText: some View {
         Text(code)
             .font(.system(size: 17))
-            .foregroundStyle(Color.neutral400)
+            .foregroundStyle(Color.sceneCodeText)
             .frame(width: 36, alignment: .leading)
     }
 
@@ -131,7 +131,7 @@ extension SceneRow {
         Button(action: onDelete) {
             Image(systemName: "xmark")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Color.neutral300)
+                .foregroundStyle(Color.sceneDelete)
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)

@@ -33,7 +33,7 @@ struct MainCueSheetView: View {
         .padding(.horizontal, 35)
         .padding(.top, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(.white)
+        .background(Color.appBackground)
         .appPopoverHost()   // 표 안 팝오버(파트 추가 · 수정)가 그려지는 곳
         .environment(\.myUserID, iCloudAccount.userRecordName)
         .onReceive(NotificationCenter.default.publisher(for: CloudSync.didApplyRemoteNotification)) { _ in
@@ -144,9 +144,9 @@ extension MainCueSheetView {
         Button { isShowingShare = true } label: {
             Text("공유하기")
                 .font(.body)                                   // Body/Regular 13
-                .foregroundStyle(Color.neutral25)
+                .foregroundStyle(Color.softActionText)
                 .frame(width: 79, height: 28)
-                .background(Color.brandPrimaryHover, in: .rect(cornerRadius: 6))
+                .background(Color.softAction, in: .rect(cornerRadius: 6))
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)

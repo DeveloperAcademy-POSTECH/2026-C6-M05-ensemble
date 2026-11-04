@@ -116,13 +116,13 @@ struct StageMinimap: View {
                 }
                 if area == .stage, gridColumns > 0 {
                     StageGridLines(columns: gridColumns)
-                        .stroke(Color.brandPrimaryDisabled, style: StrokeStyle(lineWidth: 1.5, dash: [8, 6]))
+                        .stroke(Color.stageGridLine, style: StrokeStyle(lineWidth: 1.5, dash: [8, 6]))
                     cellNumbers(size: size)
                 }
 
                 Text(area.rawValue)
                     .font(.system(size: style.zoneLabelSize, weight: .semibold))
-                    .foregroundStyle(Color.neutral400)
+                    .foregroundStyle(Color.stageZoneLabel)
                     .frame(width: size.width)
                     .offset(y: 26)
 
@@ -148,12 +148,12 @@ struct StageMinimap: View {
             }
         }
         .background(
-            area == .stage ? Color.neutral25 : Color.brandPrimarySubtle.opacity(0.1),
+            area == .stage ? Color.neutral25 : Color.stageSideZone,
             in: RoundedRectangle(cornerRadius: 6)
         )
         .overlay {
             RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(Color.brandPrimaryDisabled, lineWidth: 1)
+                .strokeBorder(Color.stageBorder, lineWidth: 1)
         }
         // 배치 창이 "어느 구역에 놓았는지" 알 수 있게 구역 위치를 올려 보낸다
         .background {
@@ -173,7 +173,7 @@ struct StageMinimap: View {
         return ForEach(0..<gridColumns * gridColumns, id: \.self) { index in
             Text("\(index + 1)")
                 .font(.system(size: gridColumns > 4 ? 10 : 12))
-                .foregroundStyle(Color.brandPrimaryDisabled)
+                .foregroundStyle(Color.stageCellNumber)
                 .offset(
                     x: size.width * CGFloat(index % gridColumns) / n + inset,
                     y: size.height * CGFloat(index / gridColumns) / n + inset - 2
@@ -214,16 +214,16 @@ struct StageMinimap: View {
             }
             HStack(spacing: 3) {
                 StageTriangle()
-                    .fill(Color.stagePropMark)
+                    .fill(style == .setup ? Color.stageLegendPropSetup : Color.stagePropMark)
                     .frame(width: 7, height: 6)
                 Text("소품")
             }
         }
         .font(.system(size: 10))
-        .foregroundStyle(Color.neutral500)
+        .foregroundStyle(Color.legendText)
         .padding(.horizontal, 13)
         .frame(height: 23)
-        .background(Color.neutral100, in: Capsule())
+        .background(Color.legendBackground, in: Capsule())
     }
 }
 
@@ -243,7 +243,7 @@ struct StageMarkView: View {
                     .frame(width: style.castSize, height: style.castSize)
             case .prop:
                 StageTriangle()
-                    .fill(Color.stagePropMark)
+                    .fill(style == .setup ? Color.stagePropMarkSetup : Color.stagePropMark)
                     .frame(width: style.propSize.width, height: style.propSize.height)
             }
         }

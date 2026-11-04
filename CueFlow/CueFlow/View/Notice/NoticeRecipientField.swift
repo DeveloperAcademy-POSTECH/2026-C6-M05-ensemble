@@ -70,7 +70,7 @@ struct NoticeRecipientField: View {
                     text: $query,
                     prompt: Text(production == nil ? "프로젝트를 먼저 선택하세요." : "프로젝트 전체 멤버 (\(allMemberCount)명)")
                         .font(.body.weight(.semibold))
-                        .foregroundStyle(Color.neutral400)
+                        .foregroundStyle(Color.noticePlaceholder)
                 )
                 .help("이름이나 파트를 입력하면 그 사람 · 파트에게만 보낼 수 있어요")
                 .textFieldStyle(.plain)
@@ -88,10 +88,10 @@ struct NoticeRecipientField: View {
         .font(.body)
         .padding(.horizontal, 25)   // 피그마 951:7466
         .frame(height: 50)
-        .background(.white, in: RoundedRectangle(cornerRadius: 6))
+        .background(Color.surfaceWhite, in: RoundedRectangle(cornerRadius: 6))
         .overlay {
             RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(Color.neutral300, lineWidth: 1)
+                .strokeBorder(Color.noticeFieldBorder, lineWidth: 1)
         }
     }
 

@@ -38,7 +38,7 @@ extension SceneInputRow {
     private var plusIcon: some View {
         Image(systemName: "plus")
             .font(.system(size: 16))
-            .foregroundStyle(Color.neutral500)
+            .foregroundStyle(Color.sceneHandle)
             .frame(width: 32.5)
     }
 
@@ -46,7 +46,7 @@ extension SceneInputRow {
     private var codeText: some View {
         Text(kind == .blackout ? "" : "\(kind.codePrefix)#\(sameKindCount + 1)")   // 암전은 번호 없이 빈칸
             .font(.system(size: 17))
-            .foregroundStyle(Color.neutral400)
+            .foregroundStyle(Color.sceneCodeText)
             .frame(width: 36, alignment: .leading)
     }
 
@@ -71,10 +71,10 @@ extension SceneInputRow {
         HStack(spacing: 4) {
             Text(kind.title)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.neutral600)
+                .foregroundStyle(Color.sceneKindText)
             Image(systemName: "chevron.down")
                 .font(.system(size: 8, weight: .semibold))
-                .foregroundStyle(Color.neutral500)
+                .foregroundStyle(Color.sceneHandle)
         }
         .frame(width: 62, height: 36)
         .background(Color.neutral100, in: .capsule)
@@ -93,12 +93,12 @@ extension SceneInputRow {
             .onSubmit { add() }   // Enter로도 등록
             .padding(.horizontal, 12)
             .frame(width: 254, height: 36)
-            .background(Color.neutral50, in: .rect(cornerRadius: 6))
+            .background(Color.sheetField, in: .rect(cornerRadius: 6))
     }
 
     private var placeholder: Text {
         Text("내용을 입력하세요")
-            .foregroundStyle(Color.neutral400)
+            .foregroundStyle(Color.sceneCodeText)
     }
 
     private var registerButton: some View {
@@ -107,7 +107,8 @@ extension SceneInputRow {
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Color.brandPrimaryText)
                 .frame(width: 60, height: 36)
-                .background(Color.brandPrimarySubtle, in: .rect(cornerRadius: 6))
+                .background(Color.sheetRegisterBackground, in: .rect(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.sheetSoftBorder, lineWidth: 1))
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
