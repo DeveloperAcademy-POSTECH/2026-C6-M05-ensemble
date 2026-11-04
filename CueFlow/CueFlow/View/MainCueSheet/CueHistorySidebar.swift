@@ -8,7 +8,7 @@
 import SwiftUI
 import SwiftData
 
-// 큐 카드 우클릭 → History: 통합 큐시트 오른쪽에 뜨는 사이드바 (피그마 Sidebar · History, 폭 329)
+// 큐 카드 우클릭 → History: 통합 큐시트 오른쪽에 뜨는 사이드바 (피그마 Sidebar · History, 폭 313)
 struct CueHistorySidebar: View {
     let cue: Cue
     var onClose: () -> Void = {}     // ← 버튼
@@ -26,34 +26,21 @@ struct CueHistorySidebar: View {
                     .padding(.top, 21)
             }
         }
-        .frame(width: 329)   // 오른쪽 사이드바 공통 폭 (우선순위 사이드바와 같게)
+        .frame(width: 313)   // 오른쪽 사이드바 공통 폭 (우선순위 사이드바와 같게)
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(Color.gridHeader.shadow(.drop(color: .black.opacity(0.25), radius: 2, y: 4)), in: .rect(cornerRadius: 10))   // 사이드바 구분선 그림자 (피그마 Y 4, 흐림 4, 검정 25%)
+        .background(Color.neutral25.shadow(.drop(color: .black.opacity(0.25), radius: 2, y: 4)), in: .rect(cornerRadius: 10))   // 피그마 Netrual/25 · 구분선 그림자 (Y 4, 흐림 4, 검정 25%)
     }
 }
 
-// 위쪽: ← History · 검색창
+// 위쪽: (« 자리) History · 검색창. « 버튼은 MainCueSheetView가 고정 위치에 그림
 
 extension CueHistorySidebar {
     private var header: some View {
-        HStack(spacing: 13) {
-            backButton
-            Text("History")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(Color.neutral900)
-        }
-        .padding(.leading, 21)
-        .padding(.top, 20)
-    }
-
-    private var backButton: some View {
-        Button(action: onClose) {
-            Image(systemName: "arrow.left")
-                .font(.system(size: 14))
-                .foregroundStyle(Color.sidebarBackIcon)
-                .frame(width: 17, height: 17)
-        }
-        .buttonStyle(.plain)
+        Text("History")
+            .font(.title3.weight(.semibold))
+            .foregroundStyle(Color.neutral900)
+            .padding(.leading, 45)   // « (왼쪽 16 + 폭 19) + 간격 10
+            .padding(.top, 20.5)     // 제목 줄(20) 가운데를 « 가운데(위에서 30.5)에 맞춤
     }
 
     private var searchField: some View {

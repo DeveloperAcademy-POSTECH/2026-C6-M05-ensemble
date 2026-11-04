@@ -68,10 +68,17 @@ extension MainCueSheetView {
         }
     }
 
-    // 오른쪽 사이드바 + 왼쪽 구분선 손잡이
     private var sidebar: some View {
         sidebarContent
             .overlay(alignment: .leading) { sidebarEdge }
+            .overlay(alignment: .topLeading) { closeButton }
+    }
+
+    // « 닫기 버튼: 세 사이드바 모두 같은 자리에 고정 (왼쪽 16, 위 21)
+    private var closeButton: some View {
+        SidebarCloseButton(action: closeSidebar)
+            .padding(.leading, 16)
+            .padding(.top, 21)
     }
 
     // 왼쪽 구분선 손잡이 (마우스를 올리면 ↔ 커서)
