@@ -71,7 +71,9 @@ extension MainCueSheetView {
     private var sidebar: some View {
         sidebarContent
             .overlay(alignment: .leading) { sidebarEdge }
-            .overlay(alignment: .topLeading) { closeButton }
+            .overlay(alignment: .topLeading) {
+                if historyCue != nil || priorityScene != nil || isShowingUnread { closeButton }   // 사이드바가 열려 있을 때만
+            }
     }
 
     // « 닫기 버튼: 세 사이드바 모두 같은 자리에 고정 (왼쪽 16, 위 21)
