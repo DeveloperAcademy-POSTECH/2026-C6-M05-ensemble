@@ -3,7 +3,7 @@
 //  CueFlow
 //
 //  무대 미니맵 (피그마 리허설모드_ver1 · 최초상태무대배치02).
-//  상수 | 무대(무대 칸 설정대로 점선으로 나눔) | 하수 위에 배역(●) · 소품(▲)을 놓은 자리에 보여준다.
+//  하수 | 무대(무대 칸 설정대로 점선으로 나눔) | 상수 (관객석에서 봤을 때 오른쪽이 상수) 위에 배역(●) · 소품(▲)을 놓은 자리에 보여준다.
 //  아래에 "관객석"과 범례. 리허설 화면(보기만)과 배치 창(카드 고르고 칸 누르기)에서 같이 쓴다.
 //
 
@@ -26,18 +26,6 @@ extension StagePlacement {
     }
 }
 
-// 배치 창에서 끌 때 쓰는 좌표 이름 + 구역 위치를 배치 창으로 올려 보내는 키
-enum StageDrag {
-    static let space = "stageDrag"
-}
-
-struct StageZoneFramesKey: PreferenceKey {
-    static let defaultValue: [StageArea: CGRect] = [:]
-    static func reduce(value: inout [StageArea: CGRect], nextValue: () -> [StageArea: CGRect]) {
-        value.merge(nextValue()) { $1 }
-    }
-}
-
 // 리허설 화면과 배치 창은 글자 · 점 크기가 다르다
 // (피그마 리허설모드 951:9052 / 최초상태무대배치02 951:9819)
 enum StageMinimapStyle {
@@ -56,11 +44,6 @@ struct StageMinimap: View {
     var highlightedIDs: Set<String> = []   // 리허설에서 지금 큐가 옮긴 것 → 둘레가 빛난다
     var gridColumns = 3                     // 무대 칸 설정 (Production.stageGridColumns). 0 = 구분선 없음
 
-    // 배치 창에서만: 점을 끄는 중 / 놓음. nil이면 보기만
-    var onDragChanged: ((StageMark, CGPoint) -> Void)?
-    var onDragEnded: ((StageMark, CGPoint) -> Void)?
-    var hiddenMarkID: String?   // 끄는 중인 점은 제자리에서 숨긴다
-
     // 배치 창에서만: 구역을 누르면 (구역, 누른 자리 0~1) / 놓인 점을 누르면 그 점 / 놓인 점 빼기
     var onTapZone: ((StageArea, CGPoint) -> Void)?
     var onTapMark: ((StageMark) -> Void)?
@@ -73,12 +56,12 @@ struct StageMinimap: View {
     var body: some View {
         VStack(spacing: 7) {
             HStack(spacing: 0) {
-                zone(.sangsu)
+                zone(.hasu)
                     .frame(width: 166)
                 zone(.stage)
                     .padding(.leading, 20)
                     .padding(.trailing, 22)
-                zone(.hasu)
+                zone(.sangsu)
                     .frame(width: 172)
             }
             .frame(height: 255)
@@ -155,15 +138,6 @@ struct StageMinimap: View {
             RoundedRectangle(cornerRadius: 6)
                 .strokeBorder(Color.stageBorder, lineWidth: 1)
         }
-        // 배치 창이 "어느 구역에 놓았는지" 알 수 있게 구역 위치를 올려 보낸다
-        .background {
-            GeometryReader { geometry in
-                Color.clear.preference(
-                    key: StageZoneFramesKey.self,
-                    value: [area: geometry.frame(in: .named(StageDrag.space))]
-                )
-            }
-        }
     }
 
     // 무대 칸 번호 1~n² (각 칸 왼쪽 위). 칸이 작아지면 번호도 안쪽으로 붙인다
@@ -185,19 +159,13 @@ struct StageMinimap: View {
     private func markView(_ mark: StageMark) -> some View {
         let isHighlighted = highlightedIDs.contains(mark.id) || mark.id == selectedMarkID
         let view = StageMarkView(mark: mark, style: style, isHighlighted: isHighlighted)
-            .opacity(mark.id == hiddenMarkID ? 0 : 1)
-        if let onDragChanged, let onDragEnded {
+        if onTapMark != nil {
             view
                 .help("눌러서 고른 뒤 다른 칸을 누르면 옮겨져요 · 우클릭으로 빼기")
                 .onTapGesture { onTapMark?(mark) }
                 .contextMenu {
                     Button("미니맵에서 빼기") { onRemoveMark?(mark) }
                 }
-                .gesture(
-                    DragGesture(coordinateSpace: .named(StageDrag.space))
-                        .onChanged { onDragChanged(mark, $0.location) }
-                        .onEnded { onDragEnded(mark, $0.location) }
-                )
         } else {
             view
         }
@@ -305,6 +273,44 @@ enum StageCell {
             x: (Double(cell % columns) + 0.5) / Double(columns),
             y: (Double(cell / columns) + 0.5) / Double(columns)
         )
+    }
+}
+
+// 놓인 것들을 칸 · 구역 안에서 자동으로 줄 세운다. 사용자는 어느 칸인지만 고른다 (UT: 세부 위치를 정하는 줄 알고 재정렬을 오류로 인식)
+enum StageAutoLayout {
+    static func arranged(_ marks: [StageMark], columns: Int) -> [StageMark] {
+        var result = marks
+        // 놓은 순서대로 칸 · 구역별로 모은다 (칸이 없는 곳은 cell = nil)
+        var groups: [String: [Int]] = [:]
+        for index in result.indices {
+            let mark = result[index]
+            let cell = mark.area == .stage && columns > 0 ? StageCell.index(x: mark.x, y: mark.y, columns: columns) : nil
+            groups["\(mark.area.rawValue)-\(cell ?? -1)", default: []].append(index)
+        }
+        for indices in groups.values {
+            let first = result[indices[0]]
+            for (order, index) in indices.enumerated() {
+                let point: CGPoint
+                if first.area == .stage, columns > 0 {
+                    let cell = StageCell.index(x: first.x, y: first.y, columns: columns)
+                    point = StageCell.slot(order, of: indices.count, in: cell, columns: columns)
+                } else {
+                    point = zoneSlot(order, of: indices.count, perRow: first.area == .stage ? 6 : 2)
+                }
+                result[index].x = point.x
+                result[index].y = point.y
+            }
+        }
+        return result
+    }
+
+    // 칸이 없는 구역(상수 · 하수 · 기본 무대): 구역 이름 아래에 왼쪽 위부터 차례로
+    private static func zoneSlot(_ i: Int, of n: Int, perRow: Int) -> CGPoint {
+        let rows = (n + perRow - 1) / perRow
+        let step = rows > 1 ? min(0.2, 0.58 / Double(rows - 1)) : 0
+        let column = i % perRow
+        let row = i / perRow
+        return CGPoint(x: (Double(column) + 0.5) / Double(perRow), y: 0.3 + Double(row) * step)
     }
 }
 

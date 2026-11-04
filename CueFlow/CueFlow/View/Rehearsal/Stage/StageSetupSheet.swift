@@ -6,7 +6,7 @@
 //  처음("배치하기"): 배우 · 소품 목록 → 다음으로 → 무대 칸 설정 → 적용 완료 → 최초 상태 무대 배치 → 배치 완료
 //  장면에서("수정하기"): 배우 · 소품 목록(이름 고치기) → 다음으로 → 무대 칸 설정 → 그 장면의 무대 배치
 //  위쪽 이름 카드를 눌러 고른 뒤 놓을 무대 칸을 누른다 (피그마 1354:7896 — 끌기는 불편하다는 의견으로 바꿈).
-//  놓인 점도 눌러서 고른 뒤 다른 칸을 누르면 옮겨진다. 빼기는 점 우클릭 또는 미니맵 밖으로 끌기.
+//  놓인 점도 눌러서 고른 뒤 다른 칸을 누르면 옮겨진다. 칸 · 구역 안 자리는 자동 정렬. 빼기는 점 우클릭.
 //  배치 완료를 눌러야 저장된다.
 //
 
@@ -99,8 +99,6 @@ private struct StagePlacementEditor: View {
     let onDone: ([StageMark]) -> Void
 
     @State private var marks: [StageMark]
-    @State private var zoneFrames: [StageArea: CGRect] = [:]
-    @State private var dragging: (mark: StageMark, location: CGPoint)?
     @State private var selected: StageMark?   // 고른 카드 (다음에 누르는 칸에 놓는다)
 
     init(
@@ -112,7 +110,8 @@ private struct StagePlacementEditor: View {
         self.production = production
         self.onBack = onBack
         self.onDone = onDone
-        _marks = State(initialValue: startMarks)
+        // 예전에 끌어서 놓은 자리도 열 때 자동 정렬 → 배치 완료를 누르면 그대로 저장된다
+        _marks = State(initialValue: StageAutoLayout.arranged(startMarks, columns: production.stageGridColumns))
     }
 
     var body: some View {
@@ -138,14 +137,12 @@ private struct StagePlacementEditor: View {
                             marks: marks,
                             style: .setup,
                             gridColumns: production.stageGridColumns,
-                            onDragChanged: { mark, location in dragging = (mark, location) },
-                            onDragEnded: drop,
-                            hiddenMarkID: dragging?.mark.id,
                             onTapZone: place,
-                            onTapMark: { selected = selected?.id == $0.id ? nil : $0 },
+                            onTapMark: tapMark,
                             onRemoveMark: { mark in
                                 marks.removeAll { $0.id == mark.id }
                                 if selected?.id == mark.id { selected = nil }
+                                marks = StageAutoLayout.arranged(marks, columns: production.stageGridColumns)
                             },
                             selectedMarkID: selected?.id,
                             isPlacing: selected != nil
@@ -166,16 +163,6 @@ private struct StagePlacementEditor: View {
         .padding(.bottom, 47)
         .frame(width: 1049, height: 800, alignment: .top)
         .background(Color.appBackground)   // 피그마 window-background = 흰색
-        .coordinateSpace(.named(StageDrag.space))
-        .onPreferenceChange(StageZoneFramesKey.self) { zoneFrames = $0 }
-        // 끄는 중인 점 · 카드는 손가락(마우스)을 따라다닌다
-        .overlay(alignment: .topLeading) {
-            if let dragging {
-                StageMarkView(mark: dragging.mark, style: .setup)
-                    .position(dragging.location)
-                    .allowsHitTesting(false)
-            }
-        }
     }
 
     // 배역 / 소품 카드 묶음: 제목 + 개수 + 카드 4개씩
@@ -210,49 +197,25 @@ private struct StagePlacementEditor: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // 고른 카드를 누른 구역에 놓는다. 무대면 그 칸에 (같은 칸 것들과 나란히), 상수 · 하수 · 칸 없는 무대면 누른 자리에
+    // 고른 카드를 누른 구역 · 칸에 놓는다. 자리는 그 안에서 자동 정렬
     private func place(in area: StageArea, at point: CGPoint) {
-        guard let mark = selected else { return }
+        guard var placed = selected else { return }
         selected = nil
-        marks.removeAll { $0.id == mark.id }
-
-        var placed = mark
+        marks.removeAll { $0.id == placed.id }
         placed.area = area
-        let columns = production.stageGridColumns
-        if area == .stage, columns > 0 {
-            let cell = StageCell.index(x: point.x, y: point.y, columns: columns)
-            placed.x = point.x
-            placed.y = point.y
-            marks.append(placed)
-            // 같은 칸에 있는 것들을 가로로 고르게 다시 놓는다 (놓은 순서대로)
-            let sameCell = marks.indices.filter {
-                marks[$0].area == .stage && StageCell.index(x: marks[$0].x, y: marks[$0].y, columns: columns) == cell
-            }
-            for (i, index) in sameCell.enumerated() {
-                let slot = StageCell.slot(i, of: sameCell.count, in: cell, columns: columns)
-                marks[index].x = slot.x
-                marks[index].y = slot.y
-            }
-        } else {
-            // 이름이 구역 밖으로 삐져나가지 않게 가장자리는 조금 안쪽으로
-            placed.x = min(max(point.x, 0.15), 0.85)
-            placed.y = min(max(point.y, 0.2), 0.88)
-            marks.append(placed)
-        }
+        placed.x = point.x
+        placed.y = point.y
+        marks.append(placed)
+        marks = StageAutoLayout.arranged(marks, columns: production.stageGridColumns)
     }
 
-    // 놓은 자리가 구역 안이면 그 구역 · 위치로, 밖이면 미니맵에서 뺀다
-    private func drop(_ mark: StageMark, at location: CGPoint) {
-        dragging = nil
-        marks.removeAll { $0.id == mark.id }
-        guard let (area, frame) = zoneFrames.first(where: { $0.value.contains(location) }).map({ ($0.key, $0.value) }) else { return }
-
-        var placed = mark
-        placed.area = area
-        // 이름이 구역 밖으로 삐져나가지 않게 가장자리는 조금 안쪽으로
-        placed.x = min(max((location.x - frame.minX) / frame.width, 0.08), 0.92)
-        placed.y = min(max((location.y - frame.minY) / frame.height, 0.06), 0.88)
-        marks.append(placed)
+    // 놓인 점 누르기: 다른 카드를 고른 중이면 그 점이 있는 칸에 놓고, 아니면 그 점을 고르거나 해제
+    private func tapMark(_ mark: StageMark) {
+        if let selected, selected.id != mark.id {
+            place(in: mark.area, at: CGPoint(x: mark.x, y: mark.y))
+        } else {
+            selected = selected?.id == mark.id ? nil : mark
+        }
     }
 }
 
