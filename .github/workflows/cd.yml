@@ -1,0 +1,165 @@
+#
+#  cd.yml — #114
+#  v로 시작하는 태그(예: v1.0.2)를 달면 GitHub 맥에서 Archive → 배포용 서명 → App Store Connect 업로드.
+#  업로드되면 TestFlight에 나타난다. 앱스토어 "심사 제출"은 지금처럼 사람이 한다.
+#  Xcode에서 손으로 올리는 방법은 그대로 둔다 (프로젝트 서명 설정은 안 건드리고, 여기서만 배포용으로 덮어씀).
+#
+#  필요한 Secrets (레포 Settings → Secrets and variables → Actions)
+#    ASC_KEY_ID · ASC_ISSUER_ID · ASC_KEY_P8      App Store Connect API 키 (p8은 base64)
+#    DIST_P12 · INSTALLER_P12 · P12_PASSWORD      Apple Distribution · Mac Installer Distribution 인증서 (base64)
+#    APPSTORE_PROFILE                             Mac App Store용 프로비저닝 프로파일 "CueFlow AppStore CD" (base64)
+#
+
+name: CD (TestFlight)
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:          # Actions 탭에서 손으로 돌리기 (버전 직접 입력)
+    inputs:
+      version:
+        description: '버전 (예: 1.0.2)'
+        required: true
+
+# 업로드는 한 번에 하나씩 (빌드 번호 꼬이지 않게)
+concurrency:
+  group: cd
+  cancel-in-progress: false
+
+jobs:
+  testflight:
+    name: TestFlight 업로드
+    runs-on: xcode-27
+    timeout-minutes: 45
+    env:
+      TEAM_ID: 5MCRVVWA6Z
+      BUNDLE_ID: Happymondayy.CueFlow
+      PROFILE_NAME: CueFlow AppStore CD
+    steps:
+      - name: 코드 받기
+        uses: actions/checkout@v5
+
+      - name: Xcode 27 고르기
+        run: |
+          if ! xcodebuild -version | grep -q "^Xcode 27"; then
+            XCODE=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | grep -vi beta | sort -V | tail -1)
+            [ -z "$XCODE" ] && XCODE=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | sort -V | tail -1)
+            if [ -z "$XCODE" ]; then echo "::error::GitHub 맥에 Xcode 27이 없어요"; exit 1; fi
+            sudo xcode-select -s "$XCODE"
+          fi
+          xcodebuild -version
+
+      # 버전 = 태그에서 v를 뗀 것 (v1.0.2 → 1.0.2), 빌드 번호 = 100 + 실행 번호
+      # (손으로 올린 빌드 1~4와 안 겹치게 100번대. 손으로 올릴 땐 이보다 큰 번호를 써야 함)
+      - name: 버전 · 빌드 번호 정하기
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then VERSION="${GITHUB_REF_NAME#v}"; else VERSION="$INPUT_VERSION"; fi
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+(\.[0-9]+)?$'; then
+            echo "::error::버전은 1.0.2처럼 숫자.숫자(.숫자)여야 해요: $VERSION"; exit 1
+          fi
+          BUILD=$((100 + GITHUB_RUN_NUMBER))
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "BUILD=$BUILD" >> "$GITHUB_ENV"
+          echo "버전 $VERSION ($BUILD)"
+
+      # Secrets에 있는 인증서 · 프로파일 · API 키를 이 맥에만 잠깐 넣는다 (끝나면 지움)
+      - name: 인증서 · 프로파일 넣기
+        env:
+          DIST_P12: ${{ secrets.DIST_P12 }}
+          INSTALLER_P12: ${{ secrets.INSTALLER_P12 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          APPSTORE_PROFILE: ${{ secrets.APPSTORE_PROFILE }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/cd.keychain-db"
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 24)
+
+          # 임시 키체인에 인증서 2개
+          echo "$DIST_P12" | base64 --decode > "$RUNNER_TEMP/dist.p12"
+          echo "$INSTALLER_P12" | base64 --decode > "$RUNNER_TEMP/installer.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/dist.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security import "$RUNNER_TEMP/installer.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm "$RUNNER_TEMP/dist.p12" "$RUNNER_TEMP/installer.p12"
+          security find-identity -v "$KEYCHAIN" | sed -E 's/[0-9A-F]{40}/<지문>/'
+
+          # 프로비저닝 프로파일 (이름 = UUID)
+          echo "$APPSTORE_PROFILE" | base64 --decode > "$RUNNER_TEMP/appstore.provisionprofile"
+          UUID=$(security cms -D -i "$RUNNER_TEMP/appstore.provisionprofile" | plutil -extract UUID raw -o - -)
+          for DIR in "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles" "$HOME/Library/MobileDevice/Provisioning Profiles"; do
+            mkdir -p "$DIR"
+            cp "$RUNNER_TEMP/appstore.provisionprofile" "$DIR/$UUID.provisionprofile"
+          done
+
+          # App Store Connect API 키 (업로드용)
+          mkdir -p "$RUNNER_TEMP/keys"
+          echo "$ASC_KEY_P8" | base64 --decode > "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+
+          echo "KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
+
+      # 프로젝트 Release 설정(Automatic)을 여기서만 배포용 수동 서명으로 덮어쓴다
+      - name: Archive
+        working-directory: CueFlow
+        run: |
+          xcodebuild archive \
+            -project CueFlow.xcodeproj \
+            -scheme CueFlow \
+            -configuration Release \
+            -destination 'generic/platform=macOS' \
+            -archivePath "$RUNNER_TEMP/CueFlow.xcarchive" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
+            OTHER_CODE_SIGN_FLAGS="--keychain $KEYCHAIN" \
+            MARKETING_VERSION="$VERSION" \
+            CURRENT_PROJECT_VERSION="$BUILD"
+
+      - name: App Store Connect 업로드
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>Apple Distribution</string>
+            <key>installerSigningCertificate</key><string>3rd Party Mac Developer Installer</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>$BUNDLE_ID</key><string>$PROFILE_NAME</string>
+            </dict>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/CueFlow.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          echo "### 업로드 완료: 버전 $VERSION ($BUILD) — 10~30분 뒤 TestFlight에 나타나요" >> "$GITHUB_STEP_SUMMARY"
+
+      # 성공하든 실패하든 인증서 · 키 · 프로파일 지우기
+      - name: 정리
+        if: always()
+        run: |
+          [ -n "$KEYCHAIN" ] && security delete-keychain "$KEYCHAIN" || true
+          rm -rf "$RUNNER_TEMP/keys" "$RUNNER_TEMP/appstore.provisionprofile"
+          rm -f "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/"*.provisionprofile "$HOME/Library/MobileDevice/Provisioning Profiles/"*.provisionprofile
