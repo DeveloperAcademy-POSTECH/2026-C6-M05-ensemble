@@ -63,16 +63,16 @@ extension UserTest {
         production.parts = partList
         let parts = Dictionary(uniqueKeysWithValues: partList.map { ($0.name, $0) })
 
-        var cueOrder = 0   // 트리거 안 순서가 섞이지 않게 차례로 번호
+        // 우선순위 번호는 트리거에서 정한다 (열마다 1번부터, 같은 트리거 = 같은 번호)
         func cue(_ title: String, _ position: CuePosition, _ part: String, cell: Int? = nil) -> Cue {
-            cueOrder += 1
-            let cue = Cue(title: title, position: position, order: cueOrder)
+            let cue = Cue(title: title, position: position, order: 0)
             cue.part = parts[part]
             cue.stageCell = cell
             return cue
         }
         func trigger(_ text: String, _ order: Int, _ cues: [Cue]) -> Trigger {
             let trigger = Trigger(text: text, order: order)
+            for cue in cues { cue.order = order + 1 }   // 트리거 순서(0부터) + 1 = 우선순위 번호
             trigger.cues = cues
             return trigger
         }

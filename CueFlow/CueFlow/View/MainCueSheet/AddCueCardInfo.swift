@@ -10,7 +10,7 @@ import SwiftUI
 struct AddCueCardInfo: View {
     // 다 입력하고 Enter를 눌렀을 때 할 일 (트리거 글, 큐 제목, 위치)
     var onSave: (String, String, CuePosition) -> Void
-    var production: Production?   // 이전 트리거를 찾을 공연 (없으면 후보 없음)
+    var scene: ShowScene?   // 이전 트리거를 찾을 열(씬) (없으면 후보 없음)
     var partName: String?   // 어느 파트의 큐인지 (입력칸 예시가 파트마다 다름)
     @Environment(\.closeAppPopover) private var closePopover   // 저장하면 팝오버 닫기
     @State private var triggerText: String
@@ -23,12 +23,12 @@ struct AddCueCardInfo: View {
     
     // 새로 만들 때는 빈 칸으로, 수정할 때는 원래 값을 채워서 연다
     init(triggerText: String = "", cueTitle: String = "", position: CuePosition? = nil,
-         production: Production? = nil, partName: String? = nil,
+         scene: ShowScene? = nil, partName: String? = nil,
          onSave: @escaping (String, String, CuePosition) -> Void = { _, _, _ in }) {
         _triggerText = State(initialValue: triggerText)
         _cueTitle = State(initialValue: cueTitle)
         _position = State(initialValue: position)
-        self.production = production
+        self.scene = scene
         self.partName = partName
         self.onSave = onSave
     }
@@ -205,11 +205,11 @@ extension AddCueCardInfo {
         }
     }
     
-    // 이 공연에서 이미 쓴 트리거 중, 지금 친 글자가 들어 있는 것 (최대 3개)
+    // 이 열(씬)에서 이미 쓴 트리거 중, 지금 친 글자가 들어 있는 것 (최대 3개)
     private var matchingTriggers: [String] {
         let typed = triggerText.trimmingCharacters(in: .whitespaces)
         guard focusedField == .trigger, !typed.isEmpty else { return [] }
-        let usedTexts = (production?.scenes ?? []).flatMap { $0.triggers ?? [] }.map(\.text)
+        let usedTexts = (scene?.triggers ?? []).map(\.text)
         let matches = Set(usedTexts).filter { $0.contains(typed) && $0 != typed }
         return Array(matches.sorted().prefix(3))
     }

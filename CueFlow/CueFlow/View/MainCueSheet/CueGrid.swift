@@ -164,6 +164,7 @@ extension CueGrid {
         return CueCell(
             part: part,
             cues: slotCues,
+            scene: scene,
             isHovering: hoveredSlotKey == key,
             onAddCue: { addCue(part: part, scene: scene, triggerText: $0, cueTitle: $1, position: $2) },
             onShowHistory: onShowHistory,

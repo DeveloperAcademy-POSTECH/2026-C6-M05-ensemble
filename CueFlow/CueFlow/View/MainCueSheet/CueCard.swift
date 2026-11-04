@@ -163,7 +163,7 @@ extension CueCard {
     
     // 더블클릭했을 때 뜨는 수정 팝오버 (원래 값이 채워진 채로)
     private var cueEditor: some View {
-        AddCueCardInfo(triggerText: cue.trigger?.text ?? "", cueTitle: cue.title, position: cue.position, production: cue.part?.production, partName: cue.part?.name) {
+        AddCueCardInfo(triggerText: cue.trigger?.text ?? "", cueTitle: cue.title, position: cue.position, scene: cue.trigger?.scene, partName: cue.part?.name) {
             updateCue(triggerText: $0, cueTitle: $1, position: $2)
         }
     }
