@@ -46,7 +46,7 @@ extension PerformPart {
                 .foregroundStyle(Color.brandPrimaryText)
                 .padding(.horizontal, 8)
                 .frame(height: 26)
-                .background(Color.brandPrimarySubtle, in: .capsule)
+                .background(Color.partCountBadge, in: .capsule)
             Spacer()
             addButton
         }
@@ -63,7 +63,8 @@ extension PerformPart {
             }
             .foregroundStyle(Color.brandPrimaryText)
             .frame(width: 110, height: 38)
-            .background(Color.brandPrimarySubtle, in: .rect(cornerRadius: 6))
+            .background(Color.partCountBadge, in: .rect(cornerRadius: 6))
+            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.partAddBorder, lineWidth: 1))
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -99,10 +100,10 @@ extension PerformPart {
             .foregroundStyle(isSelected ? Color.brandPrimaryText : Color.neutral900)
             .padding(.horizontal, 20)
             .frame(width: 185, height: 66)
-            .background(isSelected ? Color.brandPrimarySubtle.opacity(0.2) : Color.white.opacity(0.5),
+            .background(isSelected ? Color.partCardSelected : Color.partCardBackground,
                         in: .rect(cornerRadius: 6))
             .overlay(RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(isSelected ? Color.brandPrimary : Color.neutral400, lineWidth: 1))
+                .strokeBorder(isSelected ? Color.stageOptionSelectedBorder : Color.partCardBorder, lineWidth: 1))
             .contentShape(.rect)
         }
         .buttonStyle(.plain)

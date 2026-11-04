@@ -18,7 +18,7 @@ struct InfoComplete: View {
             buttons
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.white)
+        .background(Color.appBackground)
     }
 }
 
@@ -31,7 +31,7 @@ extension InfoComplete {
                 .foregroundStyle(Color.neutral900)
             Text("파트별 큐와 변경 내용이 통합되었고, 필수 담당자의 확인이 완료되었습니다.")
                 .font(.system(size: 15))
-                .foregroundStyle(Color.neutral500)
+                .foregroundStyle(Color.noticeSecondaryText)
         }
         .multilineTextAlignment(.center)
     }

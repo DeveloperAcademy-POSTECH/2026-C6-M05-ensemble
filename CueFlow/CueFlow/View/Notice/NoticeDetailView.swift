@@ -77,7 +77,7 @@ struct NoticeDetailView: View {
                 .frame(maxWidth: 1065, alignment: .leading)
                 .padding(40)
             }
-            .background(.white)
+            .background(Color.appBackground)
             // 다른 공지로 바뀌면 맨 위부터 보이게
             .onChange(of: notice) {
                 proxy.scrollTo("top", anchor: .top)
@@ -136,7 +136,7 @@ struct NoticeDetailView: View {
                         .foregroundStyle(Color.brandPrimaryText)
                         .padding(.horizontal, 15)
                         .frame(height: 27)
-                        .background(Color.brandPrimarySubtle, in: Capsule())
+                        .background(Color.noticeTagBackground, in: Capsule())
 
                     Text(notice.title)
                         .font(.largeTitle.bold())
@@ -150,22 +150,22 @@ struct NoticeDetailView: View {
 
                 Text(notice.sentDateDetailText)
                     .font(.callout)
-                    .foregroundStyle(Color.neutral500)
+                    .foregroundStyle(Color.noticeSecondaryText)
             }
 
             Rectangle()
-                .fill(Color.neutral200)
+                .fill(Color.noticeSeparator)
                 .frame(height: 1)
 
             Text(notice.body)
                 .font(.body)
-                .foregroundStyle(Color.neutral700)
+                .foregroundStyle(Color.noticeMetaText)
                 .lineSpacing(6)
                 .textSelection(.enabled)   // 본문 글자를 드래그해서 복사할 수 있게
         }
         .padding(30)
         .frame(maxWidth: .infinity, minHeight: 495, alignment: .topLeading)
-        .background(.white, in: RoundedRectangle(cornerRadius: 8))
+        .background(Color.surfaceWhite, in: RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)
                 .strokeBorder(Color.neutral200, lineWidth: 1)
@@ -197,7 +197,7 @@ struct NoticeActionButton: View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(.system(size: 14))
-                .foregroundStyle(isEnabled ? Color.neutral700 : Color.neutral300)
+                .foregroundStyle(isEnabled ? Color.noticeMetaText : Color.neutral300)
                 .frame(width: 34, height: 26)
                 .background(isHovering && isEnabled ? Color.neutral200 : .clear, in: Capsule())
                 .contentShape(Capsule())
@@ -227,7 +227,7 @@ struct NoticeNeighborRow: View {
             HStack(spacing: 0) {
                 Image(systemName: direction == .previous ? "chevron.up" : "chevron.down")
                     .font(.system(size: 8, weight: .semibold))
-                    .foregroundStyle(Color.neutral600)
+                    .foregroundStyle(Color.noticeIconText)
                     .frame(width: 30, alignment: .leading)
 
                 HStack(spacing: 10) {
@@ -243,11 +243,11 @@ struct NoticeNeighborRow: View {
                 Spacer()
             }
             .font(.subheadline)
-            .foregroundStyle(isHovering ? Color.neutral900 : Color.neutral500)
+            .foregroundStyle(isHovering ? Color.neutral900 : Color.noticeSecondaryText)
             .padding(.leading, 17)
             .frame(height: 45)
             .background(
-                isHovering ? Color.neutral100 : Color.neutral50,
+                isHovering ? Color.noticeNeighborHover : Color.neutral50,
                 in: RoundedRectangle(cornerRadius: 6)
             )
             .contentShape(Rectangle())   // 글자 말고 빈 곳을 눌러도 열리게

@@ -80,7 +80,7 @@ extension PerformInfo {
                 .foregroundStyle(Color.neutral900)
             if isRequired {
                 Text("*")
-                    .foregroundStyle(Color.neutral400)
+                    .foregroundStyle(Color.noticePlaceholder)
             }
         }
         .font(.system(size: 17, weight: .semibold))
@@ -98,7 +98,7 @@ extension PerformInfo {
             TextField("", value: value, format: .number)
                 .textFieldStyle(.plain)
             Text(unit)
-                .foregroundStyle(Color.neutral500)
+                .foregroundStyle(Color.noticeSecondaryText)
         }
         .formBox()
     }
@@ -115,7 +115,7 @@ extension PerformInfo {
         .padding(7)
         .frame(height: 48)
         .background(Color.neutral25, in: .rect(cornerRadius: 6))
-        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.neutral300))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.noticeFieldBorder))
     }
     
     private func genreChip(_ genre: String) -> some View {
@@ -123,9 +123,9 @@ extension PerformInfo {
         return Button { draft.genre = genre } label: {
             Text(genre)
                 .font(.system(size: 13))
-                .foregroundStyle(isSelected ? Color.neutral900 : Color.neutral500)
+                .foregroundStyle(isSelected ? Color.neutral900 : Color.noticeSecondaryText)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(isSelected ? Color.neutral100 : .clear, in: .rect(cornerRadius: 6))
+                .background(isSelected ? Color.tagBackground : .clear, in: .rect(cornerRadius: 6))
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -135,7 +135,7 @@ extension PerformInfo {
     private var dateField: some View {
         Button { isPickingDate = true } label: { dateFieldLabel }
             .buttonStyle(.plain)
-            .appPopover(isPresented: $isPickingDate, width: nil) { calendar }   // 폭은 달력 크기만큼
+            .appPopover(isPresented: $isPickingDate, width: nil, background: .calendar) { calendar }   // 폭은 달력 크기만큼
     }
     
     private var dateFieldLabel: some View {
@@ -144,7 +144,7 @@ extension PerformInfo {
             Spacer()
             Image(systemName: "chevron.down")
                 .font(.caption)
-                .foregroundStyle(Color.neutral500)
+                .foregroundStyle(Color.noticeSecondaryText)
         }
         .formBox()
         .contentShape(.rect)
@@ -182,8 +182,8 @@ private extension View {
             .foregroundStyle(Color.neutral900)
             .padding(.horizontal, 14)
             .frame(height: 48)
-            .background(.white, in: .rect(cornerRadius: 6))
-            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.neutral300))
+            .background(Color.surfaceWhite, in: .rect(cornerRadius: 6))
+            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.noticeFieldBorder))
     }
 }
 

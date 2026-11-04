@@ -345,7 +345,11 @@ struct SheetSoftButtonStyle: ButtonStyle {
             .font(.system(size: fontSize, weight: .semibold))
             .foregroundStyle(Color.brandPrimaryText)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.brandPrimarySubtle, in: RoundedRectangle(cornerRadius: 6))
+            .background(Color.sheetSoftBackground, in: RoundedRectangle(cornerRadius: 6))
+            .overlay {
+                RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(Color.sheetSoftBorder, lineWidth: 1)
+            }
             .contentShape(RoundedRectangle(cornerRadius: 6))
             .opacity(configuration.isPressed ? 0.7 : 1)
     }
@@ -359,7 +363,7 @@ struct SheetBackButton: View {
         Button(action: action) {
             Image(systemName: "chevron.left")
                 .font(.system(size: 22))
-                .foregroundStyle(Color.black)
+                .foregroundStyle(Color.iconStrong)
                 .frame(width: 24, height: 24)
                 .contentShape(Rectangle())
         }
@@ -382,14 +386,14 @@ struct SheetPrimaryButtonStyle: ButtonStyle {
         var body: some View {
             configuration.label
                 .font(.body.weight(.semibold))
-                .foregroundStyle(isEnabled ? Color.white : Color.brandPrimaryText)
+                .foregroundStyle(isEnabled ? Color.white : Color.buttonDisabledText)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(background, in: RoundedRectangle(cornerRadius: 6))
                 .contentShape(RoundedRectangle(cornerRadius: 6))
         }
 
         private var background: Color {
-            if !isEnabled { return .brandPrimaryDisabled }
+            if !isEnabled { return .buttonDisabledBackground }
             return configuration.isPressed ? .brandPrimaryPressed : .brandPrimary
         }
     }

@@ -16,6 +16,7 @@ struct SidebarView: View {
     var isInProduction = false                  // 공연 큐시트를 보고 있으면 true → 선택 표시 없음
     var onOpenProduction: (Production) -> Void = { _ in }
     var unreadNoticeCount = 0                   // 공지사항 옆 숫자 배지 (안 읽은 공지 수, #82)
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -50,7 +51,7 @@ struct SidebarView: View {
                 .padding(.bottom, 37)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(.background)
+        .background(colorScheme == .dark ? AnyShapeStyle(Color.gridHeader) : AnyShapeStyle(.background))   // 다크: 피그마 bg-sidebar #252527
     }
 }
 
@@ -84,7 +85,7 @@ struct SidebarMenuRow: View {
             .background {
                 if isSelected {
                     RoundedRectangle(cornerRadius: 7)
-                        .fill(Color.brandPrimarySubtle)
+                        .fill(Color.sidebarSelected)
                 }
             }
             .contentShape(Rectangle())   // 글자 말고 빈 곳을 눌러도 선택되게

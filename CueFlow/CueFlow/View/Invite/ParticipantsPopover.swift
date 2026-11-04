@@ -96,7 +96,7 @@ extension ParticipantsPopover {
     private var meRow: some View {
         HStack {
             HStack(spacing: 15) {
-                avatar(me?.name ?? "나", size: 36, fontSize: 18, color: .brandPrimaryDisabled)
+                avatar(me?.name ?? "나", size: 36, fontSize: 18, color: .meAvatar)
                 Text("\(me?.name ?? "나") (나)")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(Color.neutral900)
@@ -107,9 +107,9 @@ extension ParticipantsPopover {
             Button {} label: {
                 Text("Spotlight me")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.neutral700)
+                    .foregroundStyle(Color.spotlightText)
                     .frame(width: 99, height: 30)
-                    .background(Color.brandPrimarySubtle, in: RoundedRectangle(cornerRadius: 6))
+                    .background(Color.spotlightBackground, in: RoundedRectangle(cornerRadius: 6))
             }
             .buttonStyle(.plain)
             .disabled(true)
@@ -133,7 +133,7 @@ extension ParticipantsPopover {
     // 최근에 본 사람 한 줄: 회색 동그라미 + 이름 + "5시간 전"
     private func recentRow(_ member: Member) -> some View {
         HStack(spacing: 10) {
-            avatar(member.name, size: 36, fontSize: 15, color: .neutral300)
+            avatar(member.name, size: 36, fontSize: 15, color: .visitorAvatar)
             VStack(alignment: .leading, spacing: 1) {
                 Text(member.name)
                     .font(.system(size: 13.5, weight: .semibold))
@@ -141,7 +141,7 @@ extension ParticipantsPopover {
                     .lineLimit(1)
                 Text(seenText(member.lastSeenAt))
                     .font(.system(size: 11.5))
-                    .foregroundStyle(Color.neutral400)
+                    .foregroundStyle(Color.noticePlaceholder)
             }
         }
         .frame(height: 50)
@@ -159,13 +159,13 @@ extension ParticipantsPopover {
     private func sectionTitle(_ text: String) -> some View {
         Text(text)
             .font(.system(size: 11.5, weight: .semibold))
-            .foregroundStyle(Color.neutral500)
+            .foregroundStyle(Color.noticeSecondaryText)
     }
 
     private func emptyText(_ text: String) -> some View {
         Text(text)
             .font(.system(size: 11.5))
-            .foregroundStyle(Color.neutral400)
+            .foregroundStyle(Color.noticePlaceholder)
     }
 
     private var divider: some View {

@@ -143,7 +143,7 @@ extension CueGrid {
             .padding(.top, 25)
             .frame(width: GridStyle.partColumnWidth, alignment: .leading)
             .frame(minHeight: GridStyle.minRowHeight, maxHeight: .infinity, alignment: .top)
-            .background(Color.neutral25)
+            .background(Color.gridHeader)
             .overlay(alignment: .leading) { part.color.accent.frame(width: 6) }
             .gridCellBorder()
             .contentShape(.rect)
@@ -177,7 +177,7 @@ extension CueGrid {
             .padding(.vertical, 5)
             .frame(width: GridStyle.sceneColumnWidth)
             .frame(maxHeight: .infinity, alignment: .top)
-            .background(.white)
+            .background(Color.gridCell)
             .contentShape(.rect)
             .onHover { hoveredSlotKey = $0 ? key : nil }                // 들어오면 이 칸, 나가면 없음
             .gridCellBorder()
@@ -190,14 +190,14 @@ extension CueGrid {
             .buttonStyle(.plain)
             .foregroundStyle(Color.neutral900)
             .frame(width: GridStyle.partColumnWidth, height: GridStyle.addPartRowHeight)
-            .background(Color.neutral25)
+            .background(Color.gridHeader)
             .overlay(alignment: .leading) { Color.partAddaccent.frame(width: 6) }
             .gridCellBorder()
     }
     
     // 아무것도 없는 흰 칸
     private func emptyCell(width: CGFloat) -> some View {
-        Color.white
+        Color.gridCell
             .frame(width: width)
             .frame(maxHeight: .infinity)
             .gridCellBorder()

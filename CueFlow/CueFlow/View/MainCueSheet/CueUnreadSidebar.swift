@@ -32,7 +32,7 @@ struct CueUnreadSidebar: View {
         .frame(width: 329)
         .frame(maxHeight: .infinity, alignment: .top)
         .onExitCommand(perform: onClose)   // 검색창에 커서가 있을 때도 Esc로 닫힘
-        .background(Color.neutral25.shadow(.drop(color: .black.opacity(0.25), radius: 2, y: 4)), in: .rect(cornerRadius: 10))
+        .background(Color.gridHeader.shadow(.drop(color: .black.opacity(0.25), radius: 2, y: 4)), in: .rect(cornerRadius: 10))
     }
 }
 
@@ -43,7 +43,7 @@ extension CueUnreadSidebar {
         HStack {
             Text("미확인 수정사항")
                 .font(.body.weight(.semibold))
-                .foregroundStyle(Color.neutral700)
+                .foregroundStyle(Color.sidebarBackIcon)
             Spacer()
             Text("\(unreadCues.count)건")
                 .font(.body)
@@ -62,7 +62,7 @@ extension CueUnreadSidebar {
         }
         .padding(.leading, 8)
         .frame(height: 24)
-        .background(Color.neutral25, in: .capsule)
+        .background(Color.sidebarSearch, in: .capsule)
         .overlay(Capsule().strokeBorder(.black.opacity(0.08)))
     }
 }
@@ -85,7 +85,7 @@ extension CueUnreadSidebar {
                 Spacer()
                 Text(Self.dateText(lastEditDate(of: cue)))
                     .font(.caption)
-                    .foregroundStyle(Color.neutral400)
+                    .foregroundStyle(Color.noticePlaceholder)
             }
             UnreadCueCard(cue: cue)
         }
@@ -142,8 +142,8 @@ private struct UnreadCueCard: View {
         .padding(.trailing, 16)
         .padding(.vertical, 11)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.white, in: .rect(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(partColor.background, lineWidth: 1.32))
+        .background(Color.surfaceWhite, in: .rect(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(partColor.sidebarBorder, lineWidth: 1.32))
     }
 }
 
@@ -153,7 +153,7 @@ extension UnreadCueCard {
             .font(.system(size: 8, weight: .medium))
             .foregroundStyle(partColor.number)
             .frame(width: 20, height: 20)
-            .background(partColor.background, in: .circle)
+            .background(partColor.sidebarChip, in: .circle)
     }
 
     private var texts: some View {
@@ -164,7 +164,7 @@ extension UnreadCueCard {
                     .foregroundStyle(Color.neutral900)
                 Text(cue.trigger?.scene?.title ?? "")
                     .font(.system(size: 10))
-                    .foregroundStyle(Color.neutral500)
+                    .foregroundStyle(Color.noticeSecondaryText)
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(cue.trigger?.text ?? "")
@@ -184,7 +184,7 @@ extension UnreadCueCard {
             .foregroundStyle(partColor.number)
             .padding(.horizontal, 8)
             .frame(height: 18)
-            .background(partColor.background, in: .capsule)
+            .background(partColor.sidebarChip, in: .capsule)
     }
 
     private var sceneCode: String { "#\((cue.trigger?.scene?.order ?? 0) + 1) Scene" }

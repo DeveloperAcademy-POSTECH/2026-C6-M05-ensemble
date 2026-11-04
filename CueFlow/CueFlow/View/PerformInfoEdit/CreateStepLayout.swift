@@ -25,7 +25,7 @@ struct CreateStepLayout<Content: View>: View {
         }
         .overlay(alignment: .bottom) { footer }
         .frame(minWidth: 850)
-        .background(.white)
+        .background(Color.appBackground)
     }
 
     // 가운데 (폭 799). 내용과 단계 표시 사이 간격은 각 화면에서 정한다
@@ -53,7 +53,7 @@ extension CreateStepLayout {
                 .foregroundStyle(Color.neutral900)
             Text(subtitle)
                 .font(.system(size: 17))
-                .foregroundStyle(Color.neutral500)
+                .foregroundStyle(Color.noticeSecondaryText)
         }
     }
 
@@ -72,17 +72,17 @@ extension CreateStepLayout {
         return HStack(spacing: 10) {
             Text("\(number)")
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(isCurrent ? Color.neutral25 : Color.neutral500)
+                .foregroundStyle(isCurrent ? Color.stepCurrentText : Color.stepIdleText)
                 .frame(width: 24, height: 24)
-                .background(isCurrent ? Color.neutral400 : Color.neutral200, in: .circle)
+                .background(isCurrent ? Color.stepCurrent : Color.stepIdle, in: .circle)
             Text(title)
                 .font(.system(size: 11, weight: isCurrent ? .semibold : .regular))
-                .foregroundStyle(isCurrent ? Color.neutral900 : Color.neutral400)
+                .foregroundStyle(isCurrent ? Color.neutral900 : Color.stepLabelIdle)
         }
     }
 
     private var stepLine: some View {
-        Color.neutral300
+        Color.stepLine
             .frame(width: 50, height: 1)
     }
 }
@@ -92,7 +92,7 @@ extension CreateStepLayout {
 extension CreateStepLayout {
     private var footer: some View {
         footerButtons
-            .background(Color.neutral25)
+            .background(Color.createFooter)
             .frame(width: 799, alignment: .trailing)
             .padding(.bottom, 124)
     }

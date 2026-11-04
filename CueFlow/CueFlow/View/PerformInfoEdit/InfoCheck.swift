@@ -38,7 +38,7 @@ extension InfoCheck {
         }
         .frame(width: 799, alignment: .leading)
         .frame(minHeight: 460, alignment: .top)
-        .background(.white, in: .rect(cornerRadius: 10))
+        .background(Color.surfaceWhite, in: .rect(cornerRadius: 10))
         .overlay(cardBorder)
     }
 
@@ -84,7 +84,7 @@ private struct InfoRow: View {
         HStack(spacing: 0) {
             Text(label)
                 .font(.system(size: 15))
-                .foregroundStyle(Color.neutral700)
+                .foregroundStyle(Color.noticeMetaText)
                 .frame(width: 103, alignment: .leading)
             Text(value)
                 .font(.system(size: 15, weight: .semibold))

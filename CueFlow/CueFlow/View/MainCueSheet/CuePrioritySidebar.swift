@@ -29,7 +29,7 @@ struct CuePrioritySidebar: View {
         }
         .frame(width: 329)
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(Color.neutral25.shadow(.drop(color: .black.opacity(0.25), radius: 2, y: 4)), in: .rect(cornerRadius: 10))   // 피그마 바깥쪽 그림자 (Y 4, 흐림 4, 검정 25%)
+        .background(Color.gridHeader.shadow(.drop(color: .black.opacity(0.25), radius: 2, y: 4)), in: .rect(cornerRadius: 10))   // 피그마 바깥쪽 그림자 (Y 4, 흐림 4, 검정 25%)
         .onAppear(perform: numberNewCues)
     }
 }
@@ -41,7 +41,7 @@ extension CuePrioritySidebar {
             sceneChip
             Text(scene.title)
                 .font(.body)
-                .foregroundStyle(Color.neutral700)
+                .foregroundStyle(Color.sidebarBackIcon)
         }
     }
 
@@ -62,11 +62,11 @@ extension CuePrioritySidebar {
                 .foregroundStyle(Color.neutral900)
             Image(systemName: "chevron.down")
                 .font(.system(size: 8, weight: .semibold))
-                .foregroundStyle(Color.neutral500)
+                .foregroundStyle(Color.noticeSecondaryText)
         }
         .padding(.horizontal, 13)
         .frame(height: 24)
-        .background(Color.neutral200, in: .capsule)
+        .background(Color.noticeSeparator, in: .capsule)
     }
 
     // 공연의 씬들 (왼쪽부터 순서대로)
@@ -95,7 +95,7 @@ extension CuePrioritySidebar {
         .padding(.vertical, 10)
         .frame(maxWidth: .infinity, minHeight: 89, alignment: .top)
         .background(alignment: .leading) { slotNumber(number) }
-        .background(Color.neutral100)
+        .background(Color.thumbnailBackground)
         .clipShape(.rect(cornerRadius: 4.5))
         .dropDestination(for: String.self) { ids, _ in moveCue(id: ids.first, to: number) }
     }
@@ -103,7 +103,7 @@ extension CuePrioritySidebar {
     private func slotNumber(_ number: Int) -> some View {
         Text("\(number)")
             .font(.system(size: 10, weight: .bold))
-            .foregroundStyle(Color.neutral600)
+            .foregroundStyle(Color.noticeIconText)
             .frame(width: 20)
             .frame(maxHeight: .infinity)
             .background(Color.neutral200)
@@ -118,10 +118,10 @@ extension CuePrioritySidebar {
     private var addSlotLabel: some View {
         Text("+")
             .font(.system(size: 16))
-            .foregroundStyle(Color.neutral500)
+            .foregroundStyle(Color.noticeSecondaryText)
             .frame(maxWidth: .infinity, minHeight: 89)
             .background(alignment: .leading) { Color.neutral200.frame(width: 20) }
-            .background(Color.neutral100)
+            .background(Color.thumbnailBackground)
             .clipShape(.rect(cornerRadius: 4.5))
             .contentShape(.rect)
     }
@@ -193,8 +193,8 @@ private struct PriorityCueCard: View {
             .padding(.trailing, 13)
             .padding(.top, 11)
             .frame(maxWidth: .infinity, minHeight: 69, alignment: .topLeading)
-            .background(.white, in: .rect(cornerRadius: 6))
-            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(partColor.background, lineWidth: 1))
+            .background(Color.cueCardBackground, in: .rect(cornerRadius: 6))
+            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(partColor.cell, lineWidth: 1))
             .overlay(alignment: .leading) { dragHandle }
             .draggable(cue.id.uuidString)
     }

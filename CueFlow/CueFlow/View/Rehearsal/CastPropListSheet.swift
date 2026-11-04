@@ -90,18 +90,22 @@ private struct NameListColumn: View {
                         .onSubmit(add)
                     Image(systemName: "arrow.turn.down.left")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color.neutral300)
+                        .foregroundStyle(Color.sheetFieldIcon)
                 }
                 .padding(.horizontal, 15)
                 .frame(height: 36)
-                .background(Color.neutral50, in: RoundedRectangle(cornerRadius: 6))
+                .background(Color.sheetField, in: RoundedRectangle(cornerRadius: 6))
 
                 Button(action: add) {
                     Text("등록")
                         .font(.body.weight(.semibold))
                         .foregroundStyle(Color.brandPrimaryText)
                         .frame(width: 60, height: 36)
-                        .background(Color.brandPrimarySubtle, in: RoundedRectangle(cornerRadius: 6))
+                        .background(Color.sheetRegisterBackground, in: RoundedRectangle(cornerRadius: 6))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 6)
+                                .strokeBorder(Color.sheetSoftBorder, lineWidth: 1)
+                        }
                         .contentShape(RoundedRectangle(cornerRadius: 6))
                 }
                 .buttonStyle(.plain)
@@ -150,7 +154,7 @@ private struct NameTile: View {
             Button(action: onDelete) {
                 Image(systemName: "xmark")
                     .font(.system(size: 8))
-                    .foregroundStyle(Color.brandPrimaryDisabled)
+                    .foregroundStyle(Color.stageCellNumber)
                     .frame(width: 16, height: 16)
                     .contentShape(Rectangle())
             }
@@ -163,7 +167,7 @@ private struct NameTile: View {
         .background(Color.neutral25, in: RoundedRectangle(cornerRadius: 3))
         .overlay {
             RoundedRectangle(cornerRadius: 3)
-                .strokeBorder(Color.brandPrimaryDisabled, lineWidth: 0.5)
+                .strokeBorder(Color.stageBorder, lineWidth: 0.5)
         }
     }
 }

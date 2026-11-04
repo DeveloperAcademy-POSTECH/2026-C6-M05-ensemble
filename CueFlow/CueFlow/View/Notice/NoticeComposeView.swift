@@ -59,7 +59,7 @@ struct NoticeComposeView: View {
                         .foregroundStyle(Color.neutral900)
                         .padding(.horizontal, 25)
                         .frame(height: 50)
-                        .background(.white, in: RoundedRectangle(cornerRadius: 6))
+                        .background(Color.surfaceWhite, in: RoundedRectangle(cornerRadius: 6))
                         .overlay(fieldBorder)
                 }
 
@@ -72,7 +72,7 @@ struct NoticeComposeView: View {
                         .padding(.top, 20)
                         .padding(.bottom, 12)
                         .frame(height: 260)
-                        .background(.white, in: RoundedRectangle(cornerRadius: 6))
+                        .background(Color.surfaceWhite, in: RoundedRectangle(cornerRadius: 6))
                         .overlay(alignment: .topLeading) {
                             // TextEditor에는 안내 글자가 없어서 비어 있을 때만 직접 보여준다
                             if content.isEmpty {
@@ -91,7 +91,7 @@ struct NoticeComposeView: View {
                     Button(action: send) {
                         Text("보내기")
                             .font(.body)
-                            .foregroundStyle(Color.neutral25)
+                            .foregroundStyle(Color.onPrimaryText)
                             .frame(width: 110, height: 30)
                             .background(Color.brandPrimary, in: RoundedRectangle(cornerRadius: 6))
                             .contentShape(RoundedRectangle(cornerRadius: 6))
@@ -109,7 +109,7 @@ struct NoticeComposeView: View {
             .frame(maxWidth: .infinity, minHeight: geometry.size.height)   // 창이 크면 세로 가운데
         }
         }
-        .background(.white)
+        .background(Color.appBackground)
         // 피그마: 시스템 뒤로 버튼 대신 창 왼쪽 위 ← (24 · neutral700 · 왼쪽 44 · 제목 막대 아래 52 = 가운데 기준)
         .navigationBarBackButtonHidden(true)
         .overlay(alignment: .topLeading) {
@@ -123,7 +123,7 @@ struct NoticeComposeView: View {
         Button { dismiss() } label: {
             Image(systemName: "arrow.left")
                 .font(.system(size: 24))
-                .foregroundStyle(Color.neutral700)
+                .foregroundStyle(Color.noticeMetaText)
                 .frame(width: 36, height: 36)
                 .contentShape(Rectangle())
         }
@@ -143,15 +143,15 @@ struct NoticeComposeView: View {
             HStack(spacing: 11) {
                 Text(selectedProduction?.title ?? "프로젝트 선택")
                     .font(.body.weight(.semibold))
-                    .foregroundStyle(selectedProduction == nil ? Color.neutral400 : Color.neutral900)
+                    .foregroundStyle(selectedProduction == nil ? Color.noticePlaceholder : Color.neutral900)
                     .lineLimit(1)
                 Image(systemName: "chevron.down")
                     .font(.system(size: 12))
-                    .foregroundStyle(Color.neutral600)
+                    .foregroundStyle(Color.noticeIconText)
             }
             .padding(.horizontal, 19)
             .frame(minWidth: 144, minHeight: 50, maxHeight: 50)
-            .background(.white, in: RoundedRectangle(cornerRadius: 6))
+            .background(Color.surfaceWhite, in: RoundedRectangle(cornerRadius: 6))
             .overlay(fieldBorder)
             .contentShape(Rectangle())
         }
@@ -165,7 +165,7 @@ struct NoticeComposeView: View {
     private func placeholder(_ text: String) -> Text {
         Text(text)
             .font(.body.weight(.semibold))
-            .foregroundStyle(Color.neutral400)
+            .foregroundStyle(Color.noticePlaceholder)
     }
 
     // 왼쪽 이름표 + 오른쪽 입력 칸 한 줄 (피그마: 15 semibold neutral800 · 칸은 왼쪽에서 91)
@@ -183,7 +183,7 @@ struct NoticeComposeView: View {
 
     private var fieldBorder: some View {
         RoundedRectangle(cornerRadius: 6)
-            .strokeBorder(Color.neutral300, lineWidth: 1)
+            .strokeBorder(Color.noticeFieldBorder, lineWidth: 1)
     }
 
     // 공지를 만들어 저장하고 목록으로 돌아간다

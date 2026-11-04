@@ -103,11 +103,11 @@ struct RehearsalCueList<SceneControls: View>: View {
             .overlay { columnLines }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Color.neutral25)
+        .background(Color.cueRowBackground)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(Color.neutral300, lineWidth: 1)
+                .strokeBorder(Color.cueTableBorder, lineWidth: 1)
         }
     }
 
@@ -117,16 +117,16 @@ struct RehearsalCueList<SceneControls: View>: View {
             HStack(spacing: 4) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(Color.neutral600)
+                    .foregroundStyle(Color.noticeIconText)
                 Text("이전 큐")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(Color.neutral800)
             }
             .frame(width: 78, height: 36)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 6))
+            .background(Color.surfaceWhite, in: RoundedRectangle(cornerRadius: 6))
             .overlay {
                 RoundedRectangle(cornerRadius: 6)
-                    .strokeBorder(Color.neutral400, lineWidth: 1)
+                    .strokeBorder(Color.noticeCheckBorder, lineWidth: 1)
             }
             .contentShape(RoundedRectangle(cornerRadius: 6))
         }
@@ -175,13 +175,13 @@ struct RehearsalCueList<SceneControls: View>: View {
     private var columnLines: some View {
         HStack(spacing: 0) {
             Spacer().frame(width: CueListColumn.scene)
-            Divider()
+            CueTableLine()
             Spacer().frame(width: CueListColumn.trigger - 1)
-            Divider()
+            CueTableLine()
             Spacer()
-            Divider()
+            CueTableLine()
             Spacer().frame(width: CueListColumn.position - 1)
-            Divider()
+            CueTableLine()
             Spacer().frame(width: CueListColumn.part - 1)
         }
         .allowsHitTesting(false)
@@ -214,11 +214,11 @@ struct CueListRow: View {
         }
         .opacity(isPast ? 0.4 : 1)   // 글자 · 태그만 흐리게 (줄 바탕 · 가로선은 그대로)
         .frame(maxWidth: .infinity, minHeight: CueListColumn.cueHeight, alignment: .topLeading)
-        .background(isCurrent ? Color.brandPrimarySubtle.opacity(0.2) : Color.neutral25)
+        .background(isCurrent ? Color.cueRowCurrent : Color.cueRowBackground)
         .overlay(alignment: .leading) {
             if isCurrent {
                 Rectangle()
-                    .fill(Color.brandPrimaryHover)
+                    .fill(Color.cueRowBar)
                     .frame(width: 5)
             }
         }
@@ -282,7 +282,20 @@ struct CueListRow: View {
             .foregroundStyle(color.number)
             .padding(.horizontal, 10)
             .frame(height: 22)
-            .background(color.background, in: Capsule())
+            .background(color.listTag, in: Capsule())
+    }
+}
+
+// 표 세로선: 라이트는 시스템 선 그대로, 다크는 피그마 #454548
+private struct CueTableLine: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        if colorScheme == .dark {
+            Color.cueTableBorder.frame(width: 1)
+        } else {
+            Divider()
+        }
     }
 }
 
@@ -291,10 +304,10 @@ struct CueListRow: View {
 struct SoftPrimaryCompatButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .foregroundStyle(.white)
+            .foregroundStyle(Color.softActionText)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
-                configuration.isPressed ? Color.brandPrimary : Color.brandPrimaryHover,
+                configuration.isPressed ? Color.brandPrimary : Color.softAction,
                 in: RoundedRectangle(cornerRadius: 6)
             )
             .contentShape(RoundedRectangle(cornerRadius: 6))

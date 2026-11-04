@@ -16,13 +16,13 @@ struct SceneKindChip: View {
             .font(.system(size: 13, weight: .semibold))
             .foregroundStyle(Color.neutral900)
             .frame(width: 62, height: 36)
-            .background(kind.chipColor.opacity(0.5), in: .capsule)
+            .background(kind.chipColor, in: .capsule)
             .overlay(selectedBorder)
     }
 
     private var selectedBorder: some View {
         Capsule()
-            .strokeBorder(Color.brandPrimary, lineWidth: isSelected ? 1 : 0)
+            .strokeBorder(Color.stageOptionSelectedBorder, lineWidth: isSelected ? 1 : 0)
     }
 }
 
@@ -50,9 +50,9 @@ extension SceneKind {
     // 칩 배경색
     var chipColor: Color {
         switch self {
-        case .scene: .brandPrimarySubtle
-        case .number: .brandPrimaryDisabled
-        case .blackout: .brandPrimaryHover
+        case .scene: .chipScene
+        case .number: .chipNumber
+        case .blackout: .chipBlackout
         }
     }
 }

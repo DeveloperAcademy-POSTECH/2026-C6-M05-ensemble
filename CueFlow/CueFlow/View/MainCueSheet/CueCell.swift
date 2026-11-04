@@ -29,7 +29,7 @@ struct CueCell: View {
         .padding(7)
         .padding(.leading, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(partColor.background.opacity(0.2))
+        .background(partColor.tint)
         .overlay(alignment: .leading) { partColorBar }
         .clipShape(.rect(cornerRadius: 5))
     }
@@ -67,7 +67,7 @@ extension CueCell {
     
     // 칸 왼쪽의 파트색 세로 막대
     private var partColorBar: some View {
-        partColor.background
+        partColor.cell
             .frame(width: 4)
     }
 }

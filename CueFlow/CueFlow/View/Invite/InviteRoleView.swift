@@ -68,13 +68,13 @@ struct InviteRoleView: View {
                     ProgressView()
                     Text("공연 정보를 받아 오는 중이에요")
                         .font(.system(size: 15))
-                        .foregroundStyle(Color.neutral500)
+                        .foregroundStyle(Color.noticeSecondaryText)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .frame(minWidth: 850)
-        .background(.white)
+        .background(Color.appBackground)
     }
 
     // 가운데 (폭 796): 위 안내 → 스태프 → 무대 위
@@ -135,7 +135,7 @@ extension InviteRoleView {
                     .foregroundStyle(Color.neutral900)
                 Text("이 프로젝트에서 맡은 역할을 모두 선택해 주세요. 여러 개를 선택할 수 있습니다.")
                     .font(.system(size: 17))
-                    .foregroundStyle(Color.neutral500)
+                    .foregroundStyle(Color.noticeSecondaryText)
             }
         }
     }
@@ -159,11 +159,11 @@ extension InviteRoleView {
                         .foregroundStyle(Color.brandPrimaryText)
                         .padding(.horizontal, 8)
                         .frame(height: 26)
-                        .background(Color.brandPrimarySubtle, in: .capsule)
+                        .background(Color.partCountBadge, in: .capsule)
                 }
                 Text(caption)
                     .font(.system(size: 12))
-                    .foregroundStyle(Color.neutral500)
+                    .foregroundStyle(Color.noticeSecondaryText)
             }
             // 4칸씩 줄바꿈, 가로·세로 간격 18
             LazyVGrid(columns: Array(repeating: GridItem(.fixed(185), spacing: 18), count: 4),
@@ -185,10 +185,10 @@ extension InviteRoleView {
             .foregroundStyle(isSelected ? Color.brandPrimaryText : Color.neutral900)
             .padding(.horizontal, 20)
             .frame(width: 185, height: 66)
-            .background(isSelected ? Color.brandPrimarySubtle.opacity(0.2) : Color.neutral25,
+            .background(isSelected ? Color.partCardSelected : Color.neutral25,
                         in: .rect(cornerRadius: 6))
             .overlay(RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(isSelected ? Color.brandPrimary : Color.neutral400, lineWidth: 1))
+                .strokeBorder(isSelected ? Color.stageOptionSelectedBorder : Color.partCardBorder, lineWidth: 1))
             .contentShape(.rect)
         }
         .buttonStyle(.plain)

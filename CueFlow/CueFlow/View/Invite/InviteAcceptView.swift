@@ -34,16 +34,16 @@ struct InviteAcceptView: View {
             // 썸네일 + 공연 이름 + "초대받음"
             HStack(spacing: 12) {
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.neutral200)   // 피그마 초대수락화면 썸네일 = Neutral/200
+                    .fill(Color.inviteThumb)   // 피그마 초대수락화면 썸네일 = Neutral/200
                     .frame(width: 50, height: 50)
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(invite.productionTitle)
                         .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(Color.neutral700)
+                        .foregroundStyle(Color.noticeMetaText)
                     Text("초대받음")
                         .font(.system(size: 15))
-                        .foregroundStyle(Color.neutral500)
+                        .foregroundStyle(Color.noticeSecondaryText)
                 }
             }
 
@@ -57,8 +57,8 @@ struct InviteAcceptView: View {
         .background {
             // 그림자는 카드 바탕에만 (글자에 붙으면 글자가 번져 보임)
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white)
-                .shadow(color: Color.neutral300, radius: 1, x: 2, y: 2)   // 피그마 Grays/Gray 3 #C7C7CC에 가장 가까운 색
+                .fill(Color.surfaceWhite)
+                .shadow(color: Color.inviteShadow, radius: 1, x: 2, y: 2)   // 피그마 Grays/Gray 3 #C7C7CC에 가장 가까운 색
         }
         .overlay {
             RoundedRectangle(cornerRadius: 20)

@@ -75,7 +75,7 @@ extension AddCueCardInfo {
                 .font(.caption2)
         }
         .font(.callout)
-        .foregroundStyle(showPositionWarning ? Color.error : Color.neutral700)
+        .foregroundStyle(showPositionWarning ? Color.error : Color.noticeMetaText)
         .padding(.horizontal, 8)
         .frame(height: 25)
         .background(showPositionWarning ? Color.errorSubtle : Color.neutral200, in: .capsule)
@@ -117,7 +117,7 @@ extension AddCueCardInfo {
     private func placeholder(for field: InputField) -> Text {
         let example = Self.examples[partName ?? ""]
         let text = field == .trigger ? example?.trigger : example?.cue
-        return Text(text ?? "내용을 입력하세요").foregroundStyle(Color.neutral400)
+        return Text(text ?? "내용을 입력하세요").foregroundStyle(Color.noticePlaceholder)
     }
     
     // 파트별 예시 (피그마 무대 · 소품 · 의상 · 조명 · 음향_큐카드입력)
@@ -143,7 +143,7 @@ extension AddCueCardInfo {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(matchingTriggers, id: \.self) { suggestionRow($0) }
         }
-        .background(.white, in: .rect(cornerRadius: 8))
+        .background(Color.surfaceWhite, in: .rect(cornerRadius: 8))
         .clipShape(.rect(cornerRadius: 8))
     }
     

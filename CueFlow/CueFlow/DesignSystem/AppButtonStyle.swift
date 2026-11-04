@@ -25,13 +25,15 @@ struct PrimaryButtonStyle: ButtonStyle {
 
 // 흰 배경 + 보라 테두리 + 보라 글자 (예: 홈으로 가기)
 struct SecondaryButtonStyle: ButtonStyle {
+    @Environment(\.colorScheme) private var colorScheme
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body)
             .foregroundStyle(Color.brandPrimaryText)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
-                configuration.isPressed ? Color.brandPrimarySubtle : Color(nsColor: .windowBackgroundColor),
+                configuration.isPressed ? Color.brandPrimarySubtle : (colorScheme == .dark ? Color.neutral25 : Color(nsColor: .windowBackgroundColor)),   // 다크 Dark/Button #2C2C2E
                 in: RoundedRectangle(cornerRadius: 6)
             )
             .overlay {
@@ -47,7 +49,7 @@ struct SoftPrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body)
-            .foregroundStyle(.white)
+            .foregroundStyle(Color.softActionText)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
                 configuration.isPressed ? Color.brandPrimary : Color.brandPrimarySoft,   // 피그마 #9188FF
@@ -59,13 +61,15 @@ struct SoftPrimaryButtonStyle: ButtonStyle {
 
 // 흰 배경 + 연보라 테두리 + 진한 글자 (예: 최근 프로젝트 카드의 이어서 작업하기)
 struct TertiaryButtonStyle: ButtonStyle {
+    @Environment(\.colorScheme) private var colorScheme
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body)
             .foregroundStyle(Color.neutral900)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
-                configuration.isPressed ? Color.neutral100 : Color(nsColor: .windowBackgroundColor),
+                configuration.isPressed ? Color.neutral100 : (colorScheme == .dark ? Color.neutral25 : Color(nsColor: .windowBackgroundColor)),   // 다크 Dark/Button #2C2C2E
                 in: RoundedRectangle(cornerRadius: 6)
             )
             .overlay {

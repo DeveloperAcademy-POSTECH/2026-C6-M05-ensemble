@@ -56,20 +56,20 @@ extension SharePopover {
                 .foregroundStyle(Color.neutral900)
             Text("팀원과 큐시트를 함께 확인하고 편집하세요")
                 .font(.system(size: 11.5))
-                .foregroundStyle(Color.neutral500)
+                .foregroundStyle(Color.shareSubText)
         }
     }
 
     // 이메일 입력칸 + [공유하기]
     private var emailRow: some View {
         HStack(spacing: 4) {
-            TextField("", text: $email, prompt: Text("이메일 주소를 입력하세요").foregroundStyle(Color.neutral400))
+            TextField("", text: $email, prompt: Text("이메일 주소를 입력하세요").foregroundStyle(Color.shareHint))
                 .textFieldStyle(.plain)
                 .font(.footnote)   // 피그마 10
                 .foregroundStyle(Color.neutral800)
                 .padding(.horizontal, 14)
                 .frame(height: 30)
-                .background(.white, in: .rect(cornerRadius: 6))
+                .background(Color.surfaceWhite, in: .rect(cornerRadius: 6))
                 .overlay {
                     RoundedRectangle(cornerRadius: 6)
                         .strokeBorder(Color.neutral300, lineWidth: 1)
@@ -156,7 +156,7 @@ extension SharePopover {
                     Image(systemName: "chevron.down")
                         .font(.system(size: 9, weight: .semibold))
                 }
-                .foregroundStyle(Color.neutral700)
+                .foregroundStyle(Color.noticeMetaText)
                 .contentShape(Rectangle())
             }
             .menuStyle(.button)
@@ -172,9 +172,9 @@ extension SharePopover {
         HStack(spacing: 11) {
             Text(member.initial)
                 .font(.system(size: member.isOwner ? 14 : 16, weight: .medium))
-                .foregroundStyle(member.isOwner ? Color.white : Color.brandPrimaryDisabled)
+                .foregroundStyle(member.isOwner ? Color.white : Color.shareInviteeText)
                 .frame(width: 25, height: 25)
-                .background(member.isOwner ? Color.neutral300 : Color.brandPrimarySubtle, in: .circle)
+                .background(member.isOwner ? Color.neutral300 : Color.shareInviteeBackground, in: .circle)
             VStack(alignment: .leading, spacing: 3) {
                 Text(member.isMe ? "\(member.name) (나)" : member.name)
                     .font(.body.weight(.medium))
@@ -234,12 +234,16 @@ private struct GrayButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body.weight(.semibold))
-            .foregroundStyle(isEnabled ? Color.neutral700 : Color.neutral400)
+            .foregroundStyle(isEnabled ? Color.noticeMetaText : Color.neutral400)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
-                configuration.isPressed ? Color.neutral300 : Color.neutral200,
+                configuration.isPressed ? Color.neutral300 : Color.shareButtonBackground,
                 in: RoundedRectangle(cornerRadius: 6)
             )
+            .overlay {
+                RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(Color.shareButtonBorder, lineWidth: 1)
+            }
             .contentShape(RoundedRectangle(cornerRadius: 6))
     }
 }

@@ -109,7 +109,7 @@ struct RehearsalStageMap: View {
                     .background(Color.neutral25, in: RoundedRectangle(cornerRadius: 6))
                     .overlay {
                         RoundedRectangle(cornerRadius: 6)
-                            .strokeBorder(Color.neutral300, lineWidth: 1)
+                            .strokeBorder(Color.noticeFieldBorder, lineWidth: 1)
                     }
                     .contentShape(RoundedRectangle(cornerRadius: 6))
                 }
@@ -148,7 +148,11 @@ struct RehearsalStageMap: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.brandPrimaryText)
                     .frame(width: 104, height: 35)
-                    .background(Color.brandPrimarySubtle, in: RoundedRectangle(cornerRadius: 6))
+                    .background(Color.sheetRegisterBackground, in: RoundedRectangle(cornerRadius: 6))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 6)
+                            .strokeBorder(Color.stageButtonBorder, lineWidth: 1)
+                    }
                     .contentShape(RoundedRectangle(cornerRadius: 6))
             }
             .buttonStyle(.plain)

@@ -22,7 +22,7 @@ struct CueCheckPopover: View {
                 .padding(.top, 12)
             memberSection(title: "확인함", members: checkedMembers, empty: "아직 확인한 사람이 없어요")
                 .padding(.top, 12)
-            Color(red: 212 / 255, green: 212 / 255, blue: 213 / 255)   // D4D4D5 (에셋에 없음)
+            Color.dividerSoft   // 라이트 D4D4D5
                 .frame(height: 1)
                 .padding(.vertical, 14)
             memberSection(title: "미확인", members: uncheckedMembers, empty: "모두 확인했어요")
@@ -43,7 +43,7 @@ extension CueCheckPopover {
             Spacer()
             Text("\(checkedMembers.count)/\(allMembers.count)명")
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Color.neutral500)
+                .foregroundStyle(Color.noticeSecondaryText)
         }
     }
 
@@ -70,7 +70,7 @@ extension CueCheckPopover {
             if members.isEmpty {
                 Text(empty)
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.neutral400)
+                    .foregroundStyle(Color.noticePlaceholder)
             }
             ForEach(members) { memberRow($0) }
         }
@@ -78,13 +78,13 @@ extension CueCheckPopover {
 
     private func memberRow(_ member: Member) -> some View {
         HStack(spacing: 10) {
-            MemberAvatar(name: member.name, size: 28, background: isChecked(member) ? partColor(of: member) : .neutral300, fontSize: 12)
+            MemberAvatar(name: member.name, size: 28, background: isChecked(member) ? partColor(of: member) : .visitorAvatar, fontSize: 12)
             Text(isMe(member) ? "\(member.name) (나)" : member.name)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.neutral500)
+                .foregroundStyle(Color.noticeSecondaryText)
             Text(member.mainPart?.name ?? "")
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color.neutral400)
+                .foregroundStyle(Color.noticePlaceholder)
         }
     }
 
@@ -92,9 +92,10 @@ extension CueCheckPopover {
         Button(action: toggleMyCheck) {
             Text(myCheck == nil ? "확인했어요" : "확인 취소")
                 .font(.body.weight(.semibold))
-                .foregroundStyle(Color.neutral700)
+                .foregroundStyle(Color.noticeMetaText)
                 .frame(maxWidth: .infinity, minHeight: 32)
-                .background(Color.neutral300, in: .rect(cornerRadius: 6))
+                .background(Color.checkButtonBackground, in: .rect(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.checkButtonBorder, lineWidth: 1))
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)

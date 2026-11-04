@@ -11,11 +11,13 @@ import SwiftUI
 enum PopoverBackground {
     case input     // 입력 팝오버: Neutral/25 (큐카드 입력 · 씬 · 파트 추가 · 우클릭 메뉴 · 댓글)
     case display   // 보기 팝오버: 흰색 70% (확인현황 · 참여자현황 · 파트 입력)
+    case calendar  // 공연일 달력: 라이트는 input과 같고 다크만 #39393D (피그마 2054:4998)
 
     var color: Color {
         switch self {
         case .input: Color.neutral25
-        case .display: Color.white.opacity(0.7)
+        case .display: Color.popoverDisplay
+        case .calendar: Color.dateCardBackground
         }
     }
 }

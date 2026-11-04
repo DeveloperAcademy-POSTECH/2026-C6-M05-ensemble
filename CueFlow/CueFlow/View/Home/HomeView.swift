@@ -195,7 +195,7 @@ struct HomeView: View {
             .padding(.leading, 20)
             .padding(.trailing, 15)
             .frame(height: 36)
-            .background(Color.neutral50, in: Capsule())   // 피그마 #F6F6F6 → 색상 표에서 가장 가까운 neutral50
+            .background(Color.homeSortBackground, in: Capsule())   // 피그마 #F6F6F6 → 색상 표에서 가장 가까운 neutral50
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
