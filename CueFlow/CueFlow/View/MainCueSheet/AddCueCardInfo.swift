@@ -215,11 +215,10 @@ extension AddCueCardInfo {
         closePopover()
     }
     
-    // 바깥 클릭 · Esc: 아무것도 안 썼으면 그냥 닫기, 아니면 Enter와 같이 (저장하고 닫기 / 경고 띄우고 남기)
+    // 바깥 클릭 · Esc: 큐도 위치도 없으면(트리거만 썼어도) 그냥 닫기, 아니면 Enter와 같이 (저장하고 닫기 / 빠진 것 경고)
     private func closeOrWarn() {
-        let trigger = triggerText.trimmingCharacters(in: .whitespaces)
         let title = cueTitle.trimmingCharacters(in: .whitespaces)
-        guard !trigger.isEmpty || !title.isEmpty else { return closePopover() }
+        guard !title.isEmpty || position != nil else { return closePopover() }
         addCue()
     }
     
