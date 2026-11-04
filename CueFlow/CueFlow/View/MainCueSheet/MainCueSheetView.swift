@@ -26,7 +26,7 @@ struct MainCueSheetView: View {
         VStack(alignment: .leading, spacing: 0) {
             titleRow
             filterRow
-            CueGrid(production: production, selectedPart: selectedPart, remoteRevision: remoteRevision, onShowHistory: { historyCue = $0 }, onShowUnread: { isShowingUnread = true }, onEscape: { isShowingUnread = false }, priorityScene: $priorityScene, focus: gridFocus)
+            CueGrid(production: production, selectedPart: selectedPart, remoteRevision: remoteRevision, onShowHistory: { historyCue = $0 }, onEscape: { isShowingUnread = false }, priorityScene: $priorityScene, focus: gridFocus)
             .padding(.top, -12)   // 위 여유(12)만큼 올려서 표 위치는 피그마 그대로
             .overlay(alignment: .trailing) { sidebar.padding(.trailing, -35) }   // 표 높이만큼만 + 창 오른쪽 끝에 붙임 (바깥 여백 35만큼)
         }
@@ -71,6 +71,8 @@ extension MainCueSheetView {
     // 오른쪽 사이드바 + 왼쪽 구분선 손잡이
     private var sidebar: some View {
         sidebarContent
+            // 표 위 여유(12) 띠 + 둥근 모서리(10) 뒤를 가림 → 스크롤할 때 표가 사이드바 위로 삐져나오지 않게
+            .background(alignment: .top) { Color.appBackground.frame(height: 22).offset(y: -12) }
             .overlay(alignment: .leading) { sidebarEdge }
     }
 
@@ -118,12 +120,15 @@ extension MainCueSheetView {
         }
     }
     
-    // 파트 칩 + 오른쪽 "씬 단위 화면" 버튼
+    // 파트 칩 + 오른쪽 미확인 · 리허설 모드 버튼
     private var filterRow: some View {
         HStack {
             PartFilterTabBar(parts: production.parts ?? [], selectedPart: $selectedPart)
             Spacer()
-            rehearsalModeButton
+            HStack(spacing: 10) {   // 피그마: 미확인 · 리허설 모드 간격 10
+                unreadButton
+                rehearsalModeButton
+            }
         }
         .padding(.top, 18)
         .padding(.bottom, 18)
@@ -137,6 +142,26 @@ extension MainCueSheetView {
         Button("리허설 모드", action: onRehearsal)
         .buttonStyle(.primary)
         .frame(width: 100, height: 36)
+    }
+    
+    // 미확인 N건 → 누르면 미확인 사이드바 (피그마: 100 × 36, neutral25 배경 + 보라 테두리, Title 3/Emphasized)
+    private var unreadButton: some View {
+        Button { isShowingUnread.toggle() } label: {
+            Text("미확인 \(unreadCount)건")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Color.brandPrimaryText)
+                .frame(width: 100, height: 36)
+                .background(Color.neutral25, in: .rect(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.brandPrimary, lineWidth: 1))
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // 내가 아직 확인 안 한 큐 수 (미확인 사이드바의 N건과 같은 기준)
+    private var unreadCount: Int {
+        let cues = (production.parts ?? []).flatMap { $0.cues ?? [] }
+        return cues.filter { $0.check(byUserID: iCloudAccount.userRecordName) == nil }.count
     }
 
     // 공유하기 (셀리나 #90 모양) → 공유하기 창 (초대 링크 · 메일, #68)
