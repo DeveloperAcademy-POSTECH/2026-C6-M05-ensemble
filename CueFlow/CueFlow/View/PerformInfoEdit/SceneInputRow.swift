@@ -91,7 +91,7 @@ extension SceneInputRow {
             .foregroundStyle(Color.neutral900)
             .focused($isFocused)
             .onSubmit { add() }   // Enter로도 등록
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 17)
             .frame(width: 254, height: 36)
             .background(Color.sheetField, in: .rect(cornerRadius: 6))
     }

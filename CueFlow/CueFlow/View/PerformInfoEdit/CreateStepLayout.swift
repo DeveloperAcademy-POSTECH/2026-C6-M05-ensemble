@@ -15,10 +15,11 @@ struct CreateStepLayout<Content: View>: View {
     let currentStep: Int
     var onPrevious: () -> Void = {}
     var onNext: () -> Void = {}
+    var nextTitle = "다음으로"   // 오른쪽 버튼 글자 (씬 구성은 "생성완료")
     @ViewBuilder var content: Content
 
-    private var steps: [String] { ["기본 정보", "파트 구성", "씬 구성", "생성 확인"] }
-
+    private var steps: [String] { ["기본 정보", "기본 정보 확인", "파트 구성", "씬 구성"] }
+    
     var body: some View {
         ScrollView {
             page
@@ -36,8 +37,8 @@ struct CreateStepLayout<Content: View>: View {
                 .padding(.top, 20)
             content
         }
-        .frame(width: 799)
-        .padding(.top, 163)
+        .frame(width: 799, alignment: .leading)
+        .padding(.top, 138)
         .padding(.bottom, 209)
         .frame(maxWidth: .infinity)
     }
@@ -57,9 +58,9 @@ extension CreateStepLayout {
         }
     }
 
-    // 기본 정보 ── 파트 구성 ── 씬 구성 ── 생성 확인
+    // 기본 정보 ── 기본 정보 확인 ── 파트 구성 ── 씬 구성
     private var stepBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 12) {
             ForEach(steps.indices, id: \.self) { index in
                 stepItem(number: index + 1, title: steps[index])
                 if index < steps.count - 1 { stepLine }
@@ -71,7 +72,7 @@ extension CreateStepLayout {
         let isCurrent = number == currentStep
         return HStack(spacing: 10) {
             Text("\(number)")
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(isCurrent ? Color.stepCurrentText : Color.stepIdleText)
                 .frame(width: 24, height: 24)
                 .background(isCurrent ? Color.stepCurrent : Color.stepIdle, in: .circle)
@@ -92,9 +93,11 @@ extension CreateStepLayout {
 extension CreateStepLayout {
     private var footer: some View {
         footerButtons
-            .background(Color.createFooter)
             .frame(width: 799, alignment: .trailing)
-            .padding(.bottom, 124)
+            .padding(.horizontal, 26)
+            .padding(.top, 10)
+            .padding(.bottom, 141)
+            .background(Color.appBackground)
     }
 
     private var footerButtons: some View {
@@ -102,7 +105,7 @@ extension CreateStepLayout {
             Button("이전으로", action: onPrevious)
                 .buttonStyle(.secondary)
                 .frame(width: 175, height: 45)
-            Button("다음으로", action: onNext)
+            Button(nextTitle, action: onNext)
                 .buttonStyle(.primary)
                 .frame(width: 175, height: 45)
         }

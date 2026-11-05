@@ -47,18 +47,19 @@ struct PerformInfo: View {
 
 extension PerformInfo {
     private var formFields: some View {
-        VStack(alignment: .leading, spacing: 25) {            labeledField("공연명", isRequired: true) { textField(text: $draft.title) }
+        VStack(alignment: .leading, spacing: 25) {
+            labeledField("공연명", isRequired: true) { textField("레미제라블", text: $draft.title) }
             HStack(alignment: .top, spacing: 15) {
                 labeledField("공연유형") { genrePicker }
                 labeledField("공연일") { dateField }
             }
             HStack(alignment: .top, spacing: 15) {
-                labeledField("공연장") { textField(text: $draft.venue) }
-                labeledField("객석 규모") { numberField(value: $draft.seatCount, unit: "석") }
+                labeledField("공연장") { textField("아트스페이스 대극장", text: $draft.venue) }
+                labeledField("객석 규모") { numberField("1,200", value: $draft.seatCount, unit: "석") }
             }
             HStack(alignment: .top, spacing: 15) {
-                labeledField("주최") { textField(text: $draft.organizer) }
-                labeledField("러닝타임") { numberField(value: $draft.runningTime, unit: "분") }
+                labeledField("주최") { textField("극단 오작뮤", text: $draft.organizer) }
+                labeledField("러닝타임") { numberField("170", value: $draft.runningTime, unit: "분") }
             }
         }
     }
@@ -81,24 +82,30 @@ extension PerformInfo {
             if isRequired {
                 Text("*")
                     .foregroundStyle(Color.noticePlaceholder)
+                    .font(.system(size: 16, weight: .semibold))
             }
         }
-        .font(.system(size: 17, weight: .semibold))
+        .font(.system(size: 17, weight: .bold))
     }
     
-    private func textField(text: Binding<String>) -> some View {
-        TextField("", text: text)
+    private func textField(_ placeholder: String, text: Binding<String>) -> some View {
+        TextField("", text: text, prompt: placeholderText(placeholder))
             .textFieldStyle(.plain)
-            .formBox()
+            .formBox(padding: 20)
+    }
+    
+    // 회색 예시 글자
+    private func placeholderText(_ text: String) -> Text {
+        Text(text).foregroundStyle(Color.noticePlaceholder)
     }
     
     // 숫자만 받는 입력칸 + 칸 안 오른쪽 끝에 고정 단위 (객석 규모 "석", 러닝타임 "분")
-    private func numberField(value: Binding<Int?>, unit: String) -> some View {
+    private func numberField(_ placeholder: String, value: Binding<Int?>, unit: String) -> some View {
         HStack(spacing: 4) {
-            TextField("", value: value, format: .number)
+            TextField("", value: value, format: .number, prompt: placeholderText(placeholder))
                 .textFieldStyle(.plain)
             Text(unit)
-                .foregroundStyle(Color.noticeSecondaryText)
+            .foregroundStyle(Color.neutral900)
         }
         .formBox()
     }
@@ -109,10 +116,10 @@ extension PerformInfo {
 extension PerformInfo {
     // 뮤지컬 · 연극 · 무용 · 콘서트 · 기타 중 하나 고르기
     private var genrePicker: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 8.75) {
             ForEach(Self.genres, id: \.self) { genreChip($0) }
         }
-        .padding(7)
+        .padding(6)
         .frame(height: 48)
         .background(Color.neutral25, in: .rect(cornerRadius: 6))
         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.noticeFieldBorder))
@@ -122,7 +129,7 @@ extension PerformInfo {
         let isSelected = draft.genre == genre
         return Button { draft.genre = genre } label: {
             Text(genre)
-                .font(.system(size: 13))
+                .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
                 .foregroundStyle(isSelected ? Color.neutral900 : Color.noticeSecondaryText)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(isSelected ? Color.tagBackground : .clear, in: .rect(cornerRadius: 6))
@@ -140,11 +147,12 @@ extension PerformInfo {
     
     private var dateFieldLabel: some View {
         HStack {
-            Text(dateText)
+            Text(draft.lastShowDate == nil ? "2026.09.17 ~ 2026.10.17" : dateText)
+                .foregroundStyle(draft.lastShowDate == nil ? Color.noticePlaceholder : Color.neutral900)
             Spacer()
             Image(systemName: "chevron.down")
-                .font(.caption)
-                .foregroundStyle(Color.noticeSecondaryText)
+                .font(.system(size: 12))
+                .foregroundStyle(.gray)
         }
         .formBox()
         .contentShape(.rect)
@@ -176,11 +184,11 @@ extension PerformInfo {
 // 입력칸 공통 모양: 흰 배경 + 연한 테두리
 
 private extension View {
-    func formBox() -> some View {
+    func formBox(padding: CGFloat = 14) -> some View {
         self
             .font(.system(size: 13))
             .foregroundStyle(Color.neutral900)
-            .padding(.horizontal, 14)
+            .padding(.horizontal, padding)
             .frame(height: 48)
             .background(Color.surfaceWhite, in: .rect(cornerRadius: 6))
             .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.noticeFieldBorder))

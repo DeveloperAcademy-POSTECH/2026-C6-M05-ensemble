@@ -19,7 +19,7 @@ struct PerformPart: View {
         CreateStepLayout(
             title: "사용할 파트를 선택해주세요",
             subtitle: "한 파트에 여러 명을 배정하고 파트장·담당 역할을 설정합니다.",
-            currentStep: 2,
+            currentStep: 3,
             onPrevious: onPrevious,
             onNext: onNext
         ) {
@@ -50,7 +50,7 @@ extension PerformPart {
             Spacer()
             addButton
         }
-        .frame(width: 794)
+        .frame(width: 796)
     }
 
     private var addButton: some View {
@@ -58,6 +58,7 @@ extension PerformPart {
             HStack(spacing: 10) {
                 Image(systemName: "plus")
                     .font(.system(size: 14))
+                    .foregroundStyle(Color.brandPrimaryPressed)
                 Text("추가하기")
                     .font(.system(size: 13, weight: .semibold))
             }
@@ -80,11 +81,11 @@ extension PerformPart {
 
     // 4칸씩 줄바꿈, 가로·세로 간격 18
     private var partGrid: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.fixed(185), spacing: 18), count: 4),
+        LazyVGrid(columns: Array(repeating: GridItem(.fixed(185.5), spacing: 18), count: 4),
                   alignment: .leading, spacing: 18) {
             ForEach(allOptions, id: \.self) { partCard($0) }
         }
-        .frame(width: 794, alignment: .leading)
+        .frame(width: 796, alignment: .leading)
     }
 
     private func partCard(_ part: PartOption) -> some View {
@@ -93,13 +94,14 @@ extension PerformPart {
             HStack(spacing: 8) {
                 Image(systemName: part.icon)
                     .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(isSelected ? Color.brandPrimaryText : Color.neutral700)
                 Text(part.name)
                     .font(.system(size: 17, weight: .semibold))
                 Spacer(minLength: 0)
             }
             .foregroundStyle(isSelected ? Color.brandPrimaryText : Color.neutral900)
             .padding(.horizontal, 20)
-            .frame(width: 185, height: 66)
+            .frame(width: 185.5, height: 66)
             .background(isSelected ? Color.partCardSelected : Color.partCardBackground,
                         in: .rect(cornerRadius: 6))
             .overlay(RoundedRectangle(cornerRadius: 6)
