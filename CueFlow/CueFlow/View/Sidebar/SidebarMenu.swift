@@ -13,7 +13,8 @@ enum SidebarMenu: CaseIterable {
     case help
 
     // 사이드바에 보여줄 메뉴
-    static var visibleCases: [SidebarMenu] { allCases }
+    // 도움말은 화면이 생기면 다시 넣는다 (지금은 빈 화면이라 App Store 심사 전에 숨김)
+    static var visibleCases: [SidebarMenu] { [.project, .notice] }
 
     var title: String {
         switch self {

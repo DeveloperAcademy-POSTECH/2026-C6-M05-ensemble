@@ -4,7 +4,7 @@
 //
 //  유저테스트(TestFlight) 빌드 설정.
 //  아직 동작이 정해지지 않은 버튼은 숨기고, 진행자용 메뉴(예시 공연 넣기 · 모든 데이터 지우기)를 둔다.
-//  유저테스트가 끝나면 hidesUnfinished를 false로 바꾸면 숨긴 버튼이 다시 보이고 진행자 메뉴도 사라진다.
+//  hidesUnfinished를 false로 바꾸면 숨긴 버튼이 다시 보인다. 진행자 메뉴는 개발 빌드(DEBUG)에서만 보인다.
 //
 
 import Foundation
@@ -12,7 +12,7 @@ import SwiftData
 
 enum UserTest {
     // true면 미정 기능 숨김: 홈 알림 · 설정, 큐시트 씬 단위 화면
-    // + 메뉴 막대에 "UT 진행" 메뉴가 보인다
+    // + 개발 빌드의 메뉴 막대에 "UT 진행" 메뉴가 보인다
     static let hidesUnfinished = true
 
     // true면 처음 실행할 때 예시 공연을 한 번 넣는다. 10/19 UT는 빈 화면에서 시작하므로 끔

@@ -104,7 +104,8 @@ struct CueFlowApp: App {
             }
             #endif
 
-            // UT 진행자용 메뉴 (TestFlight에도 보임). UserTest.hidesUnfinished를 false로 바꾸면 사라진다
+            // UT 진행자용 메뉴 (개발 빌드에서만. App Store · TestFlight에는 안 보인다)
+            #if DEBUG
             if UserTest.hidesUnfinished {
                 CommandMenu("UT 진행") {
                     Button("예시 공연 넣기 (레미제라블)") {
@@ -119,6 +120,7 @@ struct CueFlowApp: App {
                     }
                 }
             }
+            #endif
         }
     }
 }
