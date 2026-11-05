@@ -3,7 +3,7 @@
 //  CueFlow
 //
 //  홈 화면에 보여줄 글자를 공연 데이터로 만드는 곳.
-//  아직 모델에 없는 정보(회차, 소유자)는 빈칸으로 둔다.
+//  아직 모델에 없는 정보(회차)는 빈칸으로 둔다.
 //
 
 import Foundation
@@ -20,6 +20,15 @@ extension Production {
             return "오늘 " + Self.format(updatedAt, "HH:mm") + " 수정"
         }
         return Self.format(updatedAt, "M월 d일") + " 수정"
+    }
+
+    // 목록 "소유자" 칸: 공연을 만든 사람 이름. 내 공연이면 나, 공유받은 공연이면 iCloud 폴더 주인
+    // 주인이 아직 멤버 목록에 없으면(받아 오는 중 등) 빈칸
+    var ownerText: String {
+        if let ownerID = cloudZoneOwnerName {
+            return member(withUserID: ownerID)?.name ?? ""
+        }
+        return CurrentEditor.name(in: self)
     }
 
     // "2026.11.14-15 · 아트스페이스 A홀" (공연장이 비었으면 날짜만)

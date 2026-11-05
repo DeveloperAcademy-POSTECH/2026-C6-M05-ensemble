@@ -8,7 +8,7 @@
 import SwiftUI
 import SwiftData
 
-// 씬 열의 ⓝ → 오른쪽 우선순위 사이드바 (피그마 순서박스지정사이드바, 폭 329)
+// 씬 열의 ⓝ → 오른쪽 우선순위 사이드바 (피그마 순서박스지정사이드바, 폭 313)
 // 번호 칸(1, 2, 3 …)에 큐 카드를 끌어다 놓으면 그 칸 번호가 큐 번호가 된다. 같은 칸 = 같은 번호
 struct CuePrioritySidebar: View {
     let scene: ShowScene
@@ -27,21 +27,23 @@ struct CuePrioritySidebar: View {
             .padding(.trailing, 9)
             .padding(.vertical, 13)
         }
-        .frame(width: 329)
+        .frame(width: 313)
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(Color.gridHeader.shadow(.drop(color: .black.opacity(0.25), radius: 2, y: 4)), in: .rect(cornerRadius: 10))   // 피그마 바깥쪽 그림자 (Y 4, 흐림 4, 검정 25%)
+        .background(Color.neutral25.shadow(.drop(color: .black.opacity(0.25), radius: 2, y: 4)), in: .rect(cornerRadius: 10))   // 피그마 Netrual/25 · 바깥쪽 그림자 (Y 4, 흐림 4, 검정 25%)
         .onAppear(perform: numberNewCues)
     }
 }
 
-// 위쪽: S#1 ⌄ / 씬 이름
+// 위쪽: (« 자리) / S#1 ⌄ / 씬 이름. « 버튼은 MainCueSheetView가 고정 위치에 그림
 extension CuePrioritySidebar {
     private var header: some View {
-        VStack(alignment: .leading, spacing: 9) {
+        VStack(alignment: .leading, spacing: 0) {
             sceneChip
+                .padding(.top, 34)   // « 버튼(위 21, 높이 19) 아래 7 → 위에서 47 (바깥 여백 13 + 34)
             Text(scene.title)
                 .font(.body)
                 .foregroundStyle(Color.sidebarBackIcon)
+                .padding(.top, 9)
         }
     }
 
