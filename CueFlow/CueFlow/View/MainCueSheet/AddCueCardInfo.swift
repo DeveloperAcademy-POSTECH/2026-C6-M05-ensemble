@@ -20,7 +20,7 @@ struct AddCueCardInfo: View {
     @FocusState private var focusedField: InputField?
     @State private var showPositionWarning = false   // 위치 안 고르고 저장하려 했는지
     @State private var highlightedSuggestion: Int?   // 방향키로 고른 후보 번호 (nil = 안 고름)
-    @State private var showCueWarning = false   // 큐를 안 쓰고 저장하려 했는지 (큐 · * 빨강 + 경고 문구)
+    @State private var showCueWarning = false   // 큐를 안 쓰고 저장하려 했는지 (* 빨강 + 경고 문구)
     @State private var isPickingPosition = false   // 위치 고르는 팝오버가 열려 있는지
     
     // 새로 만들 때는 빈 칸으로, 수정할 때는 원래 값을 채워서 연다
@@ -108,7 +108,7 @@ extension AddCueCardInfo {
             HStack(alignment: .top, spacing: 0) {
                 Text(title)
                     .font(.body.weight(.semibold))
-                    .foregroundStyle(isRequired && showCueWarning ? Color.error : Color.neutral800)   // 필수 칸을 비우고 저장하려 하면 빨강
+                    .foregroundStyle(Color.neutral800)
                 if isRequired { requiredMark }
             }
             inputField(text: text, field: field)
