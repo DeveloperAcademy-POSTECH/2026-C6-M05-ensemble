@@ -77,6 +77,17 @@ extension Notice {
         !isRead(byUserID: userID) && !isSent(byUserID: userID)
     }
 
+    // 목록 · 상세의 삭제: 내가 보낸 공지는 정말 지운다 (iCloud에서도 → 모두에게서 사라짐)
+    // 남이 보낸 공지는 내 목록에서만 숨긴다 (메일 앱처럼. 다른 사람 목록에는 그대로)
+    func removeFromMyList(in context: ModelContext) {
+        let myID = ICloudAccount.currentUserRecordName
+        if myID == nil || isSent(byUserID: myID) {
+            context.delete(self)
+        } else {
+            isHiddenByMe = true
+        }
+    }
+
     // 상세를 열면 내 읽음 기록을 남긴다 → iCloud로 다른 사람에게도 간다
     func markRead(in context: ModelContext) {
         guard let userID = ICloudAccount.currentUserRecordName, let production, !isRead(byUserID: userID) else { return }
