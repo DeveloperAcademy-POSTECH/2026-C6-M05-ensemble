@@ -12,6 +12,7 @@ struct MainCueSheetView: View {
     let production: Production                 // 어느 공연의 큐시트인지
     var cueFocus: Binding<SystemNotifications.CueFocus?> = .constant(nil)   // 큐 수정 알림을 누르면 들어옴 → 표에 넘기고 비운다
     var onRehearsal: () -> Void = {}           // "리허설 모드" 버튼
+    var onSpotlight: () -> Void = {}           // 참여자 현황 "Spotlight me" → 리허설을 열고 내가 진행
     @State private var selectedPart: Part?     // 파트 칩에서 고른 파트 (nil = 전체)
     @State private var historyCue: Cue?        // History 사이드바에 보여줄 큐 (nil = 닫힘)
     @State private var priorityScene: ShowScene?  // 우선순위 사이드바에 보여줄 씬 (nil = 닫힘)
@@ -193,22 +194,29 @@ extension MainCueSheetView {
         }
     }
     
-    // 공유하기 옆 내보내기 버튼 (피그마: 26 × 26 네모 · 모서리 5 · neutral25 · 테두리 purple/300, 가운데 square.and.arrow.up 14 purple/700)
+    // 공유하기 옆 내보내기 버튼 (피그마: 26 × 26 네모 · 모서리 5 · 테두리 purple/300, 가운데 square.and.arrow.up 14)
+    // 라이트 = neutral25 바탕 · purple/700 아이콘, 다크(피그마 2439:29407) = purple/300 20% 바탕 · #FCFCFD 아이콘
+    // 누르면 CSV(엑셀) · PDF 중 고르고 저장 창으로
     private var exportButton: some View {
-        Button {
-            // TODO: 누르면 할 일 정해지면 넣기
+        Menu {
+            Button("CSV로 내보내기 (엑셀)") { production.exportCueSheet(as: .csv) }
+            Button("PDF로 내보내기") { production.exportCueSheet(as: .pdf) }
         } label: {
             Image(systemName: "square.and.arrow.up")
                 .font(.system(size: 14))
                 .offset(y: -1)   // SF Symbol은 아래 여백 때문에 눈으로는 아래로 쏠려 보여서 1pt 올림 (피그마: 위 5 · 아래 4)
-                .foregroundStyle(Color.brandPrimaryPressed)
+                .foregroundStyle(Color.exportButtonIcon)
                 .frame(width: 16, height: 17)
                 .frame(width: 26, height: 26)   // 피그마 네모 26 × 26 (아이콘은 가운데)
-                .background(Color.neutral25, in: .rect(cornerRadius: 5))
+                .background(Color.exportButtonBackground, in: .rect(cornerRadius: 5))
                 .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Color.brandPrimaryDisabled, lineWidth: 1))   // purple/300 #C1BCFF
                 .contentShape(.rect)
         }
+        .menuStyle(.button)
         .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("큐시트 내보내기")
     }
 
     // 멤버 이니셜 동그라미(겹쳐서) + ∨ → 누르면 참여자 현황
@@ -234,7 +242,10 @@ extension MainCueSheetView {
         .buttonStyle(.plain)
         // 피그마 1618:7175 폭 426
         .appPopover(isPresented: $isShowingParticipants, width: 426) {
-            ParticipantsPopover(production: production, myUserID: iCloudAccount.userRecordName)
+            ParticipantsPopover(production: production, myUserID: iCloudAccount.userRecordName) {
+                isShowingParticipants = false
+                onSpotlight()
+            }
         }
     }
 

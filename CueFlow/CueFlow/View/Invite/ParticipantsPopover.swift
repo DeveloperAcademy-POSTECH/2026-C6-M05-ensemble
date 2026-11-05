@@ -14,6 +14,7 @@ struct ParticipantsPopover: View {
     let production: Production
     let myUserID: String?          // 내 iCloud 계정 ID (Member.iCloudUserID와 비교해서 "나"를 찾는다)
     var now: Date = .now           // 미리보기에서 시간을 고정할 때
+    var onSpotlight: () -> Void = {}   // Spotlight me: 리허설을 열고 내가 진행 → 다른 사람 화면이 따라온다
 
     // 이 시간 안에 기록이 있으면 "현재 보고 있는 사람" (1분마다 기록 + iCloud로 오는 데 걸리는 시간)
     private static let viewingWindow: TimeInterval = 3 * 60
@@ -109,8 +110,7 @@ extension ParticipantsPopover {
                     .lineLimit(1)
             }
             Spacer()
-            // TODO: #69 리허설 동기화 모드 — 누르면 다른 사람 화면이 내 화면을 따라온다
-            Button {} label: {
+            Button(action: onSpotlight) {
                 Text("Spotlight me")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color.spotlightText)
@@ -118,9 +118,9 @@ extension ParticipantsPopover {
                     .background(Color.spotlightBackground, in: RoundedRectangle(cornerRadius: 6))
             }
             .buttonStyle(.plain)
-            .disabled(true)
-            .opacity(0.5)
-            .help("리허설 동기화 모드가 생기면 쓸 수 있어요")
+            .disabled(myUserID == nil)
+            .opacity(myUserID == nil ? 0.5 : 1)
+            .help(myUserID == nil ? "iCloud에 로그인해야 쓸 수 있어요" : "리허설 모드를 열고 내가 진행해요. 다른 사람 화면이 따라와요")
         }
     }
 
