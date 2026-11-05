@@ -3,33 +3,12 @@
 //  CueFlow
 //
 //  초대 수락 다음 화면 — 이 공연에서 맡은 역할 고르기 (피그마 역할 선택_초대 수락 후, #68).
-//  스태프 = 공연에 설정된 파트 → 내 멤버의 맡은 파트(Member.parts)로,
-//  무대 위 = 정해진 목록 → 내 멤버의 역할 글자(Member.role)에 "배우, 앙상블"처럼 넣는다.
+//  공연에 설정된 스태프 파트 → 내 멤버의 맡은 파트(Member.parts)로 넣는다.
 //  수락 직후엔 공연이 아직 iCloud에서 안 왔을 수 있어서, 올 때까지 기다리는 화면을 보여 준다.
 //
 
 import SwiftUI
 import SwiftData
-
-extension Member {
-    // 무대 위 역할 (이름 + 아이콘)
-    // 피그마에선 무대연주 = 선물, 특수효과 = 악보 아이콘이라 서로 바뀐 것 같아 악보를 무대연주로 옮김
-    static let stageRoles = [
-        PartOption(name: "배우", icon: "person"),
-        PartOption(name: "앙상블", icon: "person.3"),
-        PartOption(name: "무대연주", icon: "music.note.square.stack"),
-        PartOption(name: "특수효과", icon: "sparkles"),
-    ]
-
-    // 무대 위 역할을 하나라도 골랐는지 (홈 카드 "배우 N명")
-    var isOnStage: Bool {
-        let picked = role.components(separatedBy: ", ")
-        return Member.stageRoles.contains { picked.contains($0.name) }
-    }
-
-    // 스태프 파트를 하나라도 맡았는지 (홈 카드 "스태프 N명")
-    var isStaff: Bool { !(parts ?? []).isEmpty }
-}
 
 struct InviteRoleView: View {
     // 개발용 메뉴 "가짜 초대 수락"을 누르면 보낸다
@@ -46,7 +25,6 @@ struct InviteRoleView: View {
     private var production: Production? { productions.first }
 
     @State private var selectedPartIDs: Set<UUID> = []      // 고른 스태프 파트
-    @State private var selectedStageRoles: Set<String> = [] // 고른 무대 위 역할
     @State private var isSaving = false
 
     init(productionID: UUID, onPrevious: @escaping () -> Void = {}, onDone: @escaping (Production) -> Void = { _ in }) {
@@ -77,31 +55,18 @@ struct InviteRoleView: View {
         .background(Color.appBackground)
     }
 
-    // 가운데 (폭 796): 위 안내 → 스태프 → 무대 위
+    // 가운데 (폭 796): 위 안내 → 스태프
     private func page(_ production: Production) -> some View {
         VStack(alignment: .leading, spacing: 40) {
             header(production)
-            VStack(alignment: .leading, spacing: 40) {
-                section(
-                    title: "스태프",
-                    caption: "프로젝트에 설정된 제작 파트입니다.",
-                    count: selectedPartIDs.count
-                ) {
-                    ForEach(sortedParts(of: production)) { part in
-                        roleCard(name: part.name, icon: icon(for: part.name), isSelected: selectedPartIDs.contains(part.id)) {
-                            selectedPartIDs.toggle(part.id)
-                        }
-                    }
-                }
-                section(
-                    title: "무대 위",
-                    caption: "공연에 직접 출연하는 역할입니다.",
-                    count: selectedStageRoles.count
-                ) {
-                    ForEach(Member.stageRoles, id: \.self) { role in
-                        roleCard(name: role.name, icon: role.icon, isSelected: selectedStageRoles.contains(role.name)) {
-                            selectedStageRoles.toggle(role.name)
-                        }
+            section(
+                title: "스태프",
+                caption: "프로젝트에 설정된 제작 파트입니다.",
+                count: selectedPartIDs.count
+            ) {
+                ForEach(sortedParts(of: production)) { part in
+                    roleCard(name: part.name, icon: icon(for: part.name), isSelected: selectedPartIDs.contains(part.id)) {
+                        selectedPartIDs.toggle(part.id)
                     }
                 }
             }
@@ -232,9 +197,8 @@ extension InviteRoleView {
             if let myID = iCloudAccount.userRecordName,
                let me = (production.members ?? []).first(where: { $0.iCloudUserID == myID }) {
                 me.parts = sortedParts(of: production).filter { selectedPartIDs.contains($0.id) }
-                me.role = Member.stageRoles.map(\.name).filter { selectedStageRoles.contains($0) }.joined(separator: ", ")
                 try? modelContext.save()
-                print("역할 저장: \(me.name) — 파트 \((me.parts ?? []).map(\.name)), 무대 위 \"\(me.role)\"")
+                print("역할 저장: \(me.name) — 파트 \((me.parts ?? []).map(\.name))")
             } else {
                 print("역할 저장 실패: 이 공연에서 내 멤버를 못 찾음")
             }

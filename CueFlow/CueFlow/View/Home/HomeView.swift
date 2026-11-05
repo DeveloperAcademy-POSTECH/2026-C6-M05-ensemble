@@ -110,10 +110,10 @@ struct HomeView: View {
                     RecentProjectCard(
                         lastWorked: production.lastWorkedText,
                         title: production.title,
-                        tags: [production.genre, production.summaryText],
-                        members: production.memberCountText,
+                        tags: [production.genre],
                         runningTime: production.runningTimeText,
                         schedule: production.scheduleText,
+                        seats: production.summaryText,
                         onRehearsal: {
                             production.lastOpenedAt = .now
                             onRehearsal(production)

@@ -22,15 +22,6 @@ extension Production {
         return Self.format(updatedAt, "M월 d일") + " 수정"
     }
 
-    // "배우 22명 · 스태프 16명" (피그마 951:11194) — 초대 수락 후 고른 역할로 센다 (InviteRoleView)
-    // 배우 = 무대 위 역할을 고른 사람, 스태프 = 파트를 맡은 사람. 둘 다 고른 사람은 양쪽에 센다
-    var memberCountText: String {
-        let members = members ?? []
-        let onStage = members.filter(\.isOnStage).count
-        let staff = members.filter(\.isStaff).count
-        return "배우 \(onStage)명 · 스태프 \(staff)명"
-    }
-
     // 목록 "소유자" 칸: 공연을 만든 사람 이름. 내 공연이면 나, 공유받은 공연이면 iCloud 폴더 주인
     // 주인이 아직 멤버 목록에 없으면(받아 오는 중 등) 빈칸
     var ownerText: String {
