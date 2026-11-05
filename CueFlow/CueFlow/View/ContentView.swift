@@ -14,6 +14,7 @@ struct ContentView: View {
 
     // 리허설 중인 공연. 있으면 사이드바 없이 리허설 모드 화면만 보인다.
     @State private var rehearsingProduction: Production?
+    @State private var showsHomeWhenEmpty = false   // 빈 화면의 "홈으로 가기"를 눌렀으면 공연이 없어도 홈 화면
     @State private var startsLeadingRehearsal = false   // Spotlight me로 들어왔으면 리허설을 열자마자 내가 진행
 
     // 큐시트를 열어 둔 공연. 있으면 홈 대신 메인 큐시트가 보인다. 사이드바 메뉴를 누르면 홈으로.
@@ -214,8 +215,11 @@ struct ContentView: View {
                         }
                     )
                     .id(openedProduction.id)   // 사이드바에서 다른 공연으로 바로 옮기면 화면 상태(파트 필터 등)를 새로
-                } else if productions.isEmpty {
-                    HomeEmptyView(onNewProject: { isCreatingProduction = true })
+                } else if productions.isEmpty && !showsHomeWhenEmpty {
+                    HomeEmptyView(
+                        onGoHome: { showsHomeWhenEmpty = true },
+                        onNewProject: { isCreatingProduction = true }
+                    )
                 } else {
                     HomeView(
                         productions: productions,

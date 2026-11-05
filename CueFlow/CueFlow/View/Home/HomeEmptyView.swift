@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct HomeEmptyView: View {
+    var onGoHome: () -> Void = {}   // "홈으로 가기" → 프로젝트 목록 홈 화면 (피그마 951:11194)
     var onNewProject: () -> Void = {}   // "새 프로젝트" → 새 공연 만들기 흐름
 
     var body: some View {
@@ -24,9 +25,7 @@ struct HomeEmptyView: View {
             }
 
             HStack(spacing: 15) {
-                Button("홈으로 가기") {
-                    // TODO: 동작 정하기 (디자이너 확인 필요)
-                }
+                Button("홈으로 가기", action: onGoHome)
                 .buttonStyle(.secondary)
                 .frame(width: 200, height: 40)
 
