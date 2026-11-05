@@ -14,6 +14,7 @@ struct ContentView: View {
 
     // 리허설 중인 공연. 있으면 사이드바 없이 리허설 모드 화면만 보인다.
     @State private var rehearsingProduction: Production?
+    @State private var startsLeadingRehearsal = false   // Spotlight me로 들어왔으면 리허설을 열자마자 내가 진행
 
     // 큐시트를 열어 둔 공연. 있으면 홈 대신 메인 큐시트가 보인다. 사이드바 메뉴를 누르면 홈으로.
     @State private var openedProduction: Production?
@@ -86,9 +87,10 @@ struct ContentView: View {
                     }
                 )
             } else if let rehearsingProduction {
-                RehearsalView(production: rehearsingProduction) {
+                RehearsalView(production: rehearsingProduction, startsLeading: startsLeadingRehearsal) {
                     self.rehearsingProduction = nil   // 종료하면 들어오기 전 화면(홈 또는 큐시트)으로
                 }
+                .onDisappear { startsLeadingRehearsal = false }
             } else {
                 mainView
                     // iCloud 로그인 안 된 맥이면 화면 맨 위에 안내 띠
@@ -202,9 +204,15 @@ struct ContentView: View {
                         }
                     )
                 } else if let openedProduction {
-                    MainCueSheetView(production: openedProduction, cueFocus: $cueFocus) {
-                        rehearsingProduction = openedProduction
-                    }
+                    MainCueSheetView(
+                        production: openedProduction,
+                        cueFocus: $cueFocus,
+                        onRehearsal: { rehearsingProduction = openedProduction },
+                        onSpotlight: {
+                            startsLeadingRehearsal = true
+                            rehearsingProduction = openedProduction
+                        }
+                    )
                     .id(openedProduction.id)   // 사이드바에서 다른 공연으로 바로 옮기면 화면 상태(파트 필터 등)를 새로
                 } else if productions.isEmpty {
                     HomeEmptyView(onNewProject: { isCreatingProduction = true })

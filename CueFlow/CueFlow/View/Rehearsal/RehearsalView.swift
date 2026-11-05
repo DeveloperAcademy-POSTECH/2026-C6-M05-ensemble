@@ -10,6 +10,7 @@ import SwiftUI
 
 struct RehearsalView: View {
     let production: Production
+    var startsLeading = false   // true면 화면을 열자마자 내가 진행 (Spotlight me)
     let onExit: () -> Void   // "리허설 모드 종료"
 
     @Environment(ICloudAccount.self) private var iCloudAccount
@@ -134,7 +135,10 @@ struct RehearsalView: View {
         }
         // 진행하던 사람이 리허설 화면을 나가면 진행도 끝
         // 리허설 화면이 열려 있는 동안만 진행 위치를 자주 확인한다 (CloudSync)
-        .onAppear { RehearsalSync.shared.watchingProductionID = production.id }
+        .onAppear {
+            RehearsalSync.shared.watchingProductionID = production.id
+            if startsLeading { startLeading() }   // 큐시트 참여자 현황의 Spotlight me로 들어온 경우
+        }
         .onDisappear {
             if isLeading { RehearsalSync.shared.stopLeading(productionID: production.id) }
             RehearsalSync.shared.watchingProductionID = nil
