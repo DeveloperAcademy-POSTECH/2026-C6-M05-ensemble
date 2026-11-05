@@ -13,7 +13,6 @@ import SwiftData
 struct CueCard: View {
     @Bindable var cue: Cue   // 카드 안에서 cue의 값을 바꿀 수 있게 (위치 선택용)
     var onShowHistory: () -> Void = {}   // 우클릭 → History
-    var onShowUnread: () -> Void = {}    // 우클릭 → 미확인 수정사항
     var isSelected = false                       // 선택된 카드인지 (테두리가 파트 accent 색)
     var onSelect: (Bool) -> Void = { _ in }      // 카드를 눌렀을 때 (true = shift 누른 채)
     @State private var isEditingCue = false      // 큐 수정 팝오버가 열려 있는지
@@ -51,7 +50,6 @@ extension CueCard {
         PopoverMenu {
             PopoverMenuItem("큐 수정하기") { isEditingCue = true }   // 더블클릭과 같은 수정 팝오버
             PopoverMenuItem("History", action: onShowHistory)       // 오른쪽 History 사이드바 열기
-            PopoverMenuItem("미확인 수정사항", action: onShowUnread)
             PopoverMenuDivider()
             PopoverMenuItem("삭제하기") { modelContext.deleteCue(cue) }
         }
