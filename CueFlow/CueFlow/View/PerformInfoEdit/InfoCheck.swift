@@ -15,14 +15,14 @@ struct InfoCheck: View {
 
     var body: some View {
         CreateStepLayout(
-            title: "생성 전 마지막으로 확인하세요",
-            subtitle: "큐시트가 만들어지기 전에 공연 정보, 파트 구성, 초대 상태를 한 번에 확인합니다.",
-            currentStep: 4,
+            title: "입력한 공연정보가 맞는지 확인해주세요.",
+            subtitle: "공연 기본 정보를 확인해주세요. 나중에도 언제든 수정할 수 있습니다.",
+            currentStep: 2,
             onPrevious: onPrevious,
             onNext: onNext
         ) {
             summaryCard
-                .padding(.top, 44)
+                .padding(.top, 34)
         }
     }
 }
@@ -37,7 +37,6 @@ extension InfoCheck {
             infoRows
         }
         .frame(width: 799, alignment: .leading)
-        .frame(minHeight: 460, alignment: .top)
         .background(Color.surfaceWhite, in: .rect(cornerRadius: 10))
         .overlay(cardBorder)
     }
@@ -49,10 +48,10 @@ extension InfoCheck {
 
     private var cardTitle: some View {
         Text("프로젝트")
-            .font(.system(size: 17, weight: .semibold))
+            .font(.system(size: 17, weight: .bold))
             .foregroundStyle(Color.neutral800)
-            .padding(.leading, 50)
-            .frame(height: 80)
+            .padding(.leading, 49)
+            .frame(height: 61)
     }
 
     private var divider: some View {
@@ -70,9 +69,9 @@ extension InfoCheck {
             InfoRow(label: "주최", value: draft.organizerText)
             InfoRow(label: "러닝타임", value: draft.runningTimeText)
         }
-        .padding(.leading, 50)
-        .padding(.top, 39)
-        .padding(.bottom, 50)
+        .padding(.leading, 49)
+        .padding(.top, 36)
+        .padding(.bottom, 35)
     }
 }
 

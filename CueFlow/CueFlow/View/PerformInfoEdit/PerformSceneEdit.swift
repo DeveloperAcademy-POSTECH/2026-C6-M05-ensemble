@@ -19,12 +19,13 @@ struct PerformSceneEdit: View {
         CreateStepLayout(
             title: "씬/넘버 구성해주세요",
             subtitle: "공연의 흐름을 워드처럼 입력하되, 각 줄을 씬 넘버 및 암전으로 구분합니다.",
-            currentStep: 3,
+            currentStep: 4,
             onPrevious: onPrevious,
-            onNext: onNext
+            onNext: onNext,
+            nextTitle: "생성완료"
         ) {
             sceneCard
-                .padding(.top, 43)
+                .padding(.top, 34)
         }
         .appPopoverHost()   // 종류 고르기 팝오버가 그려지는 곳
     }
@@ -55,7 +56,7 @@ extension PerformSceneEdit {
     private var cardHeader: some View {
         HStack {
             Text("공연 흐름")
-                .font(.system(size: 17, weight: .semibold))
+                .font(.system(size: 17, weight: .bold))
                 .foregroundStyle(Color.neutral900)
             Spacer()
             Text(countSummary)

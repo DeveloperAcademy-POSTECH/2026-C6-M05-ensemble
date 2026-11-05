@@ -8,8 +8,8 @@
 import SwiftUI
 import SwiftData
 
-// 새 공연 만들기 흐름: 기본정보 → 파트구성 → 씬구성 → 생성확인 → 완료 → 통합 큐시트
-// 화면끼리 주고받는 값을 여기서 들고 있다가, 생성확인에서 "다음으로"를 누르면 공연을 저장한다
+// 새 공연 만들기 흐름: 기본정보 → 기본정보 확인 → 파트구성 → 씬구성 → 완료 → 통합 큐시트
+// 화면끼리 주고받는 값을 여기서 들고 있다가, 씬구성에서 "다음으로"를 누르면 공연을 저장한다
 struct NewProjectFlow: View {
     var onGoHome: () -> Void = {}   // 홈으로 돌아가기
     // "큐시트 편집 시작하기": 있으면 바깥(ContentView)의 큐시트로 연다 → 리허설 버튼도 동작. 없으면 이 흐름 안에서 연다
@@ -34,27 +34,26 @@ struct NewProjectFlow: View {
             PerformInfo(
                 draft: $draft,
                 onPrevious: onGoHome,
-                onNext: { step = .part }
+                onNext: { step = .check }
             )
         case .part:
             PerformPart(
                 selectedParts: $selectedParts,
                 customParts: $customParts,
-                onPrevious: { step = .info },
+                onPrevious: { step = .check },
                 onNext: { step = .scene }
             )
         case .scene:
             PerformSceneEdit(
                 scenes: $scenes,
                 onPrevious: { step = .part },
-                onNext: { step = .check }
+                onNext: createProduction
             )
         case .check:
             InfoCheck(
                 draft: draft,
-                onPrevious: { step = .scene },
-                onNext: createProduction
-            )
+                onPrevious: { step = .info },
+                onNext: { step = .part }            )
         case .complete:
             InfoComplete(
                 onGoHome: onGoHome,
@@ -73,7 +72,7 @@ struct NewProjectFlow: View {
 }
 
 extension NewProjectFlow {
-    // 생성확인 "다음으로": 입력한 값으로 공연을 만들어 저장하고 완료 화면으로
+    // 씬구성 "다음으로": 입력한 값으로 공연을 만들어 저장하고 완료 화면으로
     private func createProduction() {
         let production = Production(
             title: draft.title,
