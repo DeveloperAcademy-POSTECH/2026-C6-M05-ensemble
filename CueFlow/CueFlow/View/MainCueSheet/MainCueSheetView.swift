@@ -27,8 +27,9 @@ struct MainCueSheetView: View {
             titleRow
             filterRow
             CueGrid(production: production, selectedPart: selectedPart, remoteRevision: remoteRevision, onShowHistory: { historyCue = $0 }, onEscape: { isShowingUnread = false }, priorityScene: $priorityScene, focus: gridFocus)
-            .padding(.top, -12)   // 위 여유(12)만큼 올려서 표 위치는 피그마 그대로
-            .overlay(alignment: .trailing) { sidebar.padding(.trailing, -35) }   // 표 높이만큼만 + 창 오른쪽 끝에 붙임 (바깥 여백 35만큼)
+                .padding(.top, -12)   // 위 여유(12)만큼 올려서 표 위치는 피그마 그대로
+                .padding(.trailing, -35)   // 표는 바깥 여백(35)을 무시하고 창 오른쪽 끝까지
+                .overlay(alignment: .trailing) { sidebar.padding(.bottom, 20).padding(.trailing, -15) }   // 사이드바는 창 오른쪽 · 아래에서 20씩 (기준이 바깥 여백 35 안쪽이라 -15)
         }
         .padding(.horizontal, 35)
         .padding(.top, 16)
@@ -71,8 +72,6 @@ extension MainCueSheetView {
     // 오른쪽 사이드바 + 왼쪽 구분선 손잡이
     private var sidebar: some View {
         sidebarContent
-            // 표 위 여유(12) 띠 + 둥근 모서리(10) 뒤를 가림 → 스크롤할 때 표가 사이드바 위로 삐져나오지 않게
-            .background(alignment: .top) { Color.appBackground.frame(height: 22).offset(y: -12) }
             .overlay(alignment: .leading) { sidebarEdge }
     }
 
