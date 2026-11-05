@@ -20,10 +20,16 @@ struct NoticeListView: View {
     var openRequest: Binding<Notice?> = .constant(nil)   // 알림 카드 [공지 자세히 보기] → 이 공지 상세로 (#82)
 
     @Environment(\.modelContext) private var modelContext
+    @Query private var productions: [Production]
     @State private var filter: NoticeFilter = .all
     @State private var isComposing = false   // true가 되면 쓰기 화면으로 이동
     @State private var openedNotice: Notice?  // 누른 공지 (상세로 이동)
     @State private var checkedIDs: Set<UUID> = []   // 체크박스로 고른 공지 (삭제용)
+
+    // 공연이 하나라도 있는데 전부 읽기 권한이면 공지를 쓸 곳이 없다 → 작성하기 숨김 (#120)
+    private var canWriteNotice: Bool {
+        productions.isEmpty || productions.contains { $0.canEdit(userID: ICloudAccount.currentUserRecordName) }
+    }
 
     // 고른 필터에 맞는 공지
     private var filteredNotices: [Notice] {
@@ -101,13 +107,15 @@ struct NoticeListView: View {
 
             Spacer()
 
-            Button {
-                isComposing = true
-            } label: {
-                Label("작성하기", systemImage: "square.and.arrow.up")
+            if canWriteNotice {
+                Button {
+                    isComposing = true
+                } label: {
+                    Label("작성하기", systemImage: "square.and.arrow.up")
+                }
+                .buttonStyle(.primary)
+                .frame(width: 126, height: 34)
             }
-            .buttonStyle(.primary)
-            .frame(width: 126, height: 34)
         }
         .padding(.bottom, 33)
     }
