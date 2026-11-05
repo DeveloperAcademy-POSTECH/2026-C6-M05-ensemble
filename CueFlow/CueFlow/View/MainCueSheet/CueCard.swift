@@ -16,6 +16,7 @@ struct CueCard: View {
     var isSelected = false                       // 선택된 카드인지 (테두리가 파트 accent 색)
     var onSelect: (Bool) -> Void = { _ in }      // 카드를 눌렀을 때 (true = shift 누른 채)
     @State private var isEditingCue = false      // 큐 수정 팝오버가 열려 있는지
+    @State private var closeRequest = 0          // 수정 팝오버 바깥 클릭 · Esc 횟수 (입력창에 알려줌)
     @State private var isPickingPosition = false  // 위치 고르는 팝오버가 열려 있는지
     @State private var isShowingMenu = false      // 우클릭 메뉴 팝오버가 열려 있는지
     @State private var isShowingComments = false
@@ -36,7 +37,7 @@ struct CueCard: View {
         .onTapGesture(count: 2) { isEditingCue = true }   // 더블클릭하면 수정 팝오버
         .highPriorityGesture(TapGesture().modifiers(.shift).onEnded { onSelect(true) })   // Shift+클릭 = 선택에 추가
         .onTapGesture { onSelect(false) }                                                // 그냥 클릭 = 이 카드만 선택
-        .appPopover(isPresented: $isEditingCue, edge: .trailing) { cueEditor }
+        .appPopover(isPresented: $isEditingCue, edge: .trailing, onOutsideTap: { closeRequest += 1 }) { cueEditor }   // 바깥 클릭은 입력창이 정함
         .onRightClick { isShowingMenu = true }   // 우클릭하면 메뉴 팝오버
         .appPopover(isPresented: $isShowingMenu, edge: .trailing, width: nil) { cueMenu }
         .onChange(of: cue.position) { recordPositionChange(from: $0, to: $1) }
@@ -162,7 +163,7 @@ extension CueCard {
     
     // 더블클릭했을 때 뜨는 수정 팝오버 (원래 값이 채워진 채로)
     private var cueEditor: some View {
-        AddCueCardInfo(triggerText: cue.trigger?.text ?? "", cueTitle: cue.title, position: cue.position, scene: cue.trigger?.scene, partName: cue.part?.name) {
+        AddCueCardInfo(triggerText: cue.trigger?.text ?? "", cueTitle: cue.title, position: cue.position, scene: cue.trigger?.scene, partName: cue.part?.name, closeRequest: closeRequest) {
             updateCue(triggerText: $0, cueTitle: $1, position: $2)
         }
     }
