@@ -43,7 +43,13 @@ struct ContentView: View {
     private var notices: [Notice]
 
     // 내 목록에서 숨긴 공지(남이 보낸 공지를 삭제한 것)는 목록 · 안 읽은 숫자에서 뺀다
-    private var visibleNotices: [Notice] { notices.filter { !$0.isHiddenByMe } }
+    // 총 연출자(공연을 만든 사람)는 그 공연의 공지를 모두 본다. 나머지는 개인 · 파트 공지를 받는 사람과 보낸 사람만 본다
+    private var visibleNotices: [Notice] {
+        let myID = iCloudAccount.userRecordName
+        return notices.filter {
+            !$0.isHiddenByMe && ($0.production?.isSharedWithMe == false || $0.isSent(byUserID: myID) || $0.isForMe(userID: myID))
+        }
+    }
 
     // 시스템 알림을 눌러 연 공지 → 공지사항 상세로 (#103)
     @State private var noticeToOpen: Notice?
