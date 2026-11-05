@@ -391,7 +391,7 @@ extension Notice: CloudRecordConvertible {
 
     var cloudProduction: Production? { production }
 
-    // 별표(isImportant)는 "나한테 중요한 것"이라 올리지 않는다 (공연 즐겨찾기처럼)
+    // 별표(isImportant) · 내 목록에서 숨김(isHiddenByMe)은 "나한테만" 의미 있는 값이라 올리지 않는다 (공연 즐겨찾기처럼)
     func fill(_ record: CKRecord) {
         record[CloudKey.title] = title
         record[CloudKey.body] = body

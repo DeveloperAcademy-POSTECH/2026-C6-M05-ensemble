@@ -120,12 +120,11 @@ struct NoticeListView: View {
         .padding(.bottom, 33)
     }
 
-    // 체크한 공지 지우기. 체크한 게 없으면 흐리게
-    // TODO: 남이 쓴 공지도 지울 수 있게 할지 (작성자만? 감독만?) 정하기
+    // 체크한 공지 지우기 (내가 보낸 건 모두에게서, 남이 보낸 건 내 목록에서만). 체크한 게 없으면 흐리게
     private var deleteButton: some View {
         Button("삭제") {
             for notice in notices where checkedIDs.contains(notice.id) {
-                modelContext.delete(notice)
+                notice.removeFromMyList(in: modelContext)
             }
             checkedIDs.removeAll()
         }

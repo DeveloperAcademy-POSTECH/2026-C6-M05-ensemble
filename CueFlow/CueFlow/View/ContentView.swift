@@ -42,6 +42,9 @@ struct ContentView: View {
     @Query(sort: \Notice.sentAt, order: .reverse)
     private var notices: [Notice]
 
+    // 내 목록에서 숨긴 공지(남이 보낸 공지를 삭제한 것)는 목록 · 안 읽은 숫자에서 뺀다
+    private var visibleNotices: [Notice] { notices.filter { !$0.isHiddenByMe } }
+
     // 시스템 알림을 눌러 연 공지 → 공지사항 상세로 (#103)
     @State private var noticeToOpen: Notice?
     @State private var cueFocus: SystemNotifications.CueFocus?   // 큐 수정 알림을 눌렀을 때 큐시트가 찾아갈 큐들
@@ -183,7 +186,7 @@ struct ContentView: View {
                     openedProduction = production
                 },
                 // 공지 목록 "안읽음" 숫자와 같은 기준 (내가 보낸 건 읽은 것으로)
-                unreadNoticeCount: notices.filter { $0.isUnread(byUserID: iCloudAccount.userRecordName) }.count
+                unreadNoticeCount: visibleNotices.filter { $0.isUnread(byUserID: iCloudAccount.userRecordName) }.count
             )
                 .navigationSplitViewColumnWidth(220)
         } detail: {
@@ -216,7 +219,7 @@ struct ContentView: View {
             case .notice:
                 // NavigationStack: 목록 → 상세로 들어갔다가 뒤로 돌아올 수 있게
                 NavigationStack {
-                    NoticeListView(notices: notices, openRequest: $noticeToOpen)
+                    NoticeListView(notices: visibleNotices, openRequest: $noticeToOpen)
                 }
             case .help:
                 Text("도움말 화면")
