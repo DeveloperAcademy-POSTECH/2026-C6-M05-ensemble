@@ -22,15 +22,6 @@ extension Production {
         return Self.format(updatedAt, "M월 d일") + " 수정"
     }
 
-    // "배우 22명 · 스태프 16명 · 총 38명" — 초대 수락 후 고른 역할로 센다 (InviteRoleView)
-    // 배우 = 무대 위 역할을 고른 사람, 스태프 = 파트를 맡은 사람. 둘 다 고른 사람은 양쪽에 세고, 총은 사람 수
-    var memberCountText: String {
-        let members = members ?? []
-        let onStage = members.filter(\.isOnStage).count
-        let staff = members.filter(\.isStaff).count
-        return "배우 \(onStage)명 · 스태프 \(staff)명 · 총 \(members.count)명"
-    }
-
     // "2026.11.14-15 · 아트스페이스 A홀" (공연장이 비었으면 날짜만)
     var scheduleText: String {
         venue.isEmpty ? showPeriodText : "\(showPeriodText) · \(venue)"
