@@ -89,29 +89,15 @@ struct NoticeDetailView: View {
         }
     }
 
-    // 삭제 · 답장 · 전체 답장 · 전달. 마우스를 올린 버튼만 회색 동그라미
-    // TODO: 답장 · 전체 답장 · 전달은 동작이 정해지면 연결 (보낸 사람에게 개인 공지? 아래에 댓글처럼? — 팀 미정)
+    // 삭제. 마우스를 올리면 회색 동그라미
+    // TODO: 답장 · 전체 답장 · 전달은 동작이 정해지면 넣기 (피그마 951:7518, 팀 미정이라 숨김)
     private var actionBar: some View {
         HStack(spacing: 0) {
             NoticeActionButton(systemImage: "trash", help: "삭제", action: deleteNotice)
-            actionSeparator
-            NoticeActionButton(systemImage: "arrowshape.turn.up.backward", help: "답장 (준비 중)", action: {})
-                .disabled(true)
-            NoticeActionButton(systemImage: "arrowshape.turn.up.left.2", help: "전체 답장 (준비 중)", action: {})
-                .disabled(true)
-            NoticeActionButton(systemImage: "arrowshape.turn.up.forward", help: "전달 (준비 중)", action: {})
-                .disabled(true)
         }
         .padding(3)
         .background(Color.neutral50, in: Capsule())
         .overlay(Capsule().strokeBorder(Color.neutral200, lineWidth: 0.5))
-    }
-
-    private var actionSeparator: some View {
-        Rectangle()
-            .fill(Color.neutral300)
-            .frame(width: 1, height: 16)
-            .padding(.horizontal, 2)
     }
 
     // 목록으로 돌아간 다음 지운다 (내가 보낸 공지면 읽음 기록 · iCloud까지, 남이 보낸 공지면 내 목록에서만 숨김)

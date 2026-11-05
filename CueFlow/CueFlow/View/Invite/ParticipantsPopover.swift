@@ -3,7 +3,7 @@
 //  CueFlow
 //
 //  큐시트 오른쪽 위 멤버 버튼을 누르면 뜨는 "참여자 현황" (피그마 참여자현황 951:10259).
-//  나 + Spotlight me / 현재 보고 있는 사람 / 최근에 본 사람.
+//  나 / 현재 보고 있는 사람 / 최근에 본 사람.
 //  "보고 있음"은 Member.lastSeenAt으로 판단한다 — 큐시트를 열어 두면 1분마다 기록되고 iCloud로 다른 사람에게 간다.
 //
 
@@ -98,7 +98,7 @@ struct ParticipantsPopover: View {
 // 줄 모양
 
 extension ParticipantsPopover {
-    // 나 + Spotlight me
+    // 나
     private var meRow: some View {
         HStack {
             HStack(spacing: 15) {
@@ -109,18 +109,7 @@ extension ParticipantsPopover {
                     .lineLimit(1)
             }
             Spacer()
-            // TODO: #69 리허설 동기화 모드 — 누르면 다른 사람 화면이 내 화면을 따라온다
-            Button {} label: {
-                Text("Spotlight me")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.spotlightText)
-                    .frame(width: 99, height: 30)
-                    .background(Color.spotlightBackground, in: RoundedRectangle(cornerRadius: 6))
-            }
-            .buttonStyle(.plain)
-            .disabled(true)
-            .opacity(0.5)
-            .help("리허설 동기화 모드가 생기면 쓸 수 있어요")
+            // TODO: Spotlight me (피그마에 있음) — 누르면 다른 사람 화면이 내 화면을 따라온다. 동작 전이라 숨김
         }
     }
 

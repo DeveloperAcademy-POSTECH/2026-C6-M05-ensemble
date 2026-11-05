@@ -5,6 +5,7 @@
 //  프로젝트가 있을 때 홈 화면. 헤더 + 최근 프로젝트 카드 + 생성한 프로젝트 목록.
 //
 
+import SwiftData
 import SwiftUI
 
 // "최근 ⌄" 메뉴에서 고르는 목록 종류
@@ -24,6 +25,8 @@ struct HomeView: View {
     var hasUnreadNotification = false
 
     @State private var filter: ProjectFilter = .recent
+    @State private var deletingProduction: Production?   // 삭제 확인 창에 띄울 공연
+    @Environment(\.modelContext) private var modelContext
 
     // 최근에 열어본 프로젝트 3개
     private var recentlyOpened: [Production] {
@@ -54,6 +57,15 @@ struct HomeView: View {
             .padding(.horizontal, 40)
             .padding(.top, 37)
             .padding(.bottom, 40)
+        }
+        .alert(
+            "\(deletingProduction?.title ?? "")을(를) 삭제할까요?",
+            isPresented: Binding(get: { deletingProduction != nil }, set: { if !$0 { deletingProduction = nil } })
+        ) {
+            Button("취소", role: .cancel) {}
+            Button("삭제", role: .destructive) { deleteProduction() }
+        } message: {
+            Text("큐시트 · 대본 · 공지가 모두 지워지고, 함께 쓰는 사람들에게서도 사라져요. 되돌릴 수 없어요.")
         }
     }
 
@@ -123,6 +135,7 @@ struct HomeView: View {
                             onOpen(production)
                         }
                     )
+                    .contextMenu { deleteMenu(for: production) }
                 }
 
                 // 카드가 3장보다 적으면 빈자리를 채워서 카드 폭이 일정하게
@@ -172,9 +185,27 @@ struct HomeView: View {
                         production.lastOpenedAt = .now
                         onOpen(production)
                     }
+                    .contextMenu { deleteMenu(for: production) }
                 Divider()
             }
         }
+    }
+
+    // 우클릭 메뉴: 내가 만든 공연만 삭제할 수 있다
+    // 공유받은 공연은 메뉴를 보이지 않는다 (지우면 만든 사람의 iCloud 폴더를 건드리게 된다)
+    @ViewBuilder
+    private func deleteMenu(for production: Production) -> some View {
+        if !production.isSharedWithMe {
+            Button("삭제하기", role: .destructive) { deletingProduction = production }
+        }
+    }
+
+    // 지우고 저장하면 CloudSync가 iCloud 폴더째 지운다 → 함께 쓰는 사람에게서도 사라진다
+    private func deleteProduction() {
+        guard let deletingProduction else { return }
+        modelContext.delete(deletingProduction)
+        try? modelContext.save()
+        self.deletingProduction = nil
     }
 
     private var filterMenu: some View {
