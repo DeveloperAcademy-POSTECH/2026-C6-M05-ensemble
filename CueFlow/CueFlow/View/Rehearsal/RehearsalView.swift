@@ -153,6 +153,7 @@ struct RehearsalView: View {
         .overlay {
             if isMinimapExpanded { expandedMinimap }
         }
+        .environment(\.canEditCues, production.canEdit(userID: iCloudAccount.userRecordName))
     }
 
     @State private var isMinimapExpanded = false   // 무대 미니맵 크게 보기

@@ -11,6 +11,7 @@ import SwiftData
 // 씬 열의 ⓝ → 오른쪽 우선순위 사이드바 (피그마 순서박스지정사이드바, 폭 329)
 // 번호 칸(1, 2, 3 …)에 큐 카드를 끌어다 놓으면 그 칸 번호가 큐 번호가 된다. 같은 칸 = 같은 번호
 struct CuePrioritySidebar: View {
+    @Environment(\.canEditCues) private var canEdit   // 읽기 권한이면 false (#120)
     let scene: ShowScene
     @State private var slotCount = 5   // 번호 칸 수 (+ 로 늘림)
     @State private var slots: [UUID: Int] = [:]   // 사이드바에서 옮긴 큐의 칸 번호 (빈칸 유지). 사이드바를 닫으면 사라짐
@@ -162,7 +163,7 @@ extension CuePrioritySidebar {
 
     // 끌어다 놓은 카드를 이 칸으로. 칸은 빈칸이 생겨도 그대로, 큐카드 번호는 빈칸 없이 당겨서 저장
     private func moveCue(id: String?, to number: Int) {
-        guard let cue = sceneCues.first(where: { $0.id.uuidString == id }), slotNumber(of: cue) != number else { return }   // 없는 큐거나 같은 칸이면 그대로
+        guard canEdit, let cue = sceneCues.first(where: { $0.id.uuidString == id }), slotNumber(of: cue) != number else { return }   // 없는 큐거나 같은 칸이면 그대로
         for sceneCue in sceneCues where slots[sceneCue.id] == nil { slots[sceneCue.id] = sceneCue.order }   // 지금 칸 기억 (번호가 당겨져도 칸은 그대로)
         let oldOrder = cue.order
         slots[cue.id] = number

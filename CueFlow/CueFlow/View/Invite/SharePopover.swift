@@ -5,11 +5,13 @@
 //  "공유하기" 창 (피그마 951:10223). 큐시트 오른쪽 위 [공유하기]에서 연다.
 //  큐시트 오른쪽 위 멤버 버튼은 참여자 현황(ParticipantsPopover)을 연다.
 //  이메일 넣고 [공유하기] → 메일 앱이 초대 링크를 채운 채로 열린다 (우리 앱엔 메일 보낼 서버가 없어서).
-//  "편집 가능 ⌄" 메뉴의 [링크 복사] → 카톡 등에 직접 붙여 넣기 (피그마엔 버튼이 없어서 메뉴 안에 넣음, #93)
+//  총 연출자는 멤버 줄 오른쪽 메뉴에서 사람별로 읽기 · 편집 권한을 바꾼다 (#120).
+//  "읽기 가능 ⌄" 메뉴의 [링크 복사] → 카톡 등에 직접 붙여 넣기 (피그마엔 버튼이 없어서 메뉴 안에 넣음, #93)
 //
 
 import SwiftUI
 import CloudKit
+import SwiftData
 import AppKit
 
 struct SharePopover: View {
@@ -127,7 +129,7 @@ extension SharePopover {
         }
     }
 
-    // 링크가 있는 사람 · 편집 가능 ⌄ (메뉴: 링크 복사)
+    // 링크가 있는 사람 · 읽기 가능 ⌄ (메뉴: 링크 복사)
     private var linkRow: some View {
         HStack(spacing: 13) {
             Image(systemName: "network")
@@ -143,15 +145,15 @@ extension SharePopover {
                     .foregroundStyle(Color.neutral500)
             }
             Spacer()
-            // 팀 결정: 링크가 있는 사람은 모두 편집 가능 → 권한은 고르지 않고, 메뉴에 링크 복사만
+            // 팀 결정: 링크로 들어오면 모두 읽기 권한으로 시작 → 권한은 고르지 않고, 메뉴에 링크 복사만
             Menu {
-                Label("편집 가능", systemImage: "checkmark")
+                Label("읽기 가능", systemImage: "checkmark")
                 Divider()
                 Button(didCopy ? "링크 복사됨" : "링크 복사", action: copyLink)
                     .disabled(share?.url == nil)
             } label: {
                 HStack(spacing: 6) {
-                    Text("편집 가능")
+                    Text("읽기 가능")
                         .font(.system(size: 11.5, weight: .medium))
                     Image(systemName: "chevron.down")
                         .font(.system(size: 9, weight: .semibold))
@@ -184,12 +186,64 @@ extension SharePopover {
                     .foregroundStyle(Color.neutral500)
             }
             Spacer()
-            Text(member.isOwner ? "소유자" : "편집 가능")
-                .font(.system(size: 11.5))
-                .foregroundStyle(Color.neutral500)
+            permission(of: member)
         }
         .padding(.leading, 9)
         .frame(height: 58)
+    }
+
+    // 소유자 / 읽기 가능 / 편집 가능. 총 연출자에게만 바꾸는 메뉴로 보인다
+    // 수락 직후엔 그 사람 멤버 기록이 아직 안 왔을 수 있다 → 올 때까지 읽기 가능 글자만
+    @ViewBuilder
+    private func permission(of member: ShareMember) -> some View {
+        let target = production.member(withUserID: member.userID)
+        if member.isOwner {
+            permissionText("소유자")
+        } else if let target, !production.isSharedWithMe {
+            permissionMenu(for: target)
+        } else {
+            permissionText(target?.canEdit == true ? "편집 가능" : "읽기 가능")
+        }
+    }
+
+    private func permissionText(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 11.5))
+            .foregroundStyle(Color.neutral500)
+    }
+
+    private func permissionMenu(for target: Member) -> some View {
+        Menu {
+            Picker("권한", selection: canEditBinding(for: target)) {
+                Text("읽기 가능").tag(false)
+                Text("편집 가능").tag(true)
+            }
+            .labelsHidden()
+            .pickerStyle(.inline)
+        } label: {
+            HStack(spacing: 6) {
+                Text(target.canEdit ? "편집 가능" : "읽기 가능")
+                    .font(.system(size: 11.5, weight: .medium))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .semibold))
+            }
+            .foregroundStyle(Color.noticeMetaText)
+            .contentShape(Rectangle())
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+    }
+
+    // 바꾸면 바로 저장 → CloudSync가 iCloud에 올려서 그 사람 맥에도 간다
+    private func canEditBinding(for target: Member) -> Binding<Bool> {
+        Binding {
+            target.canEdit
+        } set: { newValue in
+            target.canEdit = newValue
+            try? target.modelContext?.save()
+        }
     }
 }
 

@@ -84,6 +84,7 @@ enum CloudKey {
     static let role = "role"
     static let iCloudUserID = "iCloudUserID"
     static let lastSeenAt = "lastSeenAt"
+    static let canEdit = "canEdit"
     static let speaker = "speaker"
     static let area = "area"
     static let x = "x"
@@ -262,6 +263,10 @@ extension Member: CloudRecordConvertible {
         record[CloudKey.role] = role
         record[CloudKey.iCloudUserID] = iCloudUserID
         record[CloudKey.lastSeenAt] = lastSeenAt
+        // 권한은 총 연출자만 올린다. 멤버 맥이 옛날 값으로 덮어쓰지 못하게 (lastSeenAt은 멤버 맥이 1분마다 올림)
+        if production?.isSharedWithMe == false {
+            record[CloudKey.canEdit] = canEdit
+        }
         record[CloudKey.productionID] = production?.id.uuidString
         record[CloudKey.partIDs] = (parts ?? []).map(\.id.uuidString).cloudList
     }
@@ -271,6 +276,7 @@ extension Member: CloudRecordConvertible {
         role = record[CloudKey.role] as? String ?? ""
         iCloudUserID = record[CloudKey.iCloudUserID] as? String
         lastSeenAt = record[CloudKey.lastSeenAt] as? Date
+        canEdit = record[CloudKey.canEdit] as? Bool ?? false
     }
 }
 

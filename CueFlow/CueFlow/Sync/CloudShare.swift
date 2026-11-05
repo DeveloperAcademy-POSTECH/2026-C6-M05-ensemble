@@ -39,7 +39,9 @@ enum CloudShare {
 
         let share = CKShare(recordZoneID: zoneID)
         share[CKShare.SystemFieldKey.title] = production.title
-        share.publicPermission = .readWrite   // 링크가 있는 사람 = 편집 가능
+        // iCloud 권한은 쓰기로 둔다 — 읽기 권한인 사람도 댓글 · 큐 확인은 올려야 해서.
+        // 큐 편집은 앱 화면에서 Member.canEdit으로 막는다 (#120)
+        share.publicPermission = .readWrite
         let saved = try await database.save(share) as? CKShare ?? share
         // 공유를 처음 만든 사람(주인)도 멤버로
         production.addMember(saved.currentUserParticipant)
@@ -91,6 +93,7 @@ struct ShareMember: Identifiable {
     let name: String
     let isMe: Bool
     let isOwner: Bool
+    var userID: String? = nil   // iCloud 계정 ID (Member.iCloudUserID와 비교해서 권한을 찾는다)
 
     var initial: String { String(name.prefix(1)).uppercased() }
 }
@@ -106,7 +109,8 @@ extension CKShare {
                     id: participant.participantID,
                     name: participant.displayName,
                     isMe: participant == currentUserParticipant,
-                    isOwner: participant.role == .owner
+                    isOwner: participant.role == .owner,
+                    userID: participant.userIdentity.userRecordID?.recordName
                 )
             }
     }

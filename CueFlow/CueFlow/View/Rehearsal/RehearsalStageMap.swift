@@ -30,6 +30,7 @@ struct RehearsalStageMap: View {
             }
         }
     }
+    @Environment(\.canEditCues) private var canEdit   // 읽기 권한이면 false (#120)
     @State private var editing: Editing?
 
     // 장면 배치 + 지금 큐까지 옮긴 것
@@ -94,27 +95,29 @@ struct RehearsalStageMap: View {
                     .help(isExpanded ? "작게 보기 (esc)" : "크게 보기")
                     .padding(.trailing, 4)
                 }
-                Button {
-                    if let scene { editing = .scene(scene) }
-                } label: {
-                    HStack(spacing: 2) {
-                        Image(systemName: "square.and.pencil")
-                            .font(.system(size: 16))
-                        Text("수정하기")
-                            .font(.system(size: 15, weight: .semibold))
+                if canEdit {
+                    Button {
+                        if let scene { editing = .scene(scene) }
+                    } label: {
+                        HStack(spacing: 2) {
+                            Image(systemName: "square.and.pencil")
+                                .font(.system(size: 16))
+                            Text("수정하기")
+                                .font(.system(size: 15, weight: .semibold))
+                        }
+                        .foregroundStyle(Color.neutral900)
+                        .padding(.horizontal, 8)
+                        .frame(height: 36)
+                        .background(Color.neutral25, in: RoundedRectangle(cornerRadius: 6))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 6)
+                                .strokeBorder(Color.noticeFieldBorder, lineWidth: 1)
+                        }
+                        .contentShape(RoundedRectangle(cornerRadius: 6))
                     }
-                    .foregroundStyle(Color.neutral900)
-                    .padding(.horizontal, 8)
-                    .frame(height: 36)
-                    .background(Color.neutral25, in: RoundedRectangle(cornerRadius: 6))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 6)
-                            .strokeBorder(Color.noticeFieldBorder, lineWidth: 1)
-                    }
-                    .contentShape(RoundedRectangle(cornerRadius: 6))
+                    .buttonStyle(.plain)
+                    .disabled(scene == nil)
                 }
-                .buttonStyle(.plain)
-                .disabled(scene == nil)
             }
             .padding(.leading, 33)
             .padding(.trailing, 14)
@@ -141,22 +144,24 @@ struct RehearsalStageMap: View {
                 .lineSpacing(4)
                 .foregroundStyle(Color.neutral700)
                 .multilineTextAlignment(.center)
-            Button {
-                editing = .firstSetup
-            } label: {
-                Text("배치하기")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.brandPrimaryText)
-                    .frame(width: 104, height: 35)
-                    .background(Color.sheetRegisterBackground, in: RoundedRectangle(cornerRadius: 6))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 6)
-                            .strokeBorder(Color.stageButtonBorder, lineWidth: 1)
-                    }
-                    .contentShape(RoundedRectangle(cornerRadius: 6))
+            if canEdit {
+                Button {
+                    editing = .firstSetup
+                } label: {
+                    Text("배치하기")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.brandPrimaryText)
+                        .frame(width: 104, height: 35)
+                        .background(Color.sheetRegisterBackground, in: RoundedRectangle(cornerRadius: 6))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 6)
+                                .strokeBorder(Color.stageButtonBorder, lineWidth: 1)
+                        }
+                        .contentShape(RoundedRectangle(cornerRadius: 6))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 10)
             }
-            .buttonStyle(.plain)
-            .padding(.top, 10)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

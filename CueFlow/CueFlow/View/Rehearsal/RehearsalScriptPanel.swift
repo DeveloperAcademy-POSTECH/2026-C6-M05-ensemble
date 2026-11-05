@@ -11,6 +11,7 @@
 import SwiftUI
 
 struct RehearsalScriptPanel: View {
+    @Environment(\.canEditCues) private var canEdit   // 읽기 권한이면 false (#120)
     let lines: [ScriptLine]        // 지금 장면의 대본 (순서대로)
     var highlightedLineID: UUID?   // 지금 큐에 해당하는 줄
     let onEdit: () -> Void         // "대본 입력" 창 열기
@@ -24,18 +25,20 @@ struct RehearsalScriptPanel: View {
             }
         }
         .overlay(alignment: .topTrailing) {
-            Button(action: onEdit) {
-                HStack(spacing: 8) {
-                    Image(systemName: "paperclip")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("대본 입력")
-                        .font(.system(size: 15, weight: .semibold))
+            if canEdit {
+                Button(action: onEdit) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "paperclip")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("대본 입력")
+                            .font(.system(size: 15, weight: .semibold))
+                    }
                 }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.brandPrimaryText)
+                    .padding(.trailing, 22)
+                .frame(height: 54)
             }
-                .buttonStyle(.plain)
-                .foregroundStyle(Color.brandPrimaryText)
-                .padding(.trailing, 22)
-            .frame(height: 54)
         }
         // 피그마: 아래로 퍼지는 아주 옅은 그림자 두 겹
         .shadow(color: .black.opacity(0.04), radius: 12, y: 8)
@@ -95,17 +98,19 @@ struct RehearsalScriptPanel: View {
             Text("이 장면의 대본이 없어요")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(Color.neutral900)
-            Text("구글 닥스에서 복사해 붙여넣거나\n파일을 불러올 수 있어요")
-                .font(.body)
-                .lineSpacing(2)
-                .foregroundStyle(Color.neutral600)
-                .multilineTextAlignment(.center)
-            Button(action: onEdit) {
-                Label("대본 가져오기", systemImage: "square.and.arrow.up")
-                    .font(.body.weight(.regular))
+            if canEdit {
+                Text("구글 닥스에서 복사해 붙여넣거나\n파일을 불러올 수 있어요")
+                    .font(.body)
+                    .lineSpacing(2)
+                    .foregroundStyle(Color.neutral600)
+                    .multilineTextAlignment(.center)
+                Button(action: onEdit) {
+                    Label("대본 가져오기", systemImage: "square.and.arrow.up")
+                        .font(.body.weight(.regular))
+                }
+                .buttonStyle(.primary)
+                .frame(width: 120, height: 30)
             }
-            .buttonStyle(.primary)
-            .frame(width: 120, height: 30)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

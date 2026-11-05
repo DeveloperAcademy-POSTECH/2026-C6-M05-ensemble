@@ -13,12 +13,19 @@ import SwiftData
 extension EnvironmentValues {
     // 내 iCloud 계정 ID (Member.iCloudUserID와 비교해서 "나"를 찾음)
     @Entry var myUserID: String? = nil
+    // 지금 공연을 고칠 수 있는지. 큐시트 · 리허설 화면이 넣어 준다. 읽기 권한이어도 댓글 · 큐 확인은 된다 (#120)
+    @Entry var canEditCues: Bool = true
 }
 
 extension Production {
     func member(withUserID userID: String?) -> Member? {
         guard let userID else { return nil }
         return (members ?? []).first { $0.iCloudUserID == userID }
+    }
+
+    // 이 사람이 큐를 고칠 수 있는지. 공연을 만든 사람(총 연출자)은 항상, 나머지는 총 연출자가 켜 줬을 때만 (#120)
+    func canEdit(userID: String?) -> Bool {
+        !isSharedWithMe || member(withUserID: userID)?.canEdit == true
     }
 }
 

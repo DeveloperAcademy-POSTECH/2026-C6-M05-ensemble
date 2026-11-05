@@ -36,6 +36,7 @@ struct MainCueSheetView: View {
         .background(Color.appBackground)
         .appPopoverHost()   // 표 안 팝오버(파트 추가 · 수정)가 그려지는 곳
         .environment(\.myUserID, iCloudAccount.userRecordName)
+        .environment(\.canEditCues, production.canEdit(userID: iCloudAccount.userRecordName))
         .onReceive(NotificationCenter.default.publisher(for: CloudSync.didApplyRemoteNotification)) { _ in
             remoteRevision += 1
         }
