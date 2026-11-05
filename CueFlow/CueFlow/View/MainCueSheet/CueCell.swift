@@ -16,11 +16,11 @@ struct CueCell: View {
     var isHovering = false              // 마우스가 이 칸 위에 있는지 (CueGrid가 알려줌)
     var onAddCue: (String, String, CuePosition) -> Void = { _, _, _ in }   // 팝오버에서 입력을 마치면 할 일
     var onShowHistory: (Cue) -> Void = { _ in }   // 카드 우클릭 → History
-    var onShowUnread: () -> Void = {}
     var selectedCueIDs: Set<UUID> = []                   // 선택된 큐 카드들 (CueGrid가 알려줌)
     var onSelectCue: (Cue, Bool) -> Void = { _, _ in }   // 카드를 눌렀을 때 (true = shift)
     @Environment(\.canEditCues) private var canEdit   // 읽기 권한이면 false (#120)
     @State private var isAddingCue = false          // Add new 팝오버가 열려 있는지
+    @State private var closeRequest = 0             // Add new 팝오버 바깥 클릭 · Esc 횟수 (입력창에 알려줌)
     
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
@@ -46,7 +46,6 @@ extension CueCell {
         CueCard(
             cue: cue,
             onShowHistory: { onShowHistory(cue) },
-            onShowUnread: onShowUnread,
             isSelected: selectedCueIDs.contains(cue.id),
             onSelect: { onSelectCue(cue, $0) }
         )
@@ -61,8 +60,8 @@ extension CueCell {
         .buttonStyle(.plain)
         .font(.body.weight(.medium))
         .foregroundStyle(Color.neutral900)
-        .appPopover(isPresented: $isAddingCue) {
-            AddCueCardInfo(scene: scene, partName: part.name, onSave: onAddCue)
+        .appPopover(isPresented: $isAddingCue, onOutsideTap: { closeRequest += 1 }) {   // 바깥 클릭은 입력창이 정함 (저장 · 경고 · 닫기)
+            AddCueCardInfo(scene: scene, partName: part.name, closeRequest: closeRequest, onSave: onAddCue)
         }
     }
     

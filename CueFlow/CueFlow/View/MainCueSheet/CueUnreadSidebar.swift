@@ -20,35 +20,39 @@ struct CueUnreadSidebar: View {
         VStack(alignment: .leading, spacing: 0) {
             header
             searchField
-                .padding(.top, 17)
+                .padding(.horizontal, 15)
+                .padding(.top, 26.5)   // 피그마 검색창 위에서 67 (20.5 + 제목 줄 20 + 26.5)
             ScrollView {
                 list
-                    .padding(.top, 23)
+                    .padding(.horizontal, 14)
+                    .padding(.top, 28)   // 검색창 아래 28 (위에서 119)
                     .padding(.bottom, 20)
             }
         }
-        .padding(.horizontal, 22)
-        .padding(.top, 20)
-        .frame(width: 329)
+        .padding(.top, 20.5)   // 제목 줄(20) 가운데를 « 가운데(위에서 30.5)에 맞춤
+        .frame(width: 313)
         .frame(maxHeight: .infinity, alignment: .top)
         .onExitCommand(perform: onClose)   // 검색창에 커서가 있을 때도 Esc로 닫힘
-        .background(Color.gridHeader.shadow(.drop(color: .black.opacity(0.25), radius: 2, y: 4)), in: .rect(cornerRadius: 10))
+        .background(Color.neutral25.shadow(.drop(color: .black.opacity(0.25), radius: 2, y: 4)), in: .rect(cornerRadius: 10))
     }
 }
 
-// 제목 · 검색창
+// « 제목 · 검색창
 
 extension CueUnreadSidebar {
+    // (« 자리) 미확인 수정사항 ······ N건. « 버튼은 MainCueSheetView가 고정 위치에 그림
     private var header: some View {
         HStack {
             Text("미확인 수정사항")
-                .font(.body.weight(.semibold))
-                .foregroundStyle(Color.sidebarBackIcon)
+                .font(.title3.weight(.semibold))   // 피그마 Title 3/Emphasized 15/20
+                .foregroundStyle(Color.neutral900)
             Spacer()
             Text("\(unreadCues.count)건")
-                .font(.body)
-                .foregroundStyle(Color.neutral800)
+                .font(.title3)   // 피그마 Title 3/Regular 15/20
+                .foregroundStyle(Color.neutral900)
         }
+        .padding(.leading, 45)    // « (왼쪽 16 + 폭 19) + 간격 10
+        .padding(.trailing, 14)
     }
 
     private var searchField: some View {
@@ -60,7 +64,7 @@ extension CueUnreadSidebar {
                 .textFieldStyle(.plain)
                 .font(.callout)
         }
-        .padding(.leading, 8)
+        .padding(.horizontal, 8)
         .frame(height: 24)
         .background(Color.sidebarSearch, in: .capsule)
         .overlay(Capsule().strokeBorder(.black.opacity(0.08)))
@@ -85,7 +89,7 @@ extension CueUnreadSidebar {
                 Spacer()
                 Text(Self.dateText(lastEditDate(of: cue)))
                     .font(.caption)
-                    .foregroundStyle(Color.noticePlaceholder)
+                .foregroundStyle(Color.neutral400)
             }
             UnreadCueCard(cue: cue)
         }
@@ -132,16 +136,16 @@ private struct UnreadCueCard: View {
     let cue: Cue
 
     var body: some View {
-        HStack(alignment: .top, spacing: 1) {
+        HStack(alignment: .top, spacing: 4) {
             numberCircle
             texts
             Spacer(minLength: 0)
             positionTag
         }
-        .padding(.leading, 13)
+        .padding(.leading, 14)
         .padding(.trailing, 16)
-        .padding(.vertical, 11)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 13)
+        .frame(maxWidth: .infinity, minHeight: 91, alignment: .topLeading)   // 피그마 카드 높이 91
         .background(Color.surfaceWhite, in: .rect(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(partColor.sidebarBorder, lineWidth: 1.32))
     }
@@ -157,14 +161,14 @@ extension UnreadCueCard {
     }
 
     private var texts: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(sceneCode)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(Color.neutral900)
                 Text(cue.trigger?.scene?.title ?? "")
                     .font(.system(size: 10))
-                    .foregroundStyle(Color.noticeSecondaryText)
+                .foregroundStyle(Color.neutral500)
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(cue.trigger?.text ?? "")

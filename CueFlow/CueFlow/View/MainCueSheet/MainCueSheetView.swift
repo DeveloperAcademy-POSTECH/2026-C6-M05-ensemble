@@ -26,9 +26,10 @@ struct MainCueSheetView: View {
         VStack(alignment: .leading, spacing: 0) {
             titleRow
             filterRow
-            CueGrid(production: production, selectedPart: selectedPart, remoteRevision: remoteRevision, onShowHistory: { historyCue = $0 }, onShowUnread: { isShowingUnread = true }, onEscape: { isShowingUnread = false }, priorityScene: $priorityScene, focus: gridFocus)
-            .padding(.top, -12)   // 위 여유(12)만큼 올려서 표 위치는 피그마 그대로
-            .overlay(alignment: .trailing) { sidebar.padding(.trailing, -35) }   // 표 높이만큼만 + 창 오른쪽 끝에 붙임 (바깥 여백 35만큼)
+            CueGrid(production: production, selectedPart: selectedPart, remoteRevision: remoteRevision, onShowHistory: { historyCue = $0 }, onEscape: { isShowingUnread = false }, priorityScene: $priorityScene, focus: gridFocus)
+                .padding(.top, -12)   // 위 여유(12)만큼 올려서 표 위치는 피그마 그대로
+                .padding(.trailing, -35)   // 표는 바깥 여백(35)을 무시하고 창 오른쪽 끝까지
+                .overlay(alignment: .trailing) { sidebar.padding(.bottom, 20).padding(.trailing, -15) }   // 사이드바는 창 오른쪽 · 아래에서 20씩 (기준이 바깥 여백 35 안쪽이라 -15)
         }
         .padding(.horizontal, 35)
         .padding(.top, 16)
@@ -69,10 +70,19 @@ extension MainCueSheetView {
         }
     }
 
-    // 오른쪽 사이드바 + 왼쪽 구분선 손잡이
     private var sidebar: some View {
         sidebarContent
             .overlay(alignment: .leading) { sidebarEdge }
+            .overlay(alignment: .topLeading) {
+                if historyCue != nil || priorityScene != nil || isShowingUnread { closeButton }   // 사이드바가 열려 있을 때만
+            }
+    }
+
+    // « 닫기 버튼: 세 사이드바 모두 같은 자리에 고정 (왼쪽 16, 위 21)
+    private var closeButton: some View {
+        SidebarCloseButton(action: closeSidebar)
+            .padding(.leading, 16)
+            .padding(.top, 21)
     }
 
     // 왼쪽 구분선 손잡이 (마우스를 올리면 ↔ 커서)
@@ -111,20 +121,26 @@ extension MainCueSheetView {
                 .font(.title)
                 .foregroundStyle(Color.neutral900)
             Spacer()
-            // 피그마 1349:3639: 멤버 · 공유하기
+            // 피그마 1349:3639: 멤버 · 공유하기 · 내보내기 아이콘
             HStack(spacing: 20) {
                 memberButton
-                shareButton
+                HStack(spacing: 4) {   // 피그마: 공유하기 · 내보내기 아이콘 간격 4
+                    shareButton
+                    exportButton
+                }
             }
         }
     }
     
-    // 파트 칩 + 오른쪽 "씬 단위 화면" 버튼
+    // 파트 칩 + 오른쪽 미확인 · 리허설 모드 버튼
     private var filterRow: some View {
         HStack {
             PartFilterTabBar(parts: production.parts ?? [], selectedPart: $selectedPart)
             Spacer()
-            rehearsalModeButton
+            HStack(spacing: 10) {   // 피그마: 미확인 · 리허설 모드 간격 10
+                unreadButton
+                rehearsalModeButton
+            }
         }
         .padding(.top, 18)
         .padding(.bottom, 18)
@@ -138,6 +154,26 @@ extension MainCueSheetView {
         Button("리허설 모드", action: onRehearsal)
         .buttonStyle(.primary)
         .frame(width: 100, height: 36)
+    }
+    
+    // 미확인 N건 → 누르면 미확인 사이드바 (피그마: 100 × 36, neutral25 배경 + 보라 테두리, Title 3/Emphasized)
+    private var unreadButton: some View {
+        Button { isShowingUnread.toggle() } label: {
+            Text("미확인 \(unreadCount)건")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Color.brandPrimaryText)
+                .frame(width: 100, height: 36)
+                .background(Color.neutral25, in: .rect(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.brandPrimary, lineWidth: 1))
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // 내가 아직 확인 안 한 큐 수 (미확인 사이드바의 N건과 같은 기준)
+    private var unreadCount: Int {
+        let cues = (production.parts ?? []).flatMap { $0.cues ?? [] }
+        return cues.filter { $0.check(byUserID: iCloudAccount.userRecordName) == nil }.count
     }
 
     // 공유하기 (셀리나 #90 모양) → 공유하기 창 (초대 링크 · 메일, #68)
@@ -156,6 +192,24 @@ extension MainCueSheetView {
         .appPopover(isPresented: $isShowingShare, width: 420) {
             SharePopover(production: production)
         }
+    }
+    
+    // 공유하기 옆 내보내기 버튼 (피그마: 26 × 26 네모 · 모서리 5 · neutral25 · 테두리 purple/300, 가운데 square.and.arrow.up 14 purple/700)
+    private var exportButton: some View {
+        Button {
+            // TODO: 누르면 할 일 정해지면 넣기
+        } label: {
+            Image(systemName: "square.and.arrow.up")
+                .font(.system(size: 14))
+                .offset(y: -1)   // SF Symbol은 아래 여백 때문에 눈으로는 아래로 쏠려 보여서 1pt 올림 (피그마: 위 5 · 아래 4)
+                .foregroundStyle(Color.brandPrimaryPressed)
+                .frame(width: 16, height: 17)
+                .frame(width: 26, height: 26)   // 피그마 네모 26 × 26 (아이콘은 가운데)
+                .background(Color.neutral25, in: .rect(cornerRadius: 5))
+                .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Color.brandPrimaryDisabled, lineWidth: 1))   // purple/300 #C1BCFF
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
     }
 
     // 멤버 이니셜 동그라미(겹쳐서) + ∨ → 누르면 참여자 현황

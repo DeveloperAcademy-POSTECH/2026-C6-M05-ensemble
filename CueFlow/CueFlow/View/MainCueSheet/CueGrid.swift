@@ -13,7 +13,6 @@ struct CueGrid: View {
     var selectedPart: Part? = nil                 // 파트 탭바에서 고른 파트 (nil = 전체)
     var remoteRevision = 0                        // iCloud에서 받을 때마다 +1 → 표를 다시 그린다
     var onShowHistory: (Cue) -> Void = { _ in }   // 큐 카드 우클릭 → History
-    var onShowUnread: () -> Void = {}
     var onEscape: () -> Void = {}                 // Esc → 미확인 사이드바 닫기
     @Binding var priorityScene: ShowScene?        // 우선순위 사이드바에 보여줄 씬 (nil = 닫힘)
     var focus: SystemNotifications.CueFocus? = nil   // 큐 수정 알림을 눌렀을 때 → 그 큐로 스크롤 + 선택
@@ -170,7 +169,6 @@ extension CueGrid {
             isHovering: hoveredSlotKey == key,
             onAddCue: { addCue(part: part, scene: scene, triggerText: $0, cueTitle: $1, position: $2) },
             onShowHistory: onShowHistory,
-            onShowUnread: onShowUnread,
             selectedCueIDs: selectedCueIDs,
             onSelectCue: { selectCue($0, isShiftPressed: $1) }
         )

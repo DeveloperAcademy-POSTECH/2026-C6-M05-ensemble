@@ -23,6 +23,12 @@ struct ParticipantsPopover: View {
         return (production.members ?? []).first { $0.iCloudUserID == myUserID }
     }
 
+    // 공유 전이면 공연 만든 사람도 아직 멤버가 아니다 → 이 맥의 사용자 이름으로 보여 준다
+    private var myName: String {
+        if let name = me?.name, !name.isEmpty { return name }
+        return CurrentEditor.name
+    }
+
     private var others: [Member] {
         (production.members ?? []).filter { $0.iCloudUserID == nil || $0.iCloudUserID != myUserID }
     }
@@ -96,8 +102,8 @@ extension ParticipantsPopover {
     private var meRow: some View {
         HStack {
             HStack(spacing: 15) {
-                avatar(me?.name ?? "나", size: 36, fontSize: 18, color: .meAvatar)
-                Text("\(me?.name ?? "나") (나)")
+                avatar(myName, size: 36, fontSize: 18, color: .meAvatar)
+                Text("\(myName) (나)")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(Color.neutral900)
                     .lineLimit(1)

@@ -4,7 +4,7 @@
 //
 //  홈 화면 "최근에 열어본 프로젝트" 카드 한 장 (피그마 951:11292).
 //  보여줄 글자는 바깥에서 받는다. (데이터 연결은 HomeView에서)
-//  수정한 때 / 제목 + 태그(장르 · 규모) / 일정 / 구분선 / 인원 · 러닝타임 / 버튼 두 개
+//  수정한 때 / 제목 + 태그(장르) / 일정 · 객석 / 구분선 / 러닝타임 / 버튼 두 개
 //
 
 import SwiftUI
@@ -12,10 +12,10 @@ import SwiftUI
 struct RecentProjectCard: View {
     let lastWorked: String      // 예: "오늘 16:32 수정"
     let title: String           // 예: "레미제라블"
-    let tags: [String]          // 예: ["뮤지컬", "중극장"] (빈 글자는 숨김)
-    let members: String         // 예: "배우 22명 · 스태프 16명"
+    let tags: [String]          // 예: ["뮤지컬"] (빈 글자는 숨김)
     var runningTime: String?    // 예: "러닝타임 170분" (없으면 숨김)
     let schedule: String        // 예: "2026.11.14-15 · 아트스페이스 A홀"
+    var seats: String = ""      // 예: "1,200석" (비었으면 숨김)
     let onRehearsal: () -> Void
     let onContinue: () -> Void
 
@@ -35,7 +35,7 @@ struct RecentProjectCard: View {
                         ForEach(tags.filter { !$0.isEmpty }, id: \.self) { tag in
                             Text(tag)
                                 .font(.callout.weight(.semibold))
-                                .foregroundStyle(Color.neutral500)
+                                .foregroundStyle(Color.tagText)
                                 .padding(.horizontal, 6)
                                 .frame(height: 25)
                                 .background(Color.tagBackground, in: RoundedRectangle(cornerRadius: 4))
@@ -50,19 +50,22 @@ struct RecentProjectCard: View {
                         .font(.callout)
                     Text(schedule)
                         .font(.subheadline.weight(.semibold))
+                    if !seats.isEmpty {
+                        Text(seats)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.neutral400)
+                            .layoutPriority(1)   // 공연장 이름이 길어도 객석 수는 잘리지 않게
+                    }
                 }
                 .foregroundStyle(Color.neutral600)
 
                 Divider()
 
-                HStack(spacing: 10) {
-                    Text(members)
-                    if let runningTime {
-                        Text(runningTime)
-                    }
+                if let runningTime {
+                    Text(runningTime)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.neutral600)
                 }
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.neutral600)
             }
             .padding(.top, 21)
 
@@ -120,10 +123,10 @@ private struct ProjectCardButtonStyle: ButtonStyle {
     RecentProjectCard(
         lastWorked: "오늘 16:32 수정",
         title: "레미제라블",
-        tags: ["뮤지컬", "중극장"],
-        members: "배우 22명 · 스태프 16명",
+        tags: ["뮤지컬"],
         runningTime: "러닝타임 170분",
         schedule: "2026.11.14-15 · 아트스페이스 A홀",
+        seats: "1,200석",
         onRehearsal: {},
         onContinue: {}
     )

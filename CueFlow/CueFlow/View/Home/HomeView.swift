@@ -110,10 +110,10 @@ struct HomeView: View {
                     RecentProjectCard(
                         lastWorked: production.lastWorkedText,
                         title: production.title,
-                        tags: [production.genre, production.summaryText],
-                        members: production.memberCountText,
+                        tags: [production.genre],
                         runningTime: production.runningTimeText,
                         schedule: production.scheduleText,
+                        seats: production.summaryText,
                         onRehearsal: {
                             production.lastOpenedAt = .now
                             onRehearsal(production)
@@ -161,7 +161,7 @@ struct HomeView: View {
                 ProjectListRow(
                     name: production.listName,
                     modifiedDate: production.updatedDateText,
-                    owner: "",   // TODO: 소유자 (CloudKit 공유 후)
+                    owner: production.ownerText,
                     isFavorite: production.isFavorite,
                     onToggleFavorite: { production.isFavorite.toggle() }
                 )

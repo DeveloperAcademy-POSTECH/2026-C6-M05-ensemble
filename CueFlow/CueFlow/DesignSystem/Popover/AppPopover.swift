@@ -21,7 +21,7 @@ import SwiftUI
 // ③ 팝오버 안에서 닫을 때 (Enter로 저장한 뒤 등)
 //      @Environment(\.closeAppPopover) private var closePopover   →   closePopover()
 //
-// 바깥을 클릭하거나 Esc를 누르면 저절로 닫힌다
+// 바깥을 클릭하거나 Esc를 누르면 저절로 닫힌다 (onOutsideTap을 주면 닫는 대신 그걸 함)
 // 팝오버 안 내용 뷰에는 패딩 · 폭 · 배경을 넣지 않는다 (겉모양이 다 넣어줌)
 
 extension View {
@@ -30,13 +30,14 @@ extension View {
         edge: Edge = .bottom,                    // 연 뷰의 아래(.bottom) / 오른쪽(.trailing)에 띄움
         width: CGFloat? = 240,
         background: PopoverBackground = .input,
+        onOutsideTap: (() -> Void)? = nil,       // 바깥 클릭 · Esc 때 바로 닫지 않고 할 일 (nil이면 그냥 닫힘)
         @ViewBuilder content: () -> Content
     ) -> some View {
         let popover = content().popoverStyle(width: width, background: background)
         return transformAnchorPreference(key: AppPopoverKey.self, value: .bounds) { items, anchor in   // 덮어쓰지 않고 더함 (한 뷰에 팝오버 여러 개 가능)
             guard isPresented.wrappedValue else { return }
             let close = { isPresented.wrappedValue = false }
-            items.append(AppPopoverItem(anchor: anchor, edge: edge, content: AnyView(popover.environment(\.closeAppPopover, CloseAppPopoverAction(close: close))), close: close))
+            items.append(AppPopoverItem(anchor: anchor, edge: edge, content: AnyView(popover.environment(\.closeAppPopover, CloseAppPopoverAction(close: close))), close: close, outsideTap: onOutsideTap ?? close))
         }
     }
 
@@ -62,6 +63,7 @@ struct AppPopoverItem {
     let edge: Edge
     let content: AnyView
     let close: () -> Void
+    let outsideTap: () -> Void   // 바깥 클릭 · Esc 때 할 일 (따로 안 정하면 close)
 }
 
 // 열린 팝오버들을 화면 맨 바깥(appPopoverHost)까지 올려 보내는 키
@@ -89,12 +91,12 @@ struct AppPopoverLayer: View {
         return ZStack(alignment: .topLeading) {
             Color.clear
                 .contentShape(.rect)
-                .onTapGesture(perform: item.close)    // 바깥 클릭하면 닫힘
+                .onTapGesture(perform: item.outsideTap)    // 바깥 클릭하면 닫힘 (따로 정했으면 그걸 함)
             item.content.appPopoverHost()            // 팝오버 안에서 여는 팝오버(위치 · 종류 고르기)는 이 팝오버 위에 그려짐
                 .fixedSize()
                 .onGeometryChange(for: CGSize.self) { $0.size } action: { sizes[index] = $0 }
                 .offset(position(of: item, size: sizes[index] ?? .zero, in: proxy))
-                .onExitCommand(perform: item.close)   // Esc 누르면 닫힘
+                .onExitCommand(perform: item.outsideTap)   // Esc 누르면 닫힘 (따로 정했으면 그걸 함)
         }
     }
 
