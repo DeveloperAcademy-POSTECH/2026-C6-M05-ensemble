@@ -25,10 +25,10 @@ struct CueCommentPopover: View {
             } else {
                 commentList
             }
-            inputRow
-                .padding(.top, 12)
-            buttonRow
-                .padding(.top, 12)
+            if replyTarget == nil {
+                inputArea
+                    .padding(.top, 12)
+            }
         }
     }
 }
@@ -48,6 +48,10 @@ extension CueCommentPopover {
             commentView(comment, isReply: false)
             ForEach((comment.replies ?? []).sorted { $0.createdAt < $1.createdAt }) { reply in
                 commentView(reply, isReply: true)
+                    .padding(.leading, 28)
+            }
+            if replyTarget == comment {
+                inputArea
                     .padding(.leading, 28)
             }
             Color.neutral200
@@ -124,6 +128,14 @@ extension CueCommentPopover {
             Spacer()
             smallButton("취소", isFilled: false, action: cancel)
             smallButton("댓글", isFilled: true, action: post)
+        }
+    }
+    
+    // 입력칸 + 취소/댓글 (맨 아래 또는 답글 다는 댓글 밑에 들어감)
+    private var inputArea: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            inputRow
+            buttonRow
         }
     }
 
