@@ -55,6 +55,9 @@ struct ContentView: View {
 
     // 시스템 알림을 눌러 연 공지 → 공지사항 상세로 (#103)
     @State private var noticeToOpen: Notice?
+    // 공지 목록 위에 열어 둔 상세 · 쓰기 화면. 메뉴를 바꿀 때 먼저 닫으려고 여기서 가진다 (#144)
+    @State private var openedNotice: Notice?
+    @State private var isComposingNotice = false
     @State private var cueFocus: SystemNotifications.CueFocus?   // 큐 수정 알림을 눌렀을 때 큐시트가 찾아갈 큐들
 
     init(pendingInvite: PendingInvite? = nil) {
@@ -81,7 +84,7 @@ struct ContentView: View {
                     rehearsingProduction = nil
                     openedProduction = nil
                     isCreatingProduction = false
-                    selectedMenu = .project
+                    switchMenu(to: .project)
                     roleProductionID = invite.productionID
                 }
             } else if let roleProductionID {
@@ -133,7 +136,7 @@ struct ContentView: View {
             rehearsingProduction = nil
             openedProduction = nil
             isCreatingProduction = false
-            selectedMenu = .project
+            switchMenu(to: .project)
         }
         #if DEBUG
         .onReceive(NotificationCenter.default.publisher(for: InviteRoleView.fakeAcceptNotification)) { _ in
@@ -150,7 +153,7 @@ struct ContentView: View {
         rehearsingProduction = nil
         openedProduction = nil
         isCreatingProduction = false
-        selectedMenu = .project
+        switchMenu(to: .project)
         roleProductionID = production.id
 
         Task {
@@ -168,12 +171,28 @@ struct ContentView: View {
     }
     #endif
 
+    // 공지 상세 · 쓰기가 위에 쌓인 채로 메뉴를 바꾸면 오른쪽 화면이 안 바뀐다 (#144)
+    // → 쌓인 화면을 먼저 닫고, 잠깐 뒤에 메뉴를 바꾼다
+    private func switchMenu(to menu: SidebarMenu) {
+        let hadNoticeOnTop = openedNotice != nil || isComposingNotice
+        openedNotice = nil
+        isComposingNotice = false
+        guard hadNoticeOnTop, menu != selectedMenu else {
+            selectedMenu = menu
+            return
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(100))
+            selectedMenu = menu
+        }
+    }
+
     // 사이드바에서 메뉴를 누르면(같은 메뉴여도) 열어 둔 큐시트를 닫는다
     private var menuSelection: Binding<SidebarMenu> {
         Binding(
             get: { selectedMenu },
             set: {
-                selectedMenu = $0
+                switchMenu(to: $0)
                 openedProduction = nil
                 isCreatingProduction = false
             }
@@ -190,7 +209,7 @@ struct ContentView: View {
                 isInProduction: selectedMenu == .project && openedProduction != nil,
                 onOpenProduction: { production in
                     // 사이드바 큐시트 목록에서 공연을 고르면 어느 화면에 있든 그 공연 큐시트로
-                    selectedMenu = .project
+                    switchMenu(to: .project)
                     isCreatingProduction = false
                     openedProduction = production
                 },
@@ -237,7 +256,12 @@ struct ContentView: View {
             case .notice:
                 // NavigationStack: 목록 → 상세로 들어갔다가 뒤로 돌아올 수 있게
                 NavigationStack {
-                    NoticeListView(notices: visibleNotices, openRequest: $noticeToOpen)
+                    NoticeListView(
+                        notices: visibleNotices,
+                        openRequest: $noticeToOpen,
+                        openedNotice: $openedNotice,
+                        isComposing: $isComposingNotice
+                    )
                 }
             case .help:
                 Text("도움말 화면")
@@ -318,7 +342,7 @@ extension ContentView {
             guard let production = productions.first(where: { $0.id == focus.productionID }) else { return }
             rehearsingProduction = nil
             isCreatingProduction = false
-            selectedMenu = .project
+            switchMenu(to: .project)
             openedProduction = production
             cueFocus = focus
         case nil:
