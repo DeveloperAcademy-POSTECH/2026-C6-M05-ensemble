@@ -18,13 +18,14 @@ struct CueCell: View {
     var onShowHistory: (Cue) -> Void = { _ in }   // 카드 우클릭 → History
     var selectedCueIDs: Set<UUID> = []                   // 선택된 큐 카드들 (CueGrid가 알려줌)
     var onSelectCue: (Cue, Bool) -> Void = { _, _ in }   // 카드를 눌렀을 때 (true = shift)
+    @Environment(\.canEditCues) private var canEdit   // 읽기 권한이면 false (#120)
     @State private var isAddingCue = false          // Add new 팝오버가 열려 있는지
     @State private var closeRequest = 0             // Add new 팝오버 바깥 클릭 · Esc 횟수 (입력창에 알려줌)
     
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             cueCards
-            if isHovering || isAddingCue { addNewButton }
+            if canEdit, isHovering || isAddingCue { addNewButton }
         }
         .padding(7)
         .padding(.leading, 4)

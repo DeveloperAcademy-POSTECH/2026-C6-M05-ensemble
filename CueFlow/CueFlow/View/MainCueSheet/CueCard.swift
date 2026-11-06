@@ -22,6 +22,7 @@ struct CueCard: View {
     @State private var isShowingComments = false
     @State private var isShowingChecks = false
     @Environment(\.myUserID) private var myUserID
+    @Environment(\.canEditCues) private var canEdit   // 읽기 권한이면 false (#120)
     @Environment(\.modelContext) private var modelContext   // 큐를 지울 곳
     
     var body: some View {
@@ -34,7 +35,7 @@ struct CueCard: View {
         .background(Color.cueCardBackground, in: .rect(cornerRadius: 6))
         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(isSelected ? partColor.accent : partColor.background, lineWidth: isSelected ? 1.5 : 1))
         .contentShape(.rect)
-        .onTapGesture(count: 2) { isEditingCue = true }   // 더블클릭하면 수정 팝오버
+        .onTapGesture(count: 2) { if canEdit { isEditingCue = true } }   // 더블클릭하면 수정 팝오버
         .highPriorityGesture(TapGesture().modifiers(.shift).onEnded { onSelect(true) })   // Shift+클릭 = 선택에 추가
         .onTapGesture { onSelect(false) }                                                // 그냥 클릭 = 이 카드만 선택
         .appPopover(isPresented: $isEditingCue, edge: .trailing, onOutsideTap: { closeRequest += 1 }) { cueEditor }   // 바깥 클릭은 입력창이 정함
@@ -49,10 +50,14 @@ struct CueCard: View {
 extension CueCard {
     private var cueMenu: some View {
         PopoverMenu {
-            PopoverMenuItem("큐 수정하기") { isEditingCue = true }   // 더블클릭과 같은 수정 팝오버
+            if canEdit {
+                PopoverMenuItem("큐 수정하기") { isEditingCue = true }   // 더블클릭과 같은 수정 팝오버
+            }
             PopoverMenuItem("History", action: onShowHistory)       // 오른쪽 History 사이드바 열기
-            PopoverMenuDivider()
-            PopoverMenuItem("삭제하기") { modelContext.deleteCue(cue) }
+            if canEdit {
+                PopoverMenuDivider()
+                PopoverMenuItem("삭제하기") { modelContext.deleteCue(cue) }
+            }
         }
     }
 }
@@ -100,7 +105,7 @@ extension CueCard {
     
     // 위치 태그: 누르면 상수 · 하수 · 무대 · 콘솔 고르는 팝오버 (피그마 무대위치)
     private var positionTag: some View {
-        Button { isPickingPosition = true } label: { positionTagLabel }
+        Button { if canEdit { isPickingPosition = true } } label: { positionTagLabel }
             .buttonStyle(.plain)
             .fixedSize()
             .appPopover(isPresented: $isPickingPosition, width: nil) {

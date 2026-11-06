@@ -17,6 +17,11 @@ struct NoticeComposeView: View {
     @Query(sort: \Production.updatedAt, order: .reverse)
     private var productions: [Production]
 
+    // 공지는 편집 권한이 있는 공연에만 쓸 수 있다. 읽기 권한이면 받기만 (#120)
+    private var writableProductions: [Production] {
+        productions.filter { $0.canEdit(userID: ICloudAccount.currentUserRecordName) }
+    }
+
     @State private var selectedProduction: Production?
     @State private var recipient: NoticeRecipient = .all
     @State private var title = ""
@@ -24,7 +29,7 @@ struct NoticeComposeView: View {
 
     // 프로젝트를 고르고 제목·내용을 다 써야 보낼 수 있다
     private var canSend: Bool {
-        selectedProduction != nil
+        selectedProduction?.canEdit(userID: ICloudAccount.currentUserRecordName) == true   // 쓰는 중에 권한이 꺼질 수도 있어서
             && !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
@@ -136,7 +141,7 @@ struct NoticeComposeView: View {
         Menu {
             Button("프로젝트 선택") { selectedProduction = nil }
             Divider()
-            ForEach(productions) { production in
+            ForEach(writableProductions) { production in
                 Button(production.title) { selectedProduction = production }
             }
         } label: {

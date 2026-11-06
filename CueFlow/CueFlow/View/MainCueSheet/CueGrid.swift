@@ -17,6 +17,7 @@ struct CueGrid: View {
     @Binding var priorityScene: ShowScene?        // 우선순위 사이드바에 보여줄 씬 (nil = 닫힘)
     var focus: SystemNotifications.CueFocus? = nil   // 큐 수정 알림을 눌렀을 때 → 그 큐로 스크롤 + 선택
     @Environment(\.modelContext) private var modelContext   // 새 큐를 저장할 곳
+    @Environment(\.canEditCues) private var canEdit   // 읽기 권한이면 false (#120)
 
     @State private var hoveredSlotKey: String?    // 마우스가 올라가 있는 칸 (파트id-씬id)
     @State private var isAddingScene = false      // 씬 추가 팝오버가 열려 있는지
@@ -111,20 +112,21 @@ extension CueGrid {
         .gridCellBorder()
         .contentShape(.rect)
         .id(scene.id)   // 사이드바에서 고른 씬 열로 스크롤할 때 찾는 이름표
-        .onTapGesture(count: 2) { editingScene = scene }   // 더블클릭하면 수정 팝오버
+        .onTapGesture(count: 2) { if canEdit { editingScene = scene } }   // 더블클릭하면 수정 팝오버
         .onTapGesture { selectColumn(scene) }   // 한 번 누르면 이 씬 열 선택
         .overlay(alignment: .topTrailing) { selectedMark(for: scene) }
         .appPopover(isPresented: isEditing(scene)) {
             AddScene(title: scene.title, kind: scene.kind) { scene.title = $0; scene.kind = $1 }
         }
         .contextMenu {   // 우클릭 메뉴
-            Button("삭제", role: .destructive) { deleteScene(scene) }
+            if canEdit { Button("삭제", role: .destructive) { deleteScene(scene) } }
         }
     }
     
     // + 씬 추가 칸
     private var addSceneHeaderCell: some View {
-        Button { isAddingScene = true } label: { Text("+").font(.system(size: 25, weight: .semibold)) }
+        Button { isAddingScene = true } label: { Text("+").font(.system(size: 25, weight: .semibold)).opacity(canEdit ? 1 : 0) }
+            .disabled(!canEdit)
             .appPopover(isPresented: $isAddingScene) { AddScene(onSave: addScene) }
             .buttonStyle(.plain)
             .foregroundStyle(Color.neutral900)
@@ -146,12 +148,12 @@ extension CueGrid {
             .overlay(alignment: .leading) { part.color.accent.frame(width: 6) }
             .gridCellBorder()
             .contentShape(.rect)
-            .onTapGesture(count: 2) { editingPart = part }   // 더블클릭하면 수정 팝오버
+            .onTapGesture(count: 2) { if canEdit { editingPart = part } }   // 더블클릭하면 수정 팝오버
             .appPopover(isPresented: isEditing(part), edge: .trailing) {
                 AddPart(name: part.name) { part.name = $0 }
             }
             .contextMenu {   // 우클릭 메뉴
-                Button("삭제", role: .destructive) { deletePart(part) }
+                if canEdit { Button("삭제", role: .destructive) { deletePart(part) } }
             }
     }
     
@@ -183,7 +185,8 @@ extension CueGrid {
     
     // + 파트 추가 칸
     private var addPartHeaderCell: some View {
-        Button { isAddingPart = true } label: { Text("+").font(.system(size: 25, weight: .semibold)) }   // 씬 추가 + 와 같은 모양
+        Button { isAddingPart = true } label: { Text("+").font(.system(size: 25, weight: .semibold)).opacity(canEdit ? 1 : 0) }   // 씬 추가 + 와 같은 모양
+            .disabled(!canEdit)
             .appPopover(isPresented: $isAddingPart, edge: .trailing) { AddPart(onSave: addPart) }
             .buttonStyle(.plain)
             .foregroundStyle(Color.neutral900)

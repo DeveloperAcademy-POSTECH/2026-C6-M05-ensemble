@@ -190,6 +190,7 @@ struct RehearsalCueList<SceneControls: View>: View {
 
 // 표 한 줄 = 큐 하나 (피그마 리허설모드_무대배치01). 같은 우선순위 번호의 큐는 번호 · 트리거를 줄마다 반복
 struct CueListRow: View {
+    @Environment(\.canEditCues) private var canEdit   // 읽기 권한이면 false (#120)
     let code: String       // "S#3 - 1" (씬 단축어 - 큐카드 우선순위 번호)
     let cue: Cue
     let isCurrent: Bool
@@ -251,7 +252,7 @@ struct CueListRow: View {
     @ViewBuilder
     private func positionTag(_ cue: Cue) -> some View {
         let columns = cue.trigger?.scene?.production?.stageGridColumns ?? 3
-        if cue.position == .stage, columns > 0 {
+        if cue.position == .stage, columns > 0, canEdit {
             Menu {
                 ForEach(0..<columns * columns, id: \.self) { cell in
                     Button("\(cell + 1)구역") { cue.stageCell = cell }
@@ -266,6 +267,8 @@ struct CueListRow: View {
             .menuIndicator(.hidden)
             .fixedSize()
             .help("무대 몇 구역인지 고르기")
+        } else if cue.position == .stage, let cell = cue.stageCell {
+            tagLabel("무대 \(cell + 1)", color: tagColor(cue))   // 읽기 권한: 고르지는 못하고 보기만
         } else {
             tagLabel(cue.position.rawValue, color: tagColor(cue))
         }
