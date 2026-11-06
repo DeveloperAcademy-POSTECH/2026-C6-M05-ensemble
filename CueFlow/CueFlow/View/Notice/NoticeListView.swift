@@ -18,12 +18,12 @@ enum NoticeFilter: String, CaseIterable {
 struct NoticeListView: View {
     let notices: [Notice]   // 최근에 보낸 순서로 들어온다
     var openRequest: Binding<Notice?> = .constant(nil)   // 알림 카드 [공지 자세히 보기] → 이 공지 상세로 (#82)
+    @Binding var openedNotice: Notice?   // 누른 공지 (상세로 이동). 메뉴를 바꿀 때 닫을 수 있게 ContentView가 가진다 (#144)
+    @Binding var isComposing: Bool       // true가 되면 쓰기 화면으로 이동
 
     @Environment(\.modelContext) private var modelContext
     @Query private var productions: [Production]
     @State private var filter: NoticeFilter = .all
-    @State private var isComposing = false   // true가 되면 쓰기 화면으로 이동
-    @State private var openedNotice: Notice?  // 누른 공지 (상세로 이동)
     @State private var checkedIDs: Set<UUID> = []   // 체크박스로 고른 공지 (삭제용)
 
     // 공연이 하나라도 있는데 전부 읽기 권한이면 공지를 쓸 곳이 없다 → 작성하기 숨김 (#120)
@@ -175,8 +175,10 @@ struct NoticeListView: View {
 }
 
 #Preview {
+    @Previewable @State var openedNotice: Notice?
+    @Previewable @State var isComposing = false
     NavigationStack {
-        NoticeListView(notices: NoticePreviewData.samples)
+        NoticeListView(notices: NoticePreviewData.samples, openedNotice: $openedNotice, isComposing: $isComposing)
     }
     .frame(width: 1290, height: 930)
 }
