@@ -2,7 +2,7 @@
 //  ScriptPropAI.swift
 //  CueFlow
 //
-//  Apple Intelligence(Foundation Models)로 지문에서 소품 후보 찾기 — 시험 중.
+//  Apple Intelligence(Foundation Models)로 지문에서 소품 후보 찾기.
 //  규칙("~을/를")이 놓치는 "칼로 찌른다", "의자에 앉는다" 같은 것도 잡아 보려고.
 //  - 맥에서 Apple Intelligence를 못 쓰면(꺼짐 · 인텔 맥 · 한국어 미지원) 아무것도 안 한다 → 규칙 결과만 남음
 //  - 한 번에 읽을 수 있는 양이 적어서 지문을 조각내서 묻는다
@@ -83,7 +83,7 @@ enum ScriptPropAI {
                     seen.insert(name)
                     fresh.append(name)
                 }
-                if !fresh.isEmpty { await onFound(fresh) }
+                if !fresh.isEmpty { onFound(fresh) }
             } catch {
                 // 한 조각이 실패해도(안전 필터 · 너무 김 등) 나머지는 계속
                 logger.error("소품 찾기 실패: \(error)")

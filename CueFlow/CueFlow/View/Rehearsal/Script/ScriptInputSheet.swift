@@ -26,7 +26,7 @@ struct ScriptInputSheet: View {
     @State private var props: [String] = []            // 소품 목록 (괄호 지문에서 찾은 것 + 직접 추가)
     @State private var selectedProps: Set<String> = []
     @State private var newProp = ""
-    @State private var aiProps: Set<String> = []         // Apple Intelligence가 찾아 준 소품 (칩에 ✨ 표시 — 시험 중)
+    @State private var aiProps: Set<String> = []         // Apple Intelligence가 찾아 준 소품 (칩에 ✨ 표시)
     @State private var aiTask: Task<Void, Never>?        // AI 소품 찾기 (뒤로 · 적용 · 닫기 하면 멈춘다)
     @State private var aiMessage: String?                // AI 소품 찾기 결과 한 줄 (몇 개 찾았는지 · 왜 못 썼는지)
 
@@ -147,7 +147,7 @@ struct ScriptInputSheet: View {
 
         let foundProps = ScriptParser.propCandidates(in: text, cast: selectedCast)
         props = foundProps + props.filter { !foundProps.contains($0) }
-        selectedProps = selectedProps.union(foundProps.filter(ScriptParser.isLikelyProp))   // 손 · 고개 · 노동자들 같은 말은 꺼 둔다
+        selectedProps = selectedProps.union(foundProps.filter { ScriptParser.isLikelyProp($0) })   // 손 · 고개 · 노동자들 같은 말은 꺼 둔다
         step = .review
         findMorePropsWithAI()
     }
