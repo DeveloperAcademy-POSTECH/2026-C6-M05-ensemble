@@ -231,17 +231,13 @@ struct RehearsalView: View {
             syncMenu
                 .padding(.horizontal, 8)
 
-            // TODO: #41 머지 후 .buttonStyle(.tertiary)로 교체
-            Button("리허설 모드 종료", action: onExit)
-                .buttonStyle(.plain)
-                .frame(width: 130, height: 36)
-                .foregroundStyle(Color.brandPrimaryText)
-                .background(Color.surfaceWhite, in: RoundedRectangle(cornerRadius: 6))
-                .overlay {
-                    // 피그마 #2B2476 → 색상 표에서 가장 가까운 brandPrimaryText
-                    RoundedRectangle(cornerRadius: 6)
-                        .strokeBorder(Color.rehearsalExitBorder, lineWidth: 1)
-                }
+            // 피그마 리허설모드: 흰 바탕 + 연보라 테두리(tertiary) + 15 Semibold. 글자 #151144는 색상 표에 없어 tertiary 기본 neutral900
+            Button(action: onExit) {
+                Text("리허설 모드 종료")
+                    .font(.system(size: 15, weight: .semibold))
+            }
+            .buttonStyle(.tertiary)
+            .frame(width: 130, height: 36)
         }
     }
 
