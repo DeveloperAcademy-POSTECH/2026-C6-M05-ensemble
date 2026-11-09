@@ -302,8 +302,8 @@ private struct CueTableLine: View {
     }
 }
 
-// "다음 큐" 버튼: 연보라 배경 + 흰 글자
-// TODO: #41 머지 후 .buttonStyle(.softPrimary)로 교체하고 이건 지우기
+// "다음 큐" 버튼: 연보라 배경 + 흰 글자 (피그마 brand/primary-hover #9990FF)
+// 공용 softPrimary는 #9188FF라 색이 달라서 따로 둔다
 struct SoftPrimaryCompatButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label

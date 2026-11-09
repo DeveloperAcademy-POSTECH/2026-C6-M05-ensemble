@@ -8,18 +8,30 @@
 
 import SwiftUI
 
-// 보라 배경 + 흰 글자 (예: 새 프로젝트, 작성하기)
+// 보라 배경 + 흰 글자 (예: 새 프로젝트, 작성하기). 못 누를 때는 연보라 바탕 + 보라 글자 (예: 대본 입력 "다음")
 struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.body.weight(.semibold))
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(
-                configuration.isPressed ? Color.brandPrimaryPressed : Color.brandPrimary,
-                in: RoundedRectangle(cornerRadius: 6)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 6))
+        PrimaryButton(configuration: configuration)
+    }
+
+    // 못 누르는 상태(.disabled)는 View 안에서만 읽을 수 있어서 따로 뺀다
+    private struct PrimaryButton: View {
+        let configuration: ButtonStyleConfiguration
+        @Environment(\.isEnabled) private var isEnabled
+
+        var body: some View {
+            configuration.label
+                .font(.body.weight(.semibold))
+                .foregroundStyle(isEnabled ? Color.white : Color.buttonDisabledText)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(background, in: RoundedRectangle(cornerRadius: 6))
+                .contentShape(RoundedRectangle(cornerRadius: 6))
+        }
+
+        private var background: Color {
+            if !isEnabled { return .buttonDisabledBackground }
+            return configuration.isPressed ? .brandPrimaryPressed : .brandPrimary
+        }
     }
 }
 
