@@ -145,7 +145,7 @@ struct ScriptInputSheet: View {
 
         let foundProps = ScriptParser.propCandidates(in: text, cast: selectedCast)
         props = foundProps + props.filter { !foundProps.contains($0) }
-        selectedProps = selectedProps.union(foundProps.filter(ScriptParser.isLikelyProp))   // 손 · 고개 · 노동자들 같은 말은 꺼 둔다
+        selectedProps = selectedProps.union(foundProps.filter { ScriptParser.isLikelyProp($0) })   // 손 · 고개 · 노동자들 같은 말은 꺼 둔다
         step = .review
     }
 
