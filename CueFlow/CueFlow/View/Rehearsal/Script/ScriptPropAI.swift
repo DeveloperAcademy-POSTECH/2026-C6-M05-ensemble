@@ -83,7 +83,7 @@ enum ScriptPropAI {
                     seen.insert(name)
                     fresh.append(name)
                 }
-                if !fresh.isEmpty { onFound(fresh) }
+                if !fresh.isEmpty, !Task.isCancelled { onFound(fresh) }   // 멈춘 뒤 늦게 온 답은 버린다 (옛 대본 소품이 새 목록에 섞이지 않게)
             } catch {
                 // 한 조각이 실패해도(안전 필터 · 너무 김 등) 나머지는 계속
                 logger.error("소품 찾기 실패: \(error)")

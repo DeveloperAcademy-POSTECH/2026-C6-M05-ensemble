@@ -27,6 +27,8 @@ struct ScriptInputSheet: View {
     @State private var selectedProps: Set<String> = []
     @State private var newProp = ""
     @State private var aiProps: Set<String> = []         // Apple Intelligence가 찾아 준 소품 (칩에 ✨ 표시)
+    @State private var scannedCast: Set<String> = []     // 이번 대본에서 자동으로 찾은 배역 (대본을 고치면 지우고 다시 찾는다)
+    @State private var scannedProps: Set<String> = []    // 이번 대본에서 자동으로 찾은 소품 (규칙 + AI)
     @State private var aiTask: Task<Void, Never>?        // AI 소품 찾기 (뒤로 · 적용 · 닫기 하면 멈춘다)
     @State private var aiMessage: String?                // AI 소품 찾기 결과 한 줄 (몇 개 찾았는지 · 왜 못 썼는지)
 
@@ -140,12 +142,20 @@ struct ScriptInputSheet: View {
     }
 
     private func goToReview() {
+        // 뒤로 가서 대본을 고친 경우: 옛 대본에서 자동으로 찾은 것은 지우고 다시 찾는다 (작품에 있던 것 · 직접 추가한 것은 남김)
+        cast.removeAll { scannedCast.contains($0) }
+        selectedCast.subtract(scannedCast)
+        props.removeAll { scannedProps.contains($0) }
+        selectedProps.subtract(scannedProps)
+        aiProps = []
+
         let found = ScriptParser.castCandidates(in: text)
-        // 앞에서 직접 추가했던 배역은 남긴다
+        scannedCast = Set(found).subtracting(cast)
         cast = found + cast.filter { !found.contains($0) }
         selectedCast = selectedCast.union(found)
 
         let foundProps = ScriptParser.propCandidates(in: text, cast: selectedCast)
+        scannedProps = Set(foundProps).subtracting(props)
         props = foundProps + props.filter { !foundProps.contains($0) }
         selectedProps = selectedProps.union(foundProps.filter { ScriptParser.isLikelyProp($0) })   // 손 · 고개 · 노동자들 같은 말은 꺼 둔다
         step = .review
@@ -166,6 +176,7 @@ struct ScriptInputSheet: View {
                 for name in found.reversed() where !props.contains(name) {
                     props.insert(name, at: 0)
                     aiProps.insert(name)
+                    scannedProps.insert(name)
                     if ScriptParser.isLikelyProp(name) { selectedProps.insert(name) }
                 }
             }
