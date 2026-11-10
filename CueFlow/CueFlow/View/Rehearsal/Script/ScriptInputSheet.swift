@@ -268,11 +268,11 @@ struct ScriptInputSheet: View {
                     .foregroundStyle(Color.neutral500)
                 if let index = parsed.headingIndex {
                     Button("앞 장면에 합치기") { overrides.merged.insert(index) }
-                        .buttonStyle(.link)
+                        .linkButtonStyle()
                         .font(.caption)
                 } else if let index = parsed.splitIndex {
                     Button("나누기 취소") { overrides.splits[index] = nil }
-                        .buttonStyle(.link)
+                        .linkButtonStyle()
                         .font(.caption)
                 }
             }

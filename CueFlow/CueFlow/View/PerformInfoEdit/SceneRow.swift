@@ -67,12 +67,15 @@ extension SceneRow {
         .background(Color.surfaceWhite, in: .rect(cornerRadius: 10))
     }
 
+    // 끌 수 있다는 표시로 손 모양 커서 (맥만. 아이패드는 그대로)
     private func updateCursor(isHovering: Bool) {
+        #if os(macOS)
         if isHovering {
             NSCursor.openHand.push()
         } else {
             NSCursor.pop()
         }
+        #endif
     }
 }
 
@@ -123,7 +126,7 @@ extension SceneRow {
             .focused($isTitleFocused)
             .onAppear { isTitleFocused = true }
             .onSubmit { finishTitleEdit() }                    // Enter: 저장
-            .onExitCommand { isEditingTitle = false }          // Esc: 취소
+            .onEscape { isEditingTitle = false }          // Esc: 취소
             .onChange(of: isTitleFocused) { saveIfBlurred() }  // 다른 곳 클릭: 저장
     }
 

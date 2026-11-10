@@ -170,13 +170,13 @@ struct DarkModeToggle: View {
 
                 // 손잡이
                 Capsule()
-                    .fill(Color(nsColor: .windowBackgroundColor))
+                    .fill(Color.windowBackground)
                     .frame(width: 44, height: 28)
                     .shadow(color: .black.opacity(0.08), radius: 2, y: 1)
                     .padding(.horizontal, 6)
             }
             .frame(width: 94, height: 40)
-            .background(Color(nsColor: .quaternarySystemFill), in: Capsule())
+            .background(Color.quaternaryFill, in: Capsule())
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)

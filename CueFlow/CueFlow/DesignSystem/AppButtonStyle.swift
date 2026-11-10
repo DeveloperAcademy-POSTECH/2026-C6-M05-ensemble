@@ -33,7 +33,7 @@ struct SecondaryButtonStyle: ButtonStyle {
             .foregroundStyle(Color.brandPrimaryText)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
-                configuration.isPressed ? Color.brandPrimarySubtle : (colorScheme == .dark ? Color.neutral25 : Color(nsColor: .windowBackgroundColor)),   // 다크 Dark/Button #2C2C2E
+                configuration.isPressed ? Color.brandPrimarySubtle : (colorScheme == .dark ? Color.neutral25 : Color.windowBackground),   // 다크 Dark/Button #2C2C2E
                 in: RoundedRectangle(cornerRadius: 6)
             )
             .overlay {
@@ -69,7 +69,7 @@ struct TertiaryButtonStyle: ButtonStyle {
             .foregroundStyle(Color.neutral900)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
-                configuration.isPressed ? Color.neutral100 : (colorScheme == .dark ? Color.neutral25 : Color(nsColor: .windowBackgroundColor)),   // 다크 Dark/Button #2C2C2E
+                configuration.isPressed ? Color.neutral100 : (colorScheme == .dark ? Color.neutral25 : Color.windowBackground),   // 다크 Dark/Button #2C2C2E
                 in: RoundedRectangle(cornerRadius: 6)
             )
             .overlay {

@@ -96,7 +96,7 @@ struct AppPopoverLayer: View {
                 .fixedSize()
                 .onGeometryChange(for: CGSize.self) { $0.size } action: { sizes[index] = $0 }
                 .offset(position(of: item, size: sizes[index] ?? .zero, in: proxy))
-                .onExitCommand(perform: item.outsideTap)   // Esc 누르면 닫힘 (따로 정했으면 그걸 함)
+                .onEscape(perform: item.outsideTap)   // Esc 누르면 닫힘 (따로 정했으면 그걸 함)
         }
     }
 

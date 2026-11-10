@@ -36,7 +36,9 @@ struct CueCard: View {
         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(isSelected ? partColor.accent : partColor.background, lineWidth: isSelected ? 1.5 : 1))
         .contentShape(.rect)
         .onTapGesture(count: 2) { if canEdit { isEditingCue = true } }   // 더블클릭하면 수정 팝오버
+        #if os(macOS)   // 아이패드엔 Shift+클릭이 없다 (#156)
         .highPriorityGesture(TapGesture().modifiers(.shift).onEnded { onSelect(true) })   // Shift+클릭 = 선택에 추가
+        #endif
         .onTapGesture { onSelect(false) }                                                // 그냥 클릭 = 이 카드만 선택
         .appPopover(isPresented: $isEditingCue, edge: .trailing, onOutsideTap: { closeRequest += 1 }) { cueEditor }   // 바깥 클릭은 입력창이 정함
         .onRightClick { isShowingMenu = true }   // 우클릭하면 메뉴 팝오버

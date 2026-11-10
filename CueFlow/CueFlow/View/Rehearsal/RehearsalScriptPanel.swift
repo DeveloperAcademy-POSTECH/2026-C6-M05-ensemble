@@ -25,7 +25,7 @@ struct RehearsalScriptPanel: View {
             }
         }
         .overlay(alignment: .topTrailing) {
-            if canEdit {
+            if canImportScript {
                 Button(action: onEdit) {
                     HStack(spacing: 8) {
                         Image(systemName: "paperclip")
@@ -93,12 +93,21 @@ struct RehearsalScriptPanel: View {
             }
     }
 
+    // 대본 입력은 맥에서만. 아이패드는 맥에서 넣은 대본을 보기만 한다 (#156)
+    private var canImportScript: Bool {
+        #if os(macOS)
+        canEdit
+        #else
+        false
+        #endif
+    }
+
     private var emptyView: some View {
         VStack(spacing: 10) {
             Text("이 장면의 대본이 없어요")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(Color.neutral900)
-            if canEdit {
+            if canImportScript {
                 Text("구글 닥스에서 복사해 붙여넣거나\n파일을 불러올 수 있어요")
                     .font(.body)
                     .lineSpacing(2)
