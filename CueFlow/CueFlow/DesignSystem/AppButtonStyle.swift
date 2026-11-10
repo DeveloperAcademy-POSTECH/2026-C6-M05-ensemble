@@ -2,7 +2,7 @@
 //  AppButtonStyle.swift
 //  CueFlow
 //
-//  자주 쓰는 버튼 모양 4가지 (primary · secondary · softPrimary · tertiary). 크기는 쓰는 곳에서 .frame으로 정한다.
+//  자주 쓰는 버튼 모양 4가지 (primary · secondary · softPrimary · tertiary/tertiaryFilled). 크기는 쓰는 곳에서 .frame으로 정한다.
 //  사용법: Button("새 프로젝트") { }.buttonStyle(.primary).frame(width: 200, height: 40)
 //
 
@@ -72,21 +72,34 @@ struct SoftPrimaryButtonStyle: ButtonStyle {
 }
 
 // 흰 배경 + 연보라 테두리 + 진한 글자 (예: 최근 프로젝트 카드의 이어서 작업하기)
+// isFilled = true: 리허설 "다음 큐"
+//   라이트 = 아주 연한 보라 바탕 #E4E2FF + 보라 테두리 + 진한 글자
+//   다크 = 연보라 바탕 #C1BCFF + 검은 글자 #141414, 테두리 없음 (피그마 2426:24472)
 struct TertiaryButtonStyle: ButtonStyle {
+    var isFilled = false
     @Environment(\.colorScheme) private var colorScheme
+
+    private var isDarkFilled: Bool { isFilled && colorScheme == .dark }
+
+    private func background(isPressed: Bool) -> Color {
+        if isDarkFilled {
+            return isPressed ? Color.brandPrimary : Color.brandPrimarySoft   // 다크 #C1BCFF
+        }
+        if isFilled {
+            return isPressed ? Color.brandPrimarySoft.opacity(0.4) : Color.brandPrimarySubtle   // 라이트 #E4E2FF
+        }
+        return isPressed ? Color.neutral100 : (colorScheme == .dark ? Color.neutral25 : Color(nsColor: .windowBackgroundColor))   // 다크 Dark/Button #2C2C2E
+    }
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body)
-            .foregroundStyle(Color.neutral900)
+            .foregroundStyle(isDarkFilled ? Color.softActionText : Color.neutral900)   // 다크 #141414
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(
-                configuration.isPressed ? Color.neutral100 : (colorScheme == .dark ? Color.neutral25 : Color(nsColor: .windowBackgroundColor)),   // 다크 Dark/Button #2C2C2E
-                in: RoundedRectangle(cornerRadius: 6)
-            )
+            .background(background(isPressed: configuration.isPressed), in: RoundedRectangle(cornerRadius: 6))
             .overlay {
                 RoundedRectangle(cornerRadius: 6)
-                    .strokeBorder(Color.brandPrimaryHover, lineWidth: 1)
+                    .strokeBorder(isDarkFilled ? Color.clear : Color.brandPrimaryHover, lineWidth: 1)
             }
             .contentShape(RoundedRectangle(cornerRadius: 6))
     }
@@ -107,4 +120,5 @@ extension ButtonStyle where Self == SoftPrimaryButtonStyle {
 
 extension ButtonStyle where Self == TertiaryButtonStyle {
     static var tertiary: TertiaryButtonStyle { TertiaryButtonStyle() }
+    static var tertiaryFilled: TertiaryButtonStyle { TertiaryButtonStyle(isFilled: true) }
 }
