@@ -149,9 +149,9 @@ struct SidebarCueSheetGroup: View {
 
 // 사이드바 왼쪽 아래 다크모드 스위치. 라이트면 손잡이 왼쪽 + 달, 다크면 손잡이 오른쪽 + 해.
 // 값은 앱 전체가 같이 쓰도록 AppStorage에 저장한다 (CueFlowApp에서 화면 모드에 적용).
-// TODO: 셀리나 색상 표에 Neutral 회색이 추가되면 바탕색 교체
 struct DarkModeToggle: View {
     @AppStorage("isDarkMode") private var isDarkMode = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Button {
@@ -170,13 +170,14 @@ struct DarkModeToggle: View {
 
                 // 손잡이
                 Capsule()
-                    .fill(Color.windowBackground)
-                    .frame(width: 44, height: 28)
-                    .shadow(color: .black.opacity(0.08), radius: 2, y: 1)
+                    // 피그마 Knob 40×28: 라이트 흰색 · 다크 #5C5C63 (같은 짝 색이 색상 표에 없어서 나눠 씀)
+                    .fill(colorScheme == .dark ? Color.neutral300 : Color.surfaceWhite)
+                    .frame(width: 40, height: 28)
+                    .shadow(color: .black.opacity(0.05), radius: 18, y: 3)   // 피그마 Y 3 · 흐림 36 · 검정 5%
                     .padding(.horizontal, 6)
             }
             .frame(width: 94, height: 40)
-            .background(Color.quaternaryFill, in: Capsule())
+            .background(Color.primary.opacity(0.1), in: Capsule())   // 피그마 Track: Labels/Primary 10% (색상 표에 없는 시스템 색)
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)

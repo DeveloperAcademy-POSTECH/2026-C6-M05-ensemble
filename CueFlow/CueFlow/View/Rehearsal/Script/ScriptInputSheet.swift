@@ -26,7 +26,11 @@ struct ScriptInputSheet: View {
     @State private var props: [String] = []            // 소품 목록 (괄호 지문에서 찾은 것 + 직접 추가)
     @State private var selectedProps: Set<String> = []
     @State private var newProp = ""
-    @State private var overrides = SceneOverrides()     // 미리보기에서 직접 나누기 · 합치기한 것
+    @State private var aiProps: Set<String> = []         // Apple Intelligence가 찾아 준 소품 (칩에 ✨ 표시)
+    @State private var scannedCast: Set<String> = []     // 이번 대본에서 자동으로 찾은 배역 (대본을 고치면 지우고 다시 찾는다)
+    @State private var scannedProps: Set<String> = []    // 이번 대본에서 자동으로 찾은 소품 (규칙 + AI)
+    @State private var aiTask: Task<Void, Never>?        // AI 소품 찾기 (뒤로 · 적용 · 닫기 하면 멈춘다)
+    @State private var aiMessage: String?                // AI 소품 찾기 결과 한 줄 (몇 개 찾았는지 · 왜 못 썼는지)
 
     init(production: Production, currentScene: ShowScene?, initialText: String = "") {
         self.production = production
@@ -40,7 +44,7 @@ struct ScriptInputSheet: View {
     }
 
     private var parsedScenes: [ParsedScene] {
-        ScriptParser.parse(text, cast: selectedCast, overrides: overrides)
+        ScriptParser.parse(text, cast: selectedCast)
     }
 
     var body: some View {
@@ -55,7 +59,7 @@ struct ScriptInputSheet: View {
         .padding(.bottom, 32)
         .frame(width: 1009, height: 769)
         .background(Color.neutral25)
-        .onChange(of: text) { overrides = SceneOverrides() }   // 글이 바뀌면 문단 번호가 달라지니 고친 것도 처음부터
+        .onDisappear { aiTask?.cancel() }
         .fileImporter(isPresented: $isImportingFile, allowedContentTypes: ScriptImporter.fileTypes) { result in
             guard case .success(let url) = result else { return }
             if let loaded = ScriptImporter.text(from: url), !loaded.isEmpty {
@@ -110,7 +114,7 @@ struct ScriptInputSheet: View {
                     .buttonStyle(.secondary)
                     .frame(width: 112, height: 36)
                 Button("다음") { goToReview() }
-                    .buttonStyle(SheetPrimaryButtonStyle())
+                    .buttonStyle(.primary)
                     .frame(width: 112, height: 36)
                     .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
@@ -138,15 +142,48 @@ struct ScriptInputSheet: View {
     }
 
     private func goToReview() {
+        // 뒤로 가서 대본을 고친 경우: 옛 대본에서 자동으로 찾은 것은 지우고 다시 찾는다 (작품에 있던 것 · 직접 추가한 것은 남김)
+        cast.removeAll { scannedCast.contains($0) }
+        selectedCast.subtract(scannedCast)
+        props.removeAll { scannedProps.contains($0) }
+        selectedProps.subtract(scannedProps)
+        aiProps = []
+
         let found = ScriptParser.castCandidates(in: text)
-        // 앞에서 직접 추가했던 배역은 남긴다
+        scannedCast = Set(found).subtracting(cast)
         cast = found + cast.filter { !found.contains($0) }
         selectedCast = selectedCast.union(found)
 
         let foundProps = ScriptParser.propCandidates(in: text, cast: selectedCast)
+        scannedProps = Set(foundProps).subtracting(props)
         props = foundProps + props.filter { !foundProps.contains($0) }
-        selectedProps = selectedProps.union(foundProps.filter(ScriptParser.isLikelyProp))   // 손 · 고개 · 노동자들 같은 말은 꺼 둔다
+        selectedProps = selectedProps.union(foundProps.filter { ScriptParser.isLikelyProp($0) })   // 손 · 고개 · 노동자들 같은 말은 꺼 둔다
         step = .review
+        findMorePropsWithAI()
+    }
+
+    // 규칙이 놓친 소품을 Apple Intelligence로 더 찾아 칩 맨 앞에 붙인다 (끝에 붙이면 스크롤해야 보여서). 못 쓰는 맥이면 이유만 보여 줌
+    private func findMorePropsWithAI() {
+        aiTask?.cancel()
+        if let reason = ScriptPropAI.unavailableReason {
+            aiMessage = "규칙으로만 찾았어요 — \(reason)"
+            return
+        }
+        aiMessage = nil
+        let text = text, cast = selectedCast, known = Set(props)
+        aiTask = Task {
+            let count = await ScriptPropAI.findProps(in: text, cast: cast, known: known) { found in
+                for name in found.reversed() where !props.contains(name) {
+                    props.insert(name, at: 0)
+                    aiProps.insert(name)
+                    scannedProps.insert(name)
+                    if ScriptParser.isLikelyProp(name) { selectedProps.insert(name) }
+                }
+            }
+            guard !Task.isCancelled else { return }   // 멈춘 옛 작업이 새 작업을 지우지 않게
+            aiTask = nil
+            aiMessage = count > 0 ? "✨ Apple Intelligence가 소품 \(count)개를 더 찾았어요" : "Apple Intelligence가 더 찾은 소품은 없어요"
+        }
     }
 
     // MARK: 2단계 — 배역 확인 + 미리보기
@@ -163,6 +200,20 @@ struct ScriptInputSheet: View {
             VStack(alignment: .leading, spacing: 14) {
                 chipBar(title: "배역", names: $cast, selected: $selectedCast, newName: $newName, placeholder: "배역 추가")
                 chipBar(title: "소품", names: $props, selected: $selectedProps, newName: $newProp, placeholder: "소품 추가")
+                if aiTask != nil {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text("Apple Intelligence로 소품을 더 찾고 있어요")
+                            .font(.caption)
+                            .foregroundStyle(Color.neutral400)
+                    }
+                    .padding(.leading, 41)
+                } else if let aiMessage {
+                    Text(aiMessage)
+                        .font(.caption)
+                        .foregroundStyle(Color.neutral400)
+                        .padding(.leading, 41)
+                }
             }
 
             ScrollView {
@@ -179,17 +230,21 @@ struct ScriptInputSheet: View {
 
             HStack {
                 Spacer()
-                Button("뒤로") { step = .input }
+                Button("뒤로") {
+                    aiTask?.cancel()
+                    step = .input
+                }
                     .buttonStyle(.secondary)
                     .frame(width: 112, height: 43)
                 Button("적용하기") {
+                    aiTask?.cancel()
                     ScriptImporter.apply(
                         parsedScenes, to: production, currentScene: currentScene,
                         cast: selectedCast, props: selectedProps
                     )
                     dismiss()
                 }
-                .buttonStyle(SheetPrimaryButtonStyle())
+                .buttonStyle(.primary)
                 .frame(width: 112, height: 43)
             }
         }
@@ -217,7 +272,7 @@ struct ScriptInputSheet: View {
                             if isOn { selected.wrappedValue.remove(name) } else { selected.wrappedValue.insert(name) }
                         } label: {
                             // 체크한 것: 연보라 바탕 + 보라 글자 / 뺀 것: 테두리만 + 회색 글자
-                            Text(name)
+                            Text(aiProps.contains(name) ? "✨ \(name)" : name)
                                 .font(.system(size: 10.5, weight: .medium))
                                 .foregroundStyle(isOn ? Color.brandPrimaryText : Color.neutral400)
                                 .padding(.horizontal, 8)
@@ -266,22 +321,11 @@ struct ScriptInputSheet: View {
                 Text("\(parsed.lines.count)줄")
                     .font(.caption)
                     .foregroundStyle(Color.neutral500)
-                if let index = parsed.headingIndex {
-                    Button("앞 장면에 합치기") { overrides.merged.insert(index) }
-                        .linkButtonStyle()
-                        .font(.caption)
-                } else if let index = parsed.splitIndex {
-                    Button("나누기 취소") { overrides.splits[index] = nil }
-                        .linkButtonStyle()
-                        .font(.caption)
-                }
             }
 
-            ForEach(Array(parsed.lines.enumerated()), id: \.element.id) { position, line in
-                // 장면 첫 줄에서 나누면 빈 장면이 생기니 둘째 줄부터
-                PreviewLineRow(line: line, canSplit: position > 0) { kind in
-                    overrides.splits[line.index] = kind
-                }
+            ForEach(parsed.lines) { line in
+                ScriptLineView(speaker: line.speaker, text: line.text, fontSize: 17)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -372,33 +416,6 @@ struct SheetBackButton: View {
     }
 }
 
-// 대본 입력 창의 "다음" · "적용하기". 못 누를 때는 연보라 바탕 + 보라 글자 (피그마)
-// TODO: 다른 화면에도 쓰이면 AppButtonStyle의 primary에 합치기 (#39 머지 후, 충돌 피하려고 지금은 따로)
-struct SheetPrimaryButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        SheetPrimaryButton(configuration: configuration)
-    }
-
-    private struct SheetPrimaryButton: View {
-        let configuration: ButtonStyleConfiguration
-        @Environment(\.isEnabled) private var isEnabled
-
-        var body: some View {
-            configuration.label
-                .font(.body.weight(.semibold))
-                .foregroundStyle(isEnabled ? Color.white : Color.buttonDisabledText)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(background, in: RoundedRectangle(cornerRadius: 6))
-                .contentShape(RoundedRectangle(cornerRadius: 6))
-        }
-
-        private var background: Color {
-            if !isEnabled { return .buttonDisabledBackground }
-            return configuration.isPressed ? .brandPrimaryPressed : .brandPrimary
-        }
-    }
-}
-
 // 칩 줄 맨 끝 "+". 누르면 이름 입력 칸으로 바뀌고, Enter로 추가
 private struct AddChip: View {
     @Binding var text: String
@@ -439,36 +456,6 @@ private struct AddChip: View {
             .buttonStyle(.plain)
             .help(placeholder)
         }
-    }
-}
-
-// 미리보기 대본 한 줄. 마우스를 올리면 "여기서 나누기" 메뉴가 보인다
-private struct PreviewLineRow: View {
-    let line: ParsedLine
-    let canSplit: Bool
-    let onSplit: (SceneKind) -> Void
-
-    @State private var isHovered = false
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            ScriptLineView(speaker: line.speaker, text: line.text, fontSize: 17)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            if canSplit {
-                Menu("여기서 나누기") {
-                    ForEach(SceneKind.allCases, id: \.self) { kind in
-                        Button("새 \(kind.title)으로") { onSplit(kind) }
-                    }
-                }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-                .font(.caption)
-                .opacity(isHovered ? 1 : 0)
-            }
-        }
-        .contentShape(Rectangle())
-        .onHover { isHovered = $0 }
     }
 }
 

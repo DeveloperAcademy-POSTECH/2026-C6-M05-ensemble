@@ -31,7 +31,7 @@ enum CueSheetExport {
         let lines = [header] + rows.map {
             [$0.sceneCode, $0.sceneTitle, $0.number, $0.part, $0.trigger, $0.title, $0.position]
         }
-        let text = lines.map { $0.map(csvCell).joined(separator: ",") }.joined(separator: "\r\n") + "\r\n"
+        let text = lines.map { $0.map { csvCell($0) }.joined(separator: ",") }.joined(separator: "\r\n") + "\r\n"
         return Data([0xEF, 0xBB, 0xBF]) + Data(text.utf8)
     }
 

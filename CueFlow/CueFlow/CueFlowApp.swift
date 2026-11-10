@@ -57,6 +57,9 @@ struct CueFlowApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                #if os(macOS)
+                .frame(minWidth: 1200)   // 이보다 좁으면 리허설 미니맵 이름이 겹친다 (#153). 아이패드는 화면(1180)보다 넓어져서 맥만
+                #endif
                 .preferredColorScheme(isDarkMode ? .dark : .light)
                 .environment(iCloudAccount)
                 .task {

@@ -135,7 +135,7 @@ struct RehearsalCueList<SceneControls: View>: View {
         .opacity(canGoPrevious ? 1 : 0.4)
     }
 
-    // "다음 큐 >": 연보라 바탕 + 흰 글자. 스페이스바로도 누른다
+    // "다음 큐 >": 아주 연한 보라 바탕 + 보라 테두리 + 진한 글자. 스페이스바로도 누른다
     private var nextButton: some View {
         Button(action: onNext) {
             HStack(spacing: 4) {
@@ -145,7 +145,7 @@ struct RehearsalCueList<SceneControls: View>: View {
                     .font(.system(size: 10, weight: .semibold))
             }
         }
-        .buttonStyle(.softPrimaryCompat)
+        .buttonStyle(.tertiaryFilled)
         .frame(width: 75, height: 36)
         .disabled(!canGoNext)
         .opacity(canGoNext ? 1 : 0.4)
@@ -300,25 +300,6 @@ private struct CueTableLine: View {
             Divider()
         }
     }
-}
-
-// "다음 큐" 버튼: 연보라 배경 + 흰 글자
-// TODO: #41 머지 후 .buttonStyle(.softPrimary)로 교체하고 이건 지우기
-struct SoftPrimaryCompatButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .foregroundStyle(Color.softActionText)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(
-                configuration.isPressed ? Color.brandPrimary : Color.softAction,
-                in: RoundedRectangle(cornerRadius: 6)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 6))
-    }
-}
-
-extension ButtonStyle where Self == SoftPrimaryCompatButtonStyle {
-    static var softPrimaryCompat: SoftPrimaryCompatButtonStyle { SoftPrimaryCompatButtonStyle() }
 }
 
 #Preview {
