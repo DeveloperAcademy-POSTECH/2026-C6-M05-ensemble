@@ -85,10 +85,11 @@ struct RecentProjectCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 213)
         .background {
-            // 피그마: 바탕 #FBFBFF, 그림자 2·2·1 #D1D1D6 → 색상 표에서 가장 가까운 neutral25 · neutral300
+            // 피그마: 바탕 #FBFBFF, 그림자 X2 Y2 흐림 2 — 라이트 #D1D1D6 · 다크 검정 50%
+            // → 색상 표에서 같은 짝인 inviteShadow (라이트 #CDD5DF · 다크 검정 50%). SwiftUI radius = 피그마 흐림의 절반
             RoundedRectangle(cornerRadius: 6)
                 .fill(Color.neutral25)
-                .shadow(color: Color.neutral300, radius: 0.5, x: 2, y: 2)
+                .shadow(color: Color.inviteShadow, radius: 1, x: 2, y: 2)
         }
     }
 }

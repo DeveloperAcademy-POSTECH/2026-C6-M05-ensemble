@@ -114,7 +114,7 @@ struct ScriptInputSheet: View {
                     .buttonStyle(.secondary)
                     .frame(width: 112, height: 36)
                 Button("다음") { goToReview() }
-                    .buttonStyle(SheetPrimaryButtonStyle())
+                    .buttonStyle(.primary)
                     .frame(width: 112, height: 36)
                     .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
@@ -244,7 +244,7 @@ struct ScriptInputSheet: View {
                     )
                     dismiss()
                 }
-                .buttonStyle(SheetPrimaryButtonStyle())
+                .buttonStyle(.primary)
                 .frame(width: 112, height: 43)
             }
         }
@@ -413,33 +413,6 @@ struct SheetBackButton: View {
         }
         .buttonStyle(.plain)
         .help("뒤로")
-    }
-}
-
-// 대본 입력 창의 "다음" · "적용하기". 못 누를 때는 연보라 바탕 + 보라 글자 (피그마)
-// TODO: 다른 화면에도 쓰이면 AppButtonStyle의 primary에 합치기 (#39 머지 후, 충돌 피하려고 지금은 따로)
-struct SheetPrimaryButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        SheetPrimaryButton(configuration: configuration)
-    }
-
-    private struct SheetPrimaryButton: View {
-        let configuration: ButtonStyleConfiguration
-        @Environment(\.isEnabled) private var isEnabled
-
-        var body: some View {
-            configuration.label
-                .font(.body.weight(.semibold))
-                .foregroundStyle(isEnabled ? Color.white : Color.buttonDisabledText)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(background, in: RoundedRectangle(cornerRadius: 6))
-                .contentShape(RoundedRectangle(cornerRadius: 6))
-        }
-
-        private var background: Color {
-            if !isEnabled { return .buttonDisabledBackground }
-            return configuration.isPressed ? .brandPrimaryPressed : .brandPrimary
-        }
     }
 }
 
