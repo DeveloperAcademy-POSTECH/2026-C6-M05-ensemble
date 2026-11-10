@@ -8,7 +8,6 @@
 //      씬: S15 · S#15 · 씬 15 · Scene 15 · #15 · 15장 · 제15장
 //      넘버: N10 · M10 · 넘버 10 · Number 10
 //      전환: 암전 · 전환 (번호 없이 한 단어 → 앞 전환 번호 + 1) · D3 · 전환 3
-//  - 미리보기에서 사용자가 고친 것(SceneOverrides)이 위 규칙보다 먼저
 //  - 콜론 앞이 배역 목록에 있으면 → 배역 + 대사 ("노동자 1: 에구구,"). 콜론 앞 이름은 한 번만 나와도 배역 후보
 //  - 줄 맨 앞 단어가 배역 목록에 있으면 → 배역 + 대사 ("우현 (팔뚝을 만지며) 에구구,") — 콜론 없는 예전 대본
 //  - 그 외 줄 → 지문
@@ -23,8 +22,6 @@ struct ParsedScene: Identifiable {
     var kind: SceneKind?      // nil = 첫 장면 표시 앞에 있던 글 → 지금 보고 있는 장면에 넣는다
     var number: Int = 0       // S15의 15
     var title: String = ""    // 장면 표시 뒤의 글 (예: "기쁨 ~ 리프라이즈 - 마지막 자장가.")
-    var headingIndex: Int?    // 대본에 적힌 장면 표시의 문단 번호 (합치기용)
-    var splitIndex: Int?      // 사용자가 "여기서 나누기"로 만든 장면이면 그 문단 번호 (나누기 취소용)
     var lines: [ParsedLine] = []
 
     var code: String {
@@ -36,15 +33,8 @@ struct ParsedScene: Identifiable {
 // 나눈 결과: 대본 한 줄
 struct ParsedLine: Identifiable {
     let id = UUID()
-    var index: Int         // 몇 번째 문단인지 (나누기용)
     var speaker: String?   // nil = 지문
     var text: String
-}
-
-// 미리보기에서 사용자가 고친 장면 나누기. 키는 문단 번호
-struct SceneOverrides {
-    var splits: [Int: SceneKind] = [:]   // 이 문단부터 새 장면
-    var merged: Set<Int> = []            // 이 장면 표시는 무시하고 앞 장면에 합친다 (표시 줄은 지문으로 남김)
 }
 
 enum ScriptParser {
@@ -145,21 +135,26 @@ enum ScriptParser {
     // 예: "(편지를 품에 숨기며 작업대를 탕 치고)" → 편지, 작업대
     static func propCandidates(in text: String, cast: Set<String>) -> [String] {
         var counts: [String: Int] = [:]
-        for paragraph in paragraphs(text) where heading(paragraph) == nil {
-            let isDialogue = colonSpeaker(paragraph).map { cast.contains($0.name) }
-                ?? firstWord(paragraph).map(cast.contains) ?? false
-            for piece in directions(in: paragraph, isDialogue: isDialogue) {
-                for word in piece.split(whereSeparator: { $0.isWhitespace || ",.!?…()".contains($0) }) {
-                    guard let last = word.last, last == "을" || last == "를" else { continue }
-                    let name = String(word.dropLast())
-                    guard (1...6).contains(name.count), !notProps.contains(name), !cast.contains(name) else { continue }
-                    counts[name, default: 0] += 1
-                }
+        for piece in stageDirections(in: text, cast: cast) {
+            for word in piece.split(whereSeparator: { $0.isWhitespace || ",.!?…()".contains($0) }) {
+                guard let last = word.last, last == "을" || last == "를" else { continue }
+                let name = String(word.dropLast())
+                guard (1...6).contains(name.count), !notProps.contains(name), !cast.contains(name) else { continue }
+                counts[name, default: 0] += 1
             }
         }
         return counts
             .sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }
             .map(\.key)
+    }
+
+    // 대본 전체의 지문만 순서대로 (소품 찾기용). 장면 표시 줄은 뺀다
+    static func stageDirections(in text: String, cast: Set<String>) -> [String] {
+        paragraphs(text).filter { heading($0) == nil }.flatMap { paragraph in
+            let isDialogue = colonSpeaker(paragraph).map { cast.contains($0.name) }
+                ?? firstWord(paragraph).map(cast.contains) ?? false
+            return directions(in: paragraph, isDialogue: isDialogue)
+        }
     }
 
     // 지문 부분만: 대사 줄이면 괄호 안, 지문 줄이면 줄 전체
@@ -168,11 +163,11 @@ enum ScriptParser {
         return paragraph.matches(of: /\(([^)]*)\)/).map { String($0.1) }
     }
 
-    // 글 전체 → 장면별 대본. cast = 사용자가 확인한 배역 목록, overrides = 미리보기에서 고친 나누기
-    static func parse(_ text: String, cast: Set<String>, overrides: SceneOverrides = SceneOverrides()) -> [ParsedScene] {
+    // 글 전체 → 장면별 대본. cast = 사용자가 확인한 배역 목록
+    static func parse(_ text: String, cast: Set<String>) -> [ParsedScene] {
         var scenes: [ParsedScene] = []
         var current = ParsedScene()
-        var lastNumber: [SceneKind: Int] = [:]   // 직접 나눈 장면 번호 = 같은 종류 바로 앞 번호 + 1
+        var lastNumber: [SceneKind: Int] = [:]   // 번호 없는 "암전" 번호 = 같은 종류 바로 앞 번호 + 1
 
         func startScene(_ scene: ParsedScene) {
             if current.kind != nil || !current.lines.isEmpty { scenes.append(current) }
@@ -180,16 +175,13 @@ enum ScriptParser {
             if let kind = scene.kind { lastNumber[kind] = scene.number }
         }
 
-        for (index, paragraph) in paragraphs(text).enumerated() {
-            if let kind = overrides.splits[index] {
-                // 직접 나눈 곳: 이 줄은 새 장면의 첫 줄로 남는다
-                startScene(ParsedScene(kind: kind, number: (lastNumber[kind] ?? 0) + 1, splitIndex: index))
-            } else if !overrides.merged.contains(index), let heading = heading(paragraph) {
+        for paragraph in paragraphs(text) {
+            if let heading = heading(paragraph) {
                 let number = heading.number ?? (lastNumber[heading.kind] ?? 0) + 1   // 번호 없는 "암전" = 앞 전환 + 1
-                startScene(ParsedScene(kind: heading.kind, number: number, headingIndex: index))
+                startScene(ParsedScene(kind: heading.kind, number: number))
                 // "S15 (장면 설명)"처럼 괄호뿐이면 제목 대신 첫 지문으로
                 if heading.rest.hasPrefix("(") {
-                    current.lines.append(ParsedLine(index: index, speaker: nil, text: heading.rest))
+                    current.lines.append(ParsedLine(speaker: nil, text: heading.rest))
                 } else {
                     current.title = heading.rest
                 }
@@ -197,13 +189,13 @@ enum ScriptParser {
             }
 
             if let speaker = colonSpeaker(paragraph), cast.contains(speaker.name) {
-                current.lines.append(ParsedLine(index: index, speaker: speaker.name, text: speaker.text))
+                current.lines.append(ParsedLine(speaker: speaker.name, text: speaker.text))
             } else if let name = firstWord(paragraph), cast.contains(name) {
                 let parts = paragraph.split(separator: " ", maxSplits: 1)
                 let line = parts.count > 1 ? String(parts[1]) : ""
-                current.lines.append(ParsedLine(index: index, speaker: name, text: line))
+                current.lines.append(ParsedLine(speaker: name, text: line))
             } else {
-                current.lines.append(ParsedLine(index: index, speaker: nil, text: paragraph))
+                current.lines.append(ParsedLine(speaker: nil, text: paragraph))
             }
         }
         if current.kind != nil || !current.lines.isEmpty { scenes.append(current) }
