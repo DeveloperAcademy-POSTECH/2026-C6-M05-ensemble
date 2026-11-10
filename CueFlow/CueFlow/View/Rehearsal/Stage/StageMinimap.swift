@@ -35,6 +35,7 @@ enum StageMinimapStyle {
     var castSize: CGFloat { self == .rehearsal ? 17 : 15 }
     var propSize: CGSize { self == .rehearsal ? CGSize(width: 15, height: 13) : CGSize(width: 12.5, height: 11) }
     var nameSize: CGFloat { 15 }
+    var crowdedNameSize: CGFloat { 13 }   // 한 칸 · 구역에 2개 이상이면 이름을 조금 작게
     var nameWeight: Font.Weight { self == .rehearsal ? .semibold : .regular }   // 배치 창은 목록 창 이름 칸과 같은 레귤러 15
 }
 
@@ -52,6 +53,12 @@ struct StageMinimap: View {
     var isPlacing = false         // 카드를 골랐으면 마우스를 올린 칸을 연보라로
 
     @State private var hoveredCell: Int?   // 무대 칸 번호 (왼쪽 위부터 0)
+
+    // 저장된 자리 대신 칸 · 구역별로 줄 세운 자리로 그린다
+    // (예전에 저장된 배치 · 큐로 옮겨 온 것도 같은 칸에 있으면 겹치지 않게)
+    private var arrangedMarks: [StageMark] {
+        StageAutoLayout.arranged(marks, columns: gridColumns)
+    }
 
     var body: some View {
         VStack(spacing: 7) {
@@ -109,8 +116,11 @@ struct StageMinimap: View {
                     .frame(width: size.width)
                     .offset(y: 26)
 
-                ForEach(marks.filter { $0.area == area }) { mark in
-                    markView(mark)
+                let shown = arrangedMarks.filter { $0.area == area }
+                let spaces = StageAutoLayout.nameSpaces(shown, columns: gridColumns)
+                ForEach(shown) { mark in
+                    let space = spaces[mark.id] ?? .init(width: 1, isCrowded: false)
+                    markView(mark, nameMaxWidth: max(space.width * size.width - 6, 24), isCrowded: space.isCrowded)
                         .position(x: mark.x * size.width, y: mark.y * size.height)
                         .animation(.easeInOut(duration: 0.35), value: mark)   // 큐를 넘기면 스르륵 옮겨진다
                 }
@@ -156,9 +166,12 @@ struct StageMinimap: View {
     }
 
     @ViewBuilder
-    private func markView(_ mark: StageMark) -> some View {
+    private func markView(_ mark: StageMark, nameMaxWidth: CGFloat, isCrowded: Bool) -> some View {
         let isHighlighted = highlightedIDs.contains(mark.id) || mark.id == selectedMarkID
-        let view = StageMarkView(mark: mark, style: style, isHighlighted: isHighlighted)
+        let view = StageMarkView(
+            mark: mark, style: style, isHighlighted: isHighlighted,
+            nameMaxWidth: nameMaxWidth, isCrowded: isCrowded
+        )
         if onTapMark != nil {
             view
                 .help("눌러서 고른 뒤 다른 칸을 누르면 옮겨져요 · 우클릭으로 빼기")
@@ -168,6 +181,7 @@ struct StageMinimap: View {
                 }
         } else {
             view
+                .help(mark.name)   // 이름이 "…"로 잘렸을 때 전체 이름
         }
     }
 
@@ -201,6 +215,8 @@ struct StageMarkView: View {
     let mark: StageMark
     var style: StageMinimapStyle = .rehearsal
     var isHighlighted = false
+    var nameMaxWidth: CGFloat?   // 옆 자리와 겹치지 않을 폭. 넘치면 "…"
+    var isCrowded = false
 
     var body: some View {
         Group {
@@ -224,10 +240,12 @@ struct StageMarkView: View {
         }
         .overlay(alignment: .top) {
             Text(mark.name)
-                .font(.system(size: style.nameSize, weight: style.nameWeight))
+                .font(.system(size: isCrowded ? style.crowdedNameSize : style.nameSize, weight: style.nameWeight))
                 .foregroundStyle(nameColor)
                 .lineLimit(1)
-                .fixedSize()
+                .truncationMode(.tail)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: nameMaxWidth ?? 200)
                 .offset(y: mark.kind == .cast ? style.castSize + 4 : style.propSize.height + 2)
         }
         .padding(6)                  // 잡기 쉽게
@@ -260,12 +278,21 @@ enum StageCell {
         return row * columns + column
     }
 
-    // 한 칸에 n개면 가로로 고르게 나눈 i번째 자리 (세로는 칸 가운데)
+    // 한 칸에 n개면 한 줄에 3개씩 놓고, 넘치면 아래 줄로 (이름이 옆 이름과 겹치지 않게)
+    // 한 줄뿐이면 칸 가운데. 여러 줄이면 이름이 아래에 붙으니 점을 조금 위쪽에 둔다
+    static let perRow = 3
+
     static func slot(_ i: Int, of n: Int, in cell: Int, columns: Int) -> CGPoint {
         let width = 1 / Double(columns)
         let left = Double(cell % columns) * width
         let top = Double(cell / columns) * width
-        return CGPoint(x: left + width * Double(i + 1) / Double(n + 1), y: top + width / 2)
+
+        let rows = (n + perRow - 1) / perRow
+        let row = i / perRow
+        let countInRow = min(perRow, n - row * perRow)   // 마지막 줄은 1개일 수 있다 → 가운데
+        let x = left + width * Double(i % perRow + 1) / Double(countInRow + 1)
+        let y = rows == 1 ? top + width / 2 : top + width * (Double(row) + 0.35) / Double(rows)
+        return CGPoint(x: x, y: y)
     }
 
     static func center(of cell: Int, columns: Int) -> CGPoint {
@@ -278,16 +305,47 @@ enum StageCell {
 
 // 놓인 것들을 칸 · 구역 안에서 자동으로 줄 세운다. 사용자는 어느 칸인지만 고른다 (UT: 세부 위치를 정하는 줄 알고 재정렬을 오류로 인식)
 enum StageAutoLayout {
+    // 놓은 순서대로 칸 · 구역별로 모은 번호들 (칸이 없는 곳은 구역 하나가 한 묶음)
+    private static func groups(_ marks: [StageMark], columns: Int) -> [[Int]] {
+        var groups: [String: [Int]] = [:]
+        var order: [String] = []
+        for index in marks.indices {
+            let mark = marks[index]
+            let cell = mark.area == .stage && columns > 0 ? StageCell.index(x: mark.x, y: mark.y, columns: columns) : nil
+            let key = "\(mark.area.rawValue)-\(cell ?? -1)"
+            if groups[key] == nil { order.append(key) }
+            groups[key, default: []].append(index)
+        }
+        return order.compactMap { groups[$0] }
+    }
+
+    struct NameSpace {
+        var width: Double      // 구역 너비 대비 (0~1)
+        var isCrowded: Bool
+    }
+
+    // 줄 세운 것마다 이름이 옆 이름과 겹치지 않고 쓸 수 있는 폭
+    static func nameSpaces(_ marks: [StageMark], columns: Int) -> [String: NameSpace] {
+        var result: [String: NameSpace] = [:]
+        for indices in groups(marks, columns: columns) {
+            let n = indices.count
+            let first = marks[indices[0]]
+            let isGrid = first.area == .stage && columns > 0
+            let perRow = isGrid ? StageCell.perRow : (first.area == .stage ? 6 : 2)
+            let areaWidth = isGrid ? 1 / Double(columns) : 1
+            for (order, index) in indices.enumerated() {
+                let row = order / perRow
+                let countInRow = min(perRow, n - row * perRow)
+                let width = isGrid ? areaWidth / Double(countInRow + 1) * (countInRow == 1 ? 2 : 1) : areaWidth / Double(perRow)
+                result[marks[index].id] = NameSpace(width: width, isCrowded: n > 1)
+            }
+        }
+        return result
+    }
+
     static func arranged(_ marks: [StageMark], columns: Int) -> [StageMark] {
         var result = marks
-        // 놓은 순서대로 칸 · 구역별로 모은다 (칸이 없는 곳은 cell = nil)
-        var groups: [String: [Int]] = [:]
-        for index in result.indices {
-            let mark = result[index]
-            let cell = mark.area == .stage && columns > 0 ? StageCell.index(x: mark.x, y: mark.y, columns: columns) : nil
-            groups["\(mark.area.rawValue)-\(cell ?? -1)", default: []].append(index)
-        }
-        for indices in groups.values {
+        for indices in groups(result, columns: columns) {
             let first = result[indices[0]]
             for (order, index) in indices.enumerated() {
                 let point: CGPoint
