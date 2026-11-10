@@ -53,6 +53,7 @@ struct CueFlowApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .frame(minWidth: 1200)   // 이보다 좁으면 리허설 미니맵 이름이 겹친다 (#153)
                 .preferredColorScheme(isDarkMode ? .dark : .light)
                 .environment(iCloudAccount)
                 .task {

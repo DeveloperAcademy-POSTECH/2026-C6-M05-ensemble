@@ -54,6 +54,13 @@ struct StageMinimap: View {
 
     @State private var hoveredCell: Int?   // 무대 칸 번호 (왼쪽 위부터 0)
 
+    // 창을 줄이면 미니맵 글자 · 점 · 상수하수 폭도 같이 줄인다 (리허설 화면만. 피그마 1512 창 = 미니맵 950 기준)
+    // 너무 작아지지 않게 0.8배까지만 — 그 밑은 창 최소 너비로 막는다
+    @State private var width: CGFloat = 950
+    private var scale: CGFloat {
+        style == .rehearsal ? min(1, max(0.8, width / 950)) : 1
+    }
+
     // 저장된 자리 대신 칸 · 구역별로 줄 세운 자리로 그린다
     // (예전에 저장된 배치 · 큐로 옮겨 온 것도 같은 칸에 있으면 겹치지 않게)
     private var arrangedMarks: [StageMark] {
@@ -64,26 +71,27 @@ struct StageMinimap: View {
         VStack(spacing: 7) {
             HStack(spacing: 0) {
                 zone(.hasu)
-                    .frame(width: 166)
+                    .frame(width: 166 * scale)
                 zone(.stage)
-                    .padding(.leading, 20)
-                    .padding(.trailing, 22)
+                    .padding(.leading, 20 * scale)
+                    .padding(.trailing, 22 * scale)
                 zone(.sangsu)
-                    .frame(width: 172)
+                    .frame(width: 172 * scale)
             }
             .frame(height: 255)
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
 
             HStack(spacing: 0) {
                 Color.clear
-                    .frame(width: 166, height: 1)
+                    .frame(width: 166 * scale, height: 1)
                 Text("관객석")
-                    .font(.system(size: style.zoneLabelSize, weight: .semibold))
+                    .font(.system(size: style.zoneLabelSize * scale, weight: .semibold))
                     .foregroundStyle(Color.neutral400)
                     .frame(maxWidth: .infinity)
-                    .padding(.leading, 20)
-                    .padding(.trailing, 22)
+                    .padding(.leading, 20 * scale)
+                    .padding(.trailing, 22 * scale)
                 legend
-                    .frame(width: 172, alignment: .trailing)
+                    .frame(width: 172 * scale, alignment: .trailing)
             }
         }
     }
@@ -111,7 +119,7 @@ struct StageMinimap: View {
                 }
 
                 Text(area.rawValue)
-                    .font(.system(size: style.zoneLabelSize, weight: .semibold))
+                    .font(.system(size: style.zoneLabelSize * scale, weight: .semibold))
                     .foregroundStyle(Color.stageZoneLabel)
                     .frame(width: size.width)
                     .offset(y: 26)
@@ -170,7 +178,7 @@ struct StageMinimap: View {
         let isHighlighted = highlightedIDs.contains(mark.id) || mark.id == selectedMarkID
         let view = StageMarkView(
             mark: mark, style: style, isHighlighted: isHighlighted,
-            nameMaxWidth: nameMaxWidth, isCrowded: isCrowded
+            nameMaxWidth: nameMaxWidth, isCrowded: isCrowded, scale: scale
         )
         if onTapMark != nil {
             view
@@ -217,6 +225,11 @@ struct StageMarkView: View {
     var isHighlighted = false
     var nameMaxWidth: CGFloat?   // 옆 자리와 겹치지 않을 폭. 넘치면 "…"
     var isCrowded = false
+    var scale: CGFloat = 1   // 창이 좁으면 점 · 이름을 같이 줄인다
+
+    private var castSize: CGFloat { style.castSize * scale }
+    private var propSize: CGSize { CGSize(width: style.propSize.width * scale, height: style.propSize.height * scale) }
+    private var nameSize: CGFloat { (isCrowded ? style.crowdedNameSize : style.nameSize) * scale }
 
     var body: some View {
         Group {
@@ -224,29 +237,29 @@ struct StageMarkView: View {
             case .cast:
                 Circle()
                     .fill(Color.brandPrimary)
-                    .frame(width: style.castSize, height: style.castSize)
+                    .frame(width: castSize, height: castSize)
             case .prop:
                 StageTriangle()
                     .fill(style == .setup ? Color.stagePropMarkSetup : Color.stagePropMark)
-                    .frame(width: style.propSize.width, height: style.propSize.height)
+                    .frame(width: propSize.width, height: propSize.height)
             }
         }
         .background {
             if isHighlighted {
                 Circle()
                     .fill(Color.brandPrimarySubtle)
-                    .frame(width: 28, height: 28)
+                    .frame(width: 28 * scale, height: 28 * scale)
             }
         }
         .overlay(alignment: .top) {
             Text(mark.name)
-                .font(.system(size: isCrowded ? style.crowdedNameSize : style.nameSize, weight: style.nameWeight))
+                .font(.system(size: nameSize, weight: style.nameWeight))
                 .foregroundStyle(nameColor)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(width: nameMaxWidth ?? 200)
-                .offset(y: mark.kind == .cast ? style.castSize + 4 : style.propSize.height + 2)
+                .offset(y: mark.kind == .cast ? castSize + 4 : propSize.height + 2)
         }
         .padding(6)                  // 잡기 쉽게
         .contentShape(Rectangle())
