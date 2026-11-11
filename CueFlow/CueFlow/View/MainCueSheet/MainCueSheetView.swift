@@ -13,6 +13,7 @@ struct MainCueSheetView: View {
     var cueFocus: Binding<SystemNotifications.CueFocus?> = .constant(nil)   // 큐 수정 알림을 누르면 들어옴 → 표에 넘기고 비운다
     var onRehearsal: () -> Void = {}           // "리허설 모드" 버튼
     var onSpotlight: () -> Void = {}           // 참여자 현황 "Spotlight me" → 리허설을 열고 내가 진행
+    var isSidebarHidden = false                // 왼쪽 사이드바가 가려졌는지 (메뉴 "사이드바 가리기")
     @State private var selectedPart: Part?     // 파트 칩에서 고른 파트 (nil = 전체)
     @State private var historyCue: Cue?        // History 사이드바에 보여줄 큐 (nil = 닫힘)
     @State private var priorityScene: ShowScene?  // 우선순위 사이드바에 보여줄 씬 (nil = 닫힘)
@@ -53,6 +54,7 @@ struct MainCueSheetView: View {
         .onChange(of: historyCue) { if $1 != nil { priorityScene = nil; isShowingUnread = false } }     // 사이드바는 하나만
         .onChange(of: priorityScene) { if $1 != nil { historyCue = nil; isShowingUnread = false } }
         .onChange(of: isShowingUnread) { if $1 { historyCue = nil; priorityScene = nil } }
+        .onChange(of: isSidebarHidden) { if $1 { closeSidebar() } }   // 왼쪽 사이드바를 가리면 오른쪽 사이드바도 닫기
     }
 }
 

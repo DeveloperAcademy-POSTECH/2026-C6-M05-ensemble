@@ -24,7 +24,8 @@ struct CueCard: View {
     @Environment(\.myUserID) private var myUserID
     @Environment(\.canEditCues) private var canEdit   // 읽기 권한이면 false (#120)
     @Environment(\.modelContext) private var modelContext   // 큐를 지울 곳
-    
+    @AppStorage("showsCommentButton") private var showsComments = true   // 보기 > 댓글 표시
+
     var body: some View {
         VStack(alignment: .leading, spacing: 17) {
             cueHeader
@@ -126,7 +127,7 @@ extension CueCard {
     // 💬 댓글 수 · ✓ 확인한 사람 수
     private var cueButtons: some View {
         HStack(spacing: 6) {
-            commentButton
+            if showsComments { commentButton }   // 보기 > 댓글 표시를 끄면 숨김
             checkButton
         }
         .frame(maxWidth: .infinity, alignment: .trailing)

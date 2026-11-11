@@ -59,6 +59,7 @@ struct ContentView: View {
     @State private var openedNotice: Notice?
     @State private var isComposingNotice = false
     @State private var cueFocus: SystemNotifications.CueFocus?   // 큐 수정 알림을 눌렀을 때 큐시트가 찾아갈 큐들
+    @State private var sidebarVisibility: NavigationSplitViewVisibility = .all   // 메뉴 "사이드바 가리기"
 
     init(pendingInvite: PendingInvite? = nil) {
         _pendingInvite = State(initialValue: pendingInvite)
@@ -112,6 +113,7 @@ struct ContentView: View {
                     }
             }
         }
+        .focusedSceneValue(\.appMenu, appMenu)   // 메뉴 막대에 지금 할 수 있는 일 넘기기
         // 다른 사람이 보낸 새 공지 · 내 파트 큐 수정이 iCloud로 오면 맥 시스템 알림 (#103)
         .onReceive(NotificationCenter.default.publisher(for: CloudSync.didReceiveNoticesNotification)) { notification in
             notifyNotices(notification.object as? [UUID] ?? [])
@@ -201,7 +203,7 @@ struct ContentView: View {
 
     // 사이드바 + 내용 영역
     private var mainView: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $sidebarVisibility) {
             // 왼쪽: 사이드바
             SidebarView(
                 selectedMenu: menuSelection,
@@ -237,7 +239,8 @@ struct ContentView: View {
                         onSpotlight: {
                             startsLeadingRehearsal = true
                             rehearsingProduction = openedProduction
-                        }
+                        },
+                        isSidebarHidden: sidebarVisibility == .detailOnly
                     )
                     .id(openedProduction.id)   // 사이드바에서 다른 공연으로 바로 옮기면 화면 상태(파트 필터 등)를 새로
                 } else if productions.isEmpty && !showsHomeWhenEmpty {
@@ -357,6 +360,73 @@ extension ContentView {
         isCreatingProduction = false
         selectedMenu = .notice
         noticeToOpen = notice
+    }
+}
+
+// 메뉴 막대 (AppMenuCommands): 새 프로젝트 · 최근 사용 · 닫기 · 큐시트/리허설 전환 · 사이드바
+
+extension ContentView {
+    // 초대 수락 · 역할 선택 화면에서는 메뉴를 안 씀 (nil = 전부 회색)
+    private var appMenu: AppMenuActions? {
+        guard invite == nil, roleProductionID == nil else { return nil }
+        let isInCueSheet = openedProduction != nil && rehearsingProduction == nil
+        var actions = AppMenuActions(
+            recentProductions: Array(productions.sorted { $0.lastOpenedAt > $1.lastOpenedAt }.prefix(3)),
+            newProject: { startNewProject() },
+            open: { openFromMenu($0) },
+            toggleSidebar: { toggleSidebar() }
+        )
+        // 지금 화면에서 할 수 있을 때만 넣기 (안 넣으면 메뉴가 회색)
+        if hasOpenScreen { actions.close = { closeOpenScreen() } }
+        if rehearsingProduction != nil { actions.showCueSheet = { showCueSheet() } }
+        if isInCueSheet { actions.showRehearsal = { showRehearsal() } }
+        return actions
+    }
+
+    // 큐시트 · 리허설 · 새 프로젝트 중 하나가 열려 있는지
+    private var hasOpenScreen: Bool {
+        openedProduction != nil || rehearsingProduction != nil || isCreatingProduction
+    }
+
+    // 새 프로젝트: 어느 화면에서든 생성 흐름으로
+    private func startNewProject() {
+        rehearsingProduction = nil
+        openedProduction = nil
+        switchMenu(to: .project)
+        isCreatingProduction = true
+    }
+
+    // 최근 사용 열기: 그 공연 큐시트로
+    private func openFromMenu(_ production: Production) {
+        rehearsingProduction = nil
+        isCreatingProduction = false
+        switchMenu(to: .project)
+        production.lastOpenedAt = .now
+        openedProduction = production
+    }
+
+    // 닫기: 열어 둔 큐시트 · 리허설 · 생성 흐름을 닫고 홈으로
+    private func closeOpenScreen() {
+        rehearsingProduction = nil
+        openedProduction = nil
+        isCreatingProduction = false
+    }
+
+    // 리허설 → 통합 큐시트 (홈에서 리허설로 들어왔어도 그 공연 큐시트로)
+    private func showCueSheet() {
+        openedProduction = rehearsingProduction
+        rehearsingProduction = nil
+        switchMenu(to: .project)
+    }
+
+    private func showRehearsal() {
+        rehearsingProduction = openedProduction
+    }
+
+    private func toggleSidebar() {
+        withAnimation {
+            sidebarVisibility = sidebarVisibility == .detailOnly ? .all : .detailOnly
+        }
     }
 }
 
