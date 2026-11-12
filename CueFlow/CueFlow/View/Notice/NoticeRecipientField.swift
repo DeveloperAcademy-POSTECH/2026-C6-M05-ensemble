@@ -17,7 +17,7 @@ enum NoticeRecipient: Hashable {
 
 struct NoticeRecipientField: View {
     let production: Production?          // 고른 프로젝트 (없으면 검색 불가)
-    @Binding var recipient: NoticeRecipient
+    @Binding var recipients: [NoticeRecipient]   // 고른 파트 · 사람들. 비어 있으면 전체
 
     @State private var query = ""
     @FocusState private var isFocused: Bool
@@ -32,7 +32,7 @@ struct NoticeRecipientField: View {
     private var matchedParts: [Part] {
         guard !trimmedQuery.isEmpty else { return [] }
         return (production?.parts ?? [])
-            .filter { $0.name.localizedCaseInsensitiveContains(trimmedQuery) }
+            .filter { $0.name.localizedCaseInsensitiveContains(trimmedQuery) && !recipients.contains(.part($0)) }
             .sorted { $0.order < $1.order }
     }
 
@@ -41,9 +41,9 @@ struct NoticeRecipientField: View {
         guard !trimmedQuery.isEmpty else { return [] }
         return (production?.members ?? [])
             .filter { member in
-                member.name.localizedCaseInsensitiveContains(trimmedQuery)
+                !recipients.contains(.member(member)) && (member.name.localizedCaseInsensitiveContains(trimmedQuery)
                     || member.role.localizedCaseInsensitiveContains(trimmedQuery)
-                    || (member.parts ?? []).contains { $0.name.localizedCaseInsensitiveContains(trimmedQuery) }
+                    || (member.parts ?? []).contains { $0.name.localizedCaseInsensitiveContains(trimmedQuery) })
             }
             .sorted { $0.name < $1.name }
     }
@@ -59,30 +59,27 @@ struct NoticeRecipientField: View {
         }
     }
 
-    // 칸: 고른 대상 칩 또는 검색 입력
+    // 칸: 고른 대상 칩들 + 검색 입력 (여러 개 고를 수 있다)
     private var inputBox: some View {
-        HStack(spacing: 8) {
-            switch recipient {
-            case .all:
-                // 피그마 951:7467: 비워 두면 전체. 글자를 치면 이름 · 파트를 찾아서 그중에서 고를 수 있다
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(recipients, id: \.self) { recipient in
+                    chip(recipient)
+                }
+                // 피그마 951:7467: 비워 두면 전체. 글자를 치면 이름 · 파트를 찾아서 고를 수 있고, 계속 더 고를 수 있다
                 TextField(
                     "",
                     text: $query,
-                    prompt: Text(production == nil ? "프로젝트를 먼저 선택하세요." : "프로젝트 전체 멤버 (\(allMemberCount)명)")
+                    prompt: Text(placeholderText)
                         .font(.appBody.weight(.semibold))
                         .foregroundStyle(Color.noticePlaceholder)
                 )
-                .help("이름이나 파트를 입력하면 그 사람 · 파트에게만 보낼 수 있어요")
+                .help("이름이나 파트를 입력하면 그 사람 · 파트에게만 보낼 수 있어요. 여러 개 고를 수 있어요")
                 .textFieldStyle(.plain)
                 .focused($isFocused)
                 .disabled(production == nil)
+                .frame(minWidth: 200)
                 .onSubmit(selectFirstResult)   // Enter = 맨 위 결과 고르기
-            case .part(let part):
-                chip("\(part.name) 파트 (\(part.members?.count ?? 0)명)")
-                Spacer()
-            case .member(let member):
-                chip(member.name)
-                Spacer()
             }
         }
         .font(.appBody)
@@ -95,13 +92,19 @@ struct NoticeRecipientField: View {
         }
     }
 
-    // 고른 대상 칩. ✕를 누르면 다시 전체로
-    private func chip(_ text: String) -> some View {
+    private var placeholderText: String {
+        if production == nil { return "프로젝트를 먼저 선택하세요." }
+        if recipients.isEmpty { return "프로젝트 전체 멤버 (\(allMemberCount)명)" }
+        return "이름이나 파트를 더 추가"
+    }
+
+    // 고른 대상 칩. ✕를 누르면 그 대상만 빠진다 (다 빠지면 전체)
+    private func chip(_ recipient: NoticeRecipient) -> some View {
         HStack(spacing: 6) {
-            Text(text)
+            Text(chipTitle(recipient))
+                .lineLimit(1)
             Button {
-                recipient = .all
-                query = ""
+                recipients.removeAll { $0 == recipient }
                 isFocused = true
             } label: {
                 Image(systemName: "xmark")
@@ -114,6 +117,15 @@ struct NoticeRecipientField: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 4)
         .background(Color.brandPrimarySubtle, in: Capsule())
+        .fixedSize()
+    }
+
+    private func chipTitle(_ recipient: NoticeRecipient) -> String {
+        switch recipient {
+        case .all: "전체"
+        case .part(let part): "\(part.name) 파트 (\(part.members?.count ?? 0)명)"
+        case .member(let member): member.name
+        }
     }
 
     // 검색 결과 목록
@@ -193,10 +205,11 @@ struct NoticeRecipientField: View {
         return [member.role, partNames].filter { !$0.isEmpty }.joined(separator: " · ")
     }
 
+    // 고르면 칩으로 붙고, 칸은 비워서 바로 다음 사람을 찾을 수 있게
     private func choose(_ newRecipient: NoticeRecipient) {
-        recipient = newRecipient
+        if !recipients.contains(newRecipient) { recipients.append(newRecipient) }
         query = ""
-        isFocused = false
+        isFocused = true
     }
 
     private func selectFirstResult() {
@@ -209,7 +222,7 @@ struct NoticeRecipientField: View {
 }
 
 #Preview {
-    @Previewable @State var recipient: NoticeRecipient = .all
+    @Previewable @State var recipients: [NoticeRecipient] = []
     let production = Production(title: "별마루", genre: "뮤지컬", firstShowDate: Date())
     let lighting = Part(name: "조명", order: 0, colorIndex: 3)
     let member = Member(name: "이진환", role: "무대연출")
@@ -217,7 +230,7 @@ struct NoticeRecipientField: View {
     production.members = [member]
     member.parts = [lighting]
 
-    return NoticeRecipientField(production: production, recipient: $recipient)
+    return NoticeRecipientField(production: production, recipients: $recipients)
         .frame(width: 977)
         .padding(40)
 }
