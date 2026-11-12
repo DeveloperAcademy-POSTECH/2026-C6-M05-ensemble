@@ -91,7 +91,7 @@ struct HomeView: View {
                         // TODO: 설정 화면 (동작 미정)
                     } label: {
                         Image(systemName: "gearshape")
-                            .font(.system(size: 18))
+                            .font(.app(size: 18))
                             .foregroundStyle(Color.brandPrimary)
                             .frame(width: 40, height: 40)
                             .contentShape(Rectangle())
@@ -119,7 +119,7 @@ struct HomeView: View {
     private var recentProjects: some View {
         VStack(alignment: .leading, spacing: 19) {
             Text("최근에 열어본 프로젝트")
-                .font(.system(size: 20, weight: .semibold))   // 피그마 20pt (macOS 기본 스타일에 없음)
+                .font(.app(size: 20, weight: .semibold))   // 피그마 20pt (macOS 기본 스타일에 없음)
                 .foregroundStyle(Color.neutral900)
 
             HStack(spacing: 22) {
@@ -155,7 +155,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("생성한 프로젝트")
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.app(size: 20, weight: .semibold))
                     .foregroundStyle(Color.neutral900)
                 Spacer()
                 filterMenu
@@ -170,7 +170,7 @@ struct HomeView: View {
                 Text("소유자")
                     .frame(width: ProjectListColumn.ownerWidth)
             }
-            .font(.body)
+            .font(.appBody)
             .foregroundStyle(Color.neutral500)
             .padding(.trailing, ProjectListColumn.trailingPadding)
             .padding(.top, 21)
@@ -223,9 +223,9 @@ struct HomeView: View {
         } label: {
             HStack(spacing: 11) {
                 Text(filter.rawValue)
-                    .font(.title2)
+                    .font(.appTitle2)
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 12))
+                    .font(.app(size: 12))
             }
             .foregroundStyle(Color.neutral500)
             .padding(.leading, 20)
@@ -248,7 +248,7 @@ struct NotificationBellButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: "bell")
-                .font(.system(size: 18))
+                .font(.app(size: 18))
                 .foregroundStyle(Color.brandPrimary)
                 .frame(width: 40, height: 40)
                 .overlay {

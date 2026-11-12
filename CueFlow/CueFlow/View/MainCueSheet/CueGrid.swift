@@ -85,7 +85,7 @@ extension CueGrid {
     // 왼쪽 위 모서리 칸
     private var cornerHeaderCell: some View {
         Text("파트 / 씬")
-            .font(.title3.weight(.semibold))
+            .font(.appTitle3.weight(.semibold))
             .foregroundStyle(Color.neutral900)
             .padding(.leading, 16)
             .padding(.top, 19)
@@ -98,10 +98,10 @@ extension CueGrid {
     private func sceneHeaderCell(_ scene: ShowScene) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(sceneLabel(for: scene))
-                .font(.title3.weight(.semibold))
+                .font(.appTitle3.weight(.semibold))
                 .foregroundStyle(Color.neutral900)
             Text(scene.title)
-                .font(.title3.weight(.semibold))
+                .font(.appTitle3.weight(.semibold))
                 .foregroundStyle(Color.neutral700)
                 .lineLimit(1)
         }
@@ -125,7 +125,7 @@ extension CueGrid {
     
     // + 씬 추가 칸
     private var addSceneHeaderCell: some View {
-        Button { isAddingScene = true } label: { Text("+").font(.system(size: 25, weight: .semibold)).opacity(canEdit ? 1 : 0) }
+        Button { isAddingScene = true } label: { Text("+").font(.app(size: 25, weight: .semibold)).opacity(canEdit ? 1 : 0) }
             .disabled(!canEdit)
             .appPopover(isPresented: $isAddingScene) { AddScene(onSave: addScene) }
             .buttonStyle(.plain)
@@ -138,7 +138,7 @@ extension CueGrid {
     // 파트 칸: 파트 이름(왼쪽 위, 피그마 위치) + 왼쪽 파트색 막대
     private func partHeaderCell(_ part: Part) -> some View {
         Text(part.name)
-            .font(.title3.weight(.semibold))
+            .font(.appTitle3.weight(.semibold))
             .foregroundStyle(Color.neutral900)
             .padding(.leading, 15)
             .padding(.top, 25)
@@ -185,7 +185,7 @@ extension CueGrid {
     
     // + 파트 추가 칸
     private var addPartHeaderCell: some View {
-        Button { isAddingPart = true } label: { Text("+").font(.system(size: 25, weight: .semibold)).opacity(canEdit ? 1 : 0) }   // 씬 추가 + 와 같은 모양
+        Button { isAddingPart = true } label: { Text("+").font(.app(size: 25, weight: .semibold)).opacity(canEdit ? 1 : 0) }   // 씬 추가 + 와 같은 모양
             .disabled(!canEdit)
             .appPopover(isPresented: $isAddingPart, edge: .trailing) { AddPart(onSave: addPart) }
             .buttonStyle(.plain)
@@ -278,7 +278,7 @@ extension CueGrid {
     
     private var priorityIcon: some View {
         Image(systemName: "number.circle")
-            .font(.system(size: 16))
+            .font(.app(size: 16))
             .foregroundStyle(Color.brandPrimaryText)
             .wiggle()
     }

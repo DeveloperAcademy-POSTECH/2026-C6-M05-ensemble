@@ -85,7 +85,7 @@ struct StageMinimap: View {
                 Color.clear
                     .frame(width: 166 * scale, height: 1)
                 Text("관객석")
-                    .font(.system(size: style.zoneLabelSize * scale, weight: .semibold))
+                    .font(.app(size: style.zoneLabelSize * scale, weight: .semibold))
                     .foregroundStyle(Color.neutral400)
                     .frame(maxWidth: .infinity)
                     .padding(.leading, 20 * scale)
@@ -119,7 +119,7 @@ struct StageMinimap: View {
                 }
 
                 Text(area.rawValue)
-                    .font(.system(size: style.zoneLabelSize * scale, weight: .semibold))
+                    .font(.app(size: style.zoneLabelSize * scale, weight: .semibold))
                     .foregroundStyle(Color.stageZoneLabel)
                     .frame(width: size.width)
                     .offset(y: 26)
@@ -164,7 +164,7 @@ struct StageMinimap: View {
         let inset: CGFloat = gridColumns > 3 ? 6 : 12
         return ForEach(0..<gridColumns * gridColumns, id: \.self) { index in
             Text("\(index + 1)")
-                .font(.system(size: gridColumns > 4 ? 10 : 12))
+                .font(.app(size: gridColumns > 4 ? 10 : 12))
                 .foregroundStyle(Color.stageCellNumber)
                 .offset(
                     x: size.width * CGFloat(index % gridColumns) / n + inset,
@@ -209,7 +209,7 @@ struct StageMinimap: View {
                 Text("소품")
             }
         }
-        .font(.system(size: 10))
+        .font(.app(size: 10))
         .foregroundStyle(Color.legendText)
         .padding(.horizontal, 13)
         .frame(height: 23)
@@ -253,7 +253,7 @@ struct StageMarkView: View {
         }
         .overlay(alignment: .top) {
             Text(mark.name)
-                .font(.system(size: nameSize, weight: style.nameWeight))
+                .font(.app(size: nameSize, weight: style.nameWeight))
                 .foregroundStyle(nameColor)
                 .lineLimit(1)
                 .truncationMode(.tail)

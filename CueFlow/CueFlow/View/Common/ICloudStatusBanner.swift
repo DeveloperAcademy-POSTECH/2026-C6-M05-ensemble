@@ -19,17 +19,17 @@ struct ICloudStatusBanner: View {
             HStack(spacing: 12) {
                 // 연보라 동그라미 안 아이콘
                 Image(systemName: "icloud.slash")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.app(size: 14, weight: .semibold))
                     .foregroundStyle(Color.brandPrimary)
                     .frame(width: 32, height: 32)
                     .background(Color.brandPrimarySubtle, in: Circle())
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(text.title)
-                        .font(.subheadline.weight(.semibold))
+                        .font(.appBody.weight(.semibold))
                         .foregroundStyle(Color.neutral900)
                     Text(text.detail)
-                        .font(.footnote)
+                        .font(.appCallout)
                         .foregroundStyle(Color.neutral700)
                 }
 
@@ -42,7 +42,7 @@ struct ICloudStatusBanner: View {
                         }
                     } label: {
                         Text(Self.settingsButtonTitle)
-                            .font(.subheadline.weight(.medium))
+                            .font(.appCallout.weight(.medium))
                             .padding(.horizontal, 14)
                     }
                     .buttonStyle(.tertiaryFilled)   // 연보라 바탕 + 보라 테두리 (리허설 "다음 큐"와 같은 모양)
@@ -55,7 +55,7 @@ struct ICloudStatusBanner: View {
                         withAnimation(.easeOut(duration: 0.2)) { onClose() }
                     } label: {
                         Image(systemName: "xmark")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.app(size: 12, weight: .semibold))
                             .foregroundStyle(Color.neutral700)
                             .frame(width: 28, height: 28)   // 아이패드 손가락으로도 누르기 쉽게
                             .contentShape(Rectangle())

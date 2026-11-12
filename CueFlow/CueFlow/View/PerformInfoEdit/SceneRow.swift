@@ -59,7 +59,7 @@ extension SceneRow {
         HStack(spacing: 16) {
             SceneKindChip(kind: scene.kind)
             Text("\(code)  \(scene.title)")
-                .font(.system(size: 17))
+                .font(.app(size: 17))
                 .foregroundStyle(Color.neutral900)
         }
         .padding(.horizontal, 16)
@@ -94,7 +94,7 @@ extension SceneRow {
 
     private var codeText: some View {
         Text(code)
-            .font(.system(size: 17))
+            .font(.app(size: 17))
             .foregroundStyle(Color.sceneCodeText)
             .frame(width: 36, alignment: .leading)
     }
@@ -111,7 +111,7 @@ extension SceneRow {
 
     private var titleLabel: some View {
         Text(scene.title)
-            .font(.system(size: 17))
+            .font(.app(size: 17))
             .foregroundStyle(Color.neutral900)
             .lineLimit(1)
             .contentShape(.rect)
@@ -121,7 +121,7 @@ extension SceneRow {
     private var titleField: some View {
         TextField("", text: $editingTitle)
             .textFieldStyle(.plain)
-            .font(.system(size: 17))
+            .font(.app(size: 17))
             .foregroundStyle(Color.neutral900)
             .focused($isTitleFocused)
             .onAppear { isTitleFocused = true }
@@ -133,7 +133,7 @@ extension SceneRow {
     private var deleteButton: some View {
         Button(action: onDelete) {
             Image(systemName: "xmark")
-                .font(.system(size: 16, weight: .semibold))
+                .font(.app(size: 16, weight: .semibold))
                 .foregroundStyle(Color.sceneDelete)
                 .contentShape(.rect)
         }

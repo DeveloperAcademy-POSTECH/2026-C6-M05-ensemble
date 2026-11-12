@@ -129,7 +129,7 @@ struct NoticeListView: View {
             checkedIDs.removeAll()
         }
         .buttonStyle(.plain)
-        .font(.title3)
+        .font(.appTitle3)
         .foregroundStyle(Color.noticeSecondaryText)
         .disabled(checkedIDs.isEmpty)
     }
@@ -158,7 +158,7 @@ struct NoticeListView: View {
                             .frame(width: 22, height: 22)
                             .background(isSelected ? Color.noticeCountSelected : Color.noticeCountIdle, in: Circle())
                     }
-                    .font(.body.weight(.semibold))
+                    .font(.appBody.weight(.semibold))
                     .foregroundStyle(isSelected ? Color.onPrimaryText : Color.brandPrimaryText)
                     .padding(.leading, 14)
                     .padding(.trailing, 10)

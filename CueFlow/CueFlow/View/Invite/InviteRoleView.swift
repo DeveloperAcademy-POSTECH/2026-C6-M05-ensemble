@@ -45,7 +45,7 @@ struct InviteRoleView: View {
                 VStack(spacing: 12) {
                     ProgressView()
                     Text("공연 정보를 받아 오는 중이에요")
-                        .font(.system(size: 15))
+                        .font(.app(size: 15))
                         .foregroundStyle(Color.noticeSecondaryText)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -91,15 +91,15 @@ extension InviteRoleView {
                     .fill(Color.brandPrimary)
                     .frame(width: 7, height: 7)
                 Text("\(production.title) | 초대 수락 완료")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.app(size: 12, weight: .medium))
                     .foregroundStyle(Color.brandPrimaryText)
             }
             VStack(alignment: .leading, spacing: 9) {
                 Text("맡은 역할을 선택해 주세요")
-                    .font(.system(size: 26, weight: .bold))
+                    .font(.app(size: 26, weight: .bold))
                     .foregroundStyle(Color.neutral900)
                 Text("이 프로젝트에서 맡은 역할을 모두 선택해 주세요. 여러 개를 선택할 수 있습니다.")
-                    .font(.system(size: 17))
+                    .font(.app(size: 17))
                     .foregroundStyle(Color.noticeSecondaryText)
             }
         }
@@ -117,17 +117,17 @@ extension InviteRoleView {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 10) {
                     Text(title)
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.app(size: 17, weight: .semibold))
                         .foregroundStyle(Color.neutral800)
                     Text("\(count)개 선택")
-                        .font(.system(size: 10.5, weight: .medium))
+                        .font(.app(size: 10.5, weight: .medium))
                         .foregroundStyle(Color.brandPrimaryText)
                         .padding(.horizontal, 8)
                         .frame(height: 26)
                         .background(Color.partCountBadge, in: .capsule)
                 }
                 Text(caption)
-                    .font(.system(size: 12))
+                    .font(.app(size: 12))
                     .foregroundStyle(Color.noticeSecondaryText)
             }
             // 4칸씩 줄바꿈, 가로·세로 간격 18
@@ -142,9 +142,9 @@ extension InviteRoleView {
         Button(action: onTap) {
             HStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.app(size: 16, weight: .medium))
                 Text(name)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.app(size: 17, weight: .semibold))
                 Spacer(minLength: 0)
             }
             .foregroundStyle(isSelected ? Color.brandPrimaryText : Color.neutral900)

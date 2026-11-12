@@ -48,7 +48,7 @@ extension InfoCheck {
 
     private var cardTitle: some View {
         Text("프로젝트")
-            .font(.system(size: 17, weight: .bold))
+            .font(.app(size: 17, weight: .bold))
             .foregroundStyle(Color.neutral800)
             .padding(.leading, 49)
             .frame(height: 61)
@@ -82,11 +82,11 @@ private struct InfoRow: View {
     var body: some View {
         HStack(spacing: 0) {
             Text(label)
-                .font(.system(size: 15))
+                .font(.app(size: 15))
                 .foregroundStyle(Color.noticeMetaText)
                 .frame(width: 103, alignment: .leading)
             Text(value)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.app(size: 15, weight: .semibold))
                 .foregroundStyle(Color.neutral900)
         }
     }

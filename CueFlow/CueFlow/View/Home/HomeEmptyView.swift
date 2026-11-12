@@ -23,16 +23,16 @@ struct HomeEmptyView: View {
     private var iPadBody: some View {
         VStack(spacing: 30) {
             Image(systemName: "macbook.and.ipad")
-                .font(.system(size: 56))
+                .font(.app(size: 56))
                 .foregroundStyle(Color.brandPrimary)
 
             VStack(spacing: 14) {
                 Text("큐시트는 Mac에서 만들어요")
-                    .font(.system(size: 28, weight: .bold))
+                    .font(.app(size: 28, weight: .bold))
                     .foregroundStyle(.primary)
 
                 Text("Mac의 Cuedit에서 공연을 만들면 같은 iCloud 계정의 iPad에 자동으로 나타나요.\n팀원에게 초대받은 공연도 여기에서 볼 수 있어요.")
-                    .font(.title3)
+                    .font(.appTitle3)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
@@ -48,11 +48,11 @@ struct HomeEmptyView: View {
         VStack(spacing: 30) {
             VStack(spacing: 14) {
                 Text("아직 프로젝트가 없어요")
-                    .font(.system(size: 28, weight: .bold))   // 피그마 Title1 28pt (macOS .title은 22pt라 직접 지정)
+                    .font(.app(size: 28, weight: .bold))   // 피그마 Title1 28pt (macOS .title은 22pt라 직접 지정)
                     .foregroundStyle(.primary)
 
                 Text("공연을 더 특별하게 만드는 첫걸음, 지금 프로젝트를 만들어보세요\n팀원과 함께 큐를 관리하고, 공연을 체계적으로 준비할 수 있습니다.")
-                    .font(.title3)
+                    .font(.appTitle3)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }

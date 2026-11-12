@@ -69,7 +69,7 @@ struct NoticeRecipientField: View {
                     "",
                     text: $query,
                     prompt: Text(production == nil ? "프로젝트를 먼저 선택하세요." : "프로젝트 전체 멤버 (\(allMemberCount)명)")
-                        .font(.body.weight(.semibold))
+                        .font(.appBody.weight(.semibold))
                         .foregroundStyle(Color.noticePlaceholder)
                 )
                 .help("이름이나 파트를 입력하면 그 사람 · 파트에게만 보낼 수 있어요")
@@ -85,7 +85,7 @@ struct NoticeRecipientField: View {
                 Spacer()
             }
         }
-        .font(.body)
+        .font(.appBody)
         .padding(.horizontal, 25)   // 피그마 951:7466
         .frame(height: 50)
         .background(Color.surfaceWhite, in: RoundedRectangle(cornerRadius: 6))
@@ -105,7 +105,7 @@ struct NoticeRecipientField: View {
                 isFocused = true
             } label: {
                 Image(systemName: "xmark")
-                    .font(.caption.bold())
+                    .font(.appCaption.bold())
             }
             .buttonStyle(.plain)
             .help("대상 지우기")
@@ -162,7 +162,7 @@ struct NoticeRecipientField: View {
 
     private func sectionTitle(_ text: String) -> some View {
         Text(text)
-            .font(.caption.weight(.semibold))
+            .font(.appCaption.weight(.semibold))
             .foregroundStyle(.secondary)
             .padding(.horizontal, 12)
             .padding(.top, 8)

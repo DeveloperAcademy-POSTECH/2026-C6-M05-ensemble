@@ -21,7 +21,7 @@ struct PrimaryButtonStyle: ButtonStyle {
 
         var body: some View {
             configuration.label
-                .font(.body.weight(.semibold))
+                .font(.appBody.weight(.semibold))
                 .foregroundStyle(isEnabled ? Color.white : Color.buttonDisabledText)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(background, in: RoundedRectangle(cornerRadius: 6))
@@ -41,7 +41,7 @@ struct SecondaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.body)
+            .font(.appBody)
             .foregroundStyle(Color.brandPrimaryText)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
@@ -60,7 +60,7 @@ struct SecondaryButtonStyle: ButtonStyle {
 struct SoftPrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.body)
+            .font(.appBody)
             .foregroundStyle(Color.softActionText)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
@@ -93,7 +93,7 @@ struct TertiaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.body)
+            .font(.appBody)
             .foregroundStyle(isDarkFilled ? Color.softActionText : Color.neutral900)   // 다크 #141414
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(background(isPressed: configuration.isPressed), in: RoundedRectangle(cornerRadius: 6))

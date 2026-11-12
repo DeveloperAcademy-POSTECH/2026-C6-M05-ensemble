@@ -50,7 +50,7 @@ struct NoticeDetailView: View {
                             .allowsHitTesting(isHoveringTop || !Platform.hasHover)
 
                         Text("받은 공지")
-                            .font(.largeTitle.bold())
+                            .font(.appLargeTitle.bold())
                             .foregroundStyle(Color.neutral900)
                             .id("top")
                     }
@@ -147,14 +147,14 @@ struct NoticeDetailView: View {
                 VStack(alignment: .leading, spacing: 19) {
                     // 보낼 대상 태그: 전체공지 / 조명 공지 / 개인 공지
                     Text(notice.targetTag)
-                        .font(.subheadline.weight(.semibold))
+                        .font(.appSubheadline.weight(.semibold))
                         .foregroundStyle(Color.brandPrimaryText)
                         .padding(.horizontal, 15)
                         .frame(height: 27)
                         .background(Color.noticeTagBackground, in: Capsule())
 
                     Text(notice.title)
-                        .font(.largeTitle.bold())
+                        .font(.appLargeTitle.bold())
                         .foregroundStyle(Color.neutral900)
                 }
 
@@ -164,7 +164,7 @@ struct NoticeDetailView: View {
                 }
 
                 Text(notice.sentDateDetailText)
-                    .font(.callout)
+                    .font(.appCallout)
                     .foregroundStyle(Color.noticeSecondaryText)
             }
 
@@ -173,7 +173,7 @@ struct NoticeDetailView: View {
                 .frame(height: 1)
 
             Text(notice.body)
-                .font(.body)
+                .font(.appBody)
                 .foregroundStyle(Color.noticeMetaText)
                 .lineSpacing(6)
                 .textSelection(.enabled)   // 본문 글자를 드래그해서 복사할 수 있게
@@ -191,9 +191,9 @@ struct NoticeDetailView: View {
     private func infoRow(label: String, value: String) -> some View {
         HStack(spacing: 17) {
             Text(label)
-                .font(.body.weight(.semibold))
+                .font(.appBody.weight(.semibold))
             Text(value)
-                .font(.body)
+                .font(.appBody)
         }
         .foregroundStyle(Color.neutral900)
     }
@@ -211,7 +211,7 @@ struct NoticeActionButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 14))
+                .font(.app(size: 14))
                 .foregroundStyle(isEnabled ? Color.noticeMetaText : Color.neutral300)
                 .frame(width: 34, height: 26)
                 .background(isHovering && isEnabled ? Color.neutral200 : .clear, in: Capsule())
@@ -241,13 +241,13 @@ struct NoticeNeighborRow: View {
         Button(action: action) {
             HStack(spacing: 0) {
                 Image(systemName: direction == .previous ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 8, weight: .semibold))
+                    .font(.app(size: 8, weight: .semibold))
                     .foregroundStyle(Color.noticeIconText)
                     .frame(width: 30, alignment: .leading)
 
                 HStack(spacing: 10) {
                     Image(systemName: "envelope")
-                        .font(.footnote)
+                        .font(.appFootnote)
                     Text(notice.senderRoleAndName)
                 }
                 .frame(width: 149, alignment: .leading)
@@ -257,7 +257,7 @@ struct NoticeNeighborRow: View {
 
                 Spacer()
             }
-            .font(.subheadline)
+            .font(.appSubheadline)
             .foregroundStyle(isHovering ? Color.neutral900 : Color.noticeSecondaryText)
             .padding(.leading, 17)
             .frame(height: 45)

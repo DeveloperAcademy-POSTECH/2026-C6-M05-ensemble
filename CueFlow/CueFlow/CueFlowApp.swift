@@ -60,6 +60,7 @@ struct CueFlowApp: App {
                 #if os(macOS)
                 .frame(minWidth: 1200)   // 이보다 좁으면 리허설 미니맵 이름이 겹친다 (#153). 아이패드는 화면(1180)보다 넓어져서 맥만
                 #endif
+                .font(.appBody)   // 글자 크기를 따로 안 정한 글자도 맥 본문 크기로 (아이패드 기본 17 대신, #157)
                 .preferredColorScheme(isDarkMode ? .dark : .light)
                 .environment(iCloudAccount)
                 .task {

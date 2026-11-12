@@ -56,11 +56,11 @@ extension PerformSceneEdit {
     private var cardHeader: some View {
         HStack {
             Text("공연 흐름")
-                .font(.system(size: 17, weight: .bold))
+                .font(.app(size: 17, weight: .bold))
                 .foregroundStyle(Color.neutral900)
             Spacer()
             Text(countSummary)
-                .font(.system(size: 15))
+                .font(.app(size: 15))
                 .foregroundStyle(Color.sceneCodeText)
         }
         .padding(.leading, 26)
