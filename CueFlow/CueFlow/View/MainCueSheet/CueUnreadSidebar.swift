@@ -44,11 +44,11 @@ extension CueUnreadSidebar {
     private var header: some View {
         HStack {
             Text("미확인 수정사항")
-                .font(.title3.weight(.semibold))   // 피그마 Title 3/Emphasized 15/20
+                .font(.appTitle3.weight(.semibold))   // 피그마 Title 3/Emphasized 15/20
                 .foregroundStyle(Color.neutral900)
             Spacer()
             Text("\(unreadCues.count)건")
-                .font(.title3)   // 피그마 Title 3/Regular 15/20
+                .font(.appTitle3)   // 피그마 Title 3/Regular 15/20
                 .foregroundStyle(Color.neutral900)
         }
         .padding(.leading, 45)    // « (왼쪽 16 + 폭 19) + 간격 10
@@ -58,11 +58,11 @@ extension CueUnreadSidebar {
     private var searchField: some View {
         HStack(spacing: 2) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .font(.app(size: 13, weight: .medium, design: .rounded))
                 .foregroundStyle(Color.neutral900)
             TextField("", text: $searchText)
                 .textFieldStyle(.plain)
-                .font(.callout)
+                .font(.appCallout)
         }
         .padding(.horizontal, 8)
         .frame(height: 24)
@@ -84,11 +84,11 @@ extension CueUnreadSidebar {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(editorName(of: cue))
-                    .font(.callout.weight(.semibold))
+                    .font(.appCallout.weight(.semibold))
                     .foregroundStyle(Color.neutral900)
                 Spacer()
                 Text(Self.dateText(lastEditDate(of: cue)))
-                    .font(.caption)
+                    .font(.appCaption)
                 .foregroundStyle(Color.neutral400)
             }
             UnreadCueCard(cue: cue)
@@ -154,7 +154,7 @@ private struct UnreadCueCard: View {
 extension UnreadCueCard {
     private var numberCircle: some View {
         Text(String(format: "%02d", cue.order))
-            .font(.system(size: 8, weight: .medium))
+            .font(.app(size: 8, weight: .medium))
             .foregroundStyle(partColor.number)
             .frame(width: 20, height: 20)
             .background(partColor.sidebarChip, in: .circle)
@@ -164,18 +164,18 @@ extension UnreadCueCard {
         VStack(alignment: .leading, spacing: 4) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(sceneCode)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.app(size: 12, weight: .semibold))
                     .foregroundStyle(Color.neutral900)
                 Text(cue.trigger?.scene?.title ?? "")
-                    .font(.system(size: 10))
+                    .font(.app(size: 10))
                 .foregroundStyle(Color.neutral500)
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(cue.trigger?.text ?? "")
-                    .font(.system(size: 10))
+                    .font(.app(size: 10))
                     .foregroundStyle(Color.neutral800)
                 Text(cue.title)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.app(size: 12, weight: .semibold))
                     .foregroundStyle(Color.neutral800)
             }
         }
@@ -184,7 +184,7 @@ extension UnreadCueCard {
 
     private var positionTag: some View {
         Text(cue.position.rawValue)
-            .font(.system(size: 10))
+            .font(.app(size: 10))
             .foregroundStyle(partColor.number)
             .padding(.horizontal, 8)
             .frame(height: 18)

@@ -58,10 +58,10 @@ extension SharePopover {
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("공유하기")
-                .font(.system(size: 18, weight: .semibold))
+                .font(.app(size: 18, weight: .semibold))
                 .foregroundStyle(Color.neutral900)
             Text("팀원과 큐시트를 함께 확인하고 편집하세요")
-                .font(.system(size: 11.5))
+                .font(.app(size: 11.5))
                 .foregroundStyle(Color.shareSubText)
         }
     }
@@ -71,7 +71,7 @@ extension SharePopover {
         HStack(spacing: 4) {
             TextField("", text: $email, prompt: Text("이메일 주소를 입력하세요").foregroundStyle(Color.shareHint))
                 .textFieldStyle(.plain)
-                .font(.footnote)   // 피그마 10
+                .font(.appFootnote)   // 피그마 10
                 .foregroundStyle(Color.neutral800)
                 .padding(.horizontal, 14)
                 .frame(height: 30)
@@ -100,11 +100,11 @@ extension SharePopover {
     private var accessHeader: some View {
         HStack {
             Text("접근 권한")
-                .font(.body.weight(.semibold))
+                .font(.appBody.weight(.semibold))
                 .foregroundStyle(Color.neutral900)
             Spacer()
             Text("멤버 \(members.count)명")
-                .font(.system(size: 11))
+                .font(.app(size: 11))
                 .foregroundStyle(Color.neutral400)
         }
     }
@@ -119,7 +119,7 @@ extension SharePopover {
                     .padding(.vertical, 20)
             } else if let errorText {
                 Text(errorText)
-                    .font(.caption)
+                    .font(.appCaption)
                     .foregroundStyle(Color.neutral500)
                     .padding(.vertical, 20)
             } else {
@@ -137,15 +137,15 @@ extension SharePopover {
     private var linkRow: some View {
         HStack(spacing: 13) {
             Image(systemName: "network")
-                .font(.system(size: 18))
+                .font(.app(size: 18))
                 .foregroundStyle(Color.neutral500)
                 .frame(width: 25)
             VStack(alignment: .leading, spacing: 3) {
                 Text("링크가 있는 사람")
-                    .font(.body.weight(.medium))
+                    .font(.appBody.weight(.medium))
                     .foregroundStyle(Color.neutral900)
                 Text("링크로 프로젝트에 접근")
-                    .font(.caption2)
+                    .font(.appCaption2)
                     .foregroundStyle(Color.neutral500)
             }
             Spacer()
@@ -158,9 +158,9 @@ extension SharePopover {
             } label: {
                 HStack(spacing: 6) {
                     Text("읽기 가능")
-                        .font(.system(size: 11.5, weight: .medium))
+                        .font(.app(size: 11.5, weight: .medium))
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 9, weight: .semibold))
+                        .font(.app(size: 9, weight: .semibold))
                 }
                 .foregroundStyle(Color.noticeMetaText)
                 .contentShape(Rectangle())
@@ -177,16 +177,16 @@ extension SharePopover {
     private func memberRow(_ member: ShareMember) -> some View {
         HStack(spacing: 11) {
             Text(member.initial)
-                .font(.system(size: member.isOwner ? 14 : 16, weight: .medium))
+                .font(.app(size: member.isOwner ? 14 : 16, weight: .medium))
                 .foregroundStyle(member.isOwner ? Color.white : Color.shareInviteeText)
                 .frame(width: 25, height: 25)
                 .background(member.isOwner ? Color.neutral300 : Color.shareInviteeBackground, in: .circle)
             VStack(alignment: .leading, spacing: 3) {
                 Text(member.isMe ? "\(member.name) (나)" : member.name)
-                    .font(.body.weight(.medium))
+                    .font(.appBody.weight(.medium))
                     .foregroundStyle(Color.neutral900)
                 Text(member.isOwner ? "프로젝트 소유자" : "초대된 멤버")
-                    .font(.system(size: 10.5))
+                    .font(.app(size: 10.5))
                     .foregroundStyle(Color.neutral500)
             }
             Spacer()
@@ -212,7 +212,7 @@ extension SharePopover {
 
     private func permissionText(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 11.5))
+            .font(.app(size: 11.5))
             .foregroundStyle(Color.neutral500)
     }
 
@@ -227,9 +227,9 @@ extension SharePopover {
         } label: {
             HStack(spacing: 6) {
                 Text(target.canEdit ? "편집 가능" : "읽기 가능")
-                    .font(.system(size: 11.5, weight: .medium))
+                    .font(.app(size: 11.5, weight: .medium))
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.app(size: 9, weight: .semibold))
             }
             .foregroundStyle(Color.noticeMetaText)
             .contentShape(Rectangle())
@@ -308,7 +308,7 @@ private struct GrayButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.body.weight(.semibold))
+            .font(.appBody.weight(.semibold))
             .foregroundStyle(isEnabled ? Color.noticeMetaText : Color.neutral400)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(

@@ -82,7 +82,7 @@ extension CueCard {
     // 번호 동그라미 생김새 (01, 02 …)
     private var cueNumberLabel: some View {
         Text(cueNumberText)
-            .font(.callout.weight(.medium))
+            .font(.appCallout.weight(.medium))
             .foregroundStyle(partColor.number)
             .frame(width: 23, height: 23)
             .background(partColor.background, in: .circle)
@@ -92,7 +92,7 @@ extension CueCard {
     // 언제 실행하는지 (예: 코우 - "너 나가!" 대사 종료 후)
     private var triggerText: some View {
         Text(cue.trigger?.text ?? "")
-            .font(.body)
+            .font(.appBody)
             .foregroundStyle(Color.cueTriggerText)
             .fixedSize(horizontal: false, vertical: true)   // 길면 다음 줄로
     }
@@ -100,7 +100,7 @@ extension CueCard {
     // 무엇을 하는지 (예: 정원 전화 받으며 퇴장)
     private var cueTitleText: some View {
         Text(cue.title)
-            .font(.body.weight(.semibold))
+            .font(.appBody.weight(.semibold))
             .foregroundStyle(Color.neutral900)
             .fixedSize(horizontal: false, vertical: true)   // 길면 다음 줄로
     }
@@ -118,7 +118,7 @@ extension CueCard {
     // 태그 생김새 (원래 positionTag에 있던 모양 그대로)
     private var positionTagLabel: some View {
         Text(cue.position.rawValue)
-            .font(.callout.weight(.medium))
+            .font(.appCallout.weight(.medium))
             .foregroundStyle(partColor.number)
             .padding(.horizontal, 5)
             .frame(height: 23)
@@ -138,7 +138,7 @@ extension CueCard {
         Button { isShowingComments = true } label: {
             HStack(spacing: 2) {
                 Image(systemName: "message")
-                    .font(.system(size: 8, weight: .semibold))
+                    .font(.app(size: 8, weight: .semibold))
                 Text("\(cue.comments?.count ?? 0)")
             }
             .countPill(background: Color.tagBackground)
@@ -162,7 +162,7 @@ extension CueCard {
 
     private var checkCircle: some View {
         Image(systemName: "checkmark")
-            .font(.system(size: 7, weight: .bold))
+            .font(.app(size: 7, weight: .bold))
             .frame(width: 13, height: 13)
             .foregroundStyle(Color.checkCircleMark)
             .background(Color.checkCircleBackground, in: .circle)
@@ -238,7 +238,7 @@ extension ModelContext {
 private extension View {
     func countPill(background: Color) -> some View {
         self
-            .font(.system(size: 12, weight: .medium))
+            .font(.app(size: 12, weight: .medium))
             .foregroundStyle(Color.neutral800)
             .padding(.horizontal, 7)
             .frame(minWidth: 40, minHeight: 23)

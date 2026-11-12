@@ -37,7 +37,7 @@ struct SceneInputRow: View {
 extension SceneInputRow {
     private var plusIcon: some View {
         Image(systemName: "plus")
-            .font(.system(size: 16))
+            .font(.app(size: 16))
             .foregroundStyle(Color.sceneHandle)
             .frame(width: 32.5)
     }
@@ -45,7 +45,7 @@ extension SceneInputRow {
     // 새로 추가될 줄 번호: 같은 종류 개수 + 1
     private var codeText: some View {
         Text(kind == .blackout ? "" : "\(kind.codePrefix)#\(sameKindCount + 1)")   // 암전은 번호 없이 빈칸
-            .font(.system(size: 17))
+            .font(.app(size: 17))
             .foregroundStyle(Color.sceneCodeText)
             .frame(width: 36, alignment: .leading)
     }
@@ -70,10 +70,10 @@ extension SceneInputRow {
     private var kindMenuLabel: some View {
         HStack(spacing: 4) {
             Text(kind.title)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.app(size: 13, weight: .semibold))
                 .foregroundStyle(Color.sceneKindText)
             Image(systemName: "chevron.down")
-                .font(.system(size: 8, weight: .semibold))
+                .font(.app(size: 8, weight: .semibold))
                 .foregroundStyle(Color.sceneHandle)
         }
         .frame(width: 62, height: 36)
@@ -87,7 +87,7 @@ extension SceneInputRow {
     private var titleField: some View {
         TextField("", text: $title, prompt: placeholder)
             .textFieldStyle(.plain)
-            .font(.system(size: 13))
+            .font(.app(size: 13))
             .foregroundStyle(Color.neutral900)
             .focused($isFocused)
             .onSubmit { add() }   // Enter로도 등록
@@ -104,7 +104,7 @@ extension SceneInputRow {
     private var registerButton: some View {
         Button { add() } label: {
             Text("등록")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.app(size: 13, weight: .semibold))
                 .foregroundStyle(Color.brandPrimaryText)
                 .frame(width: 60, height: 36)
                 .background(Color.sheetRegisterBackground, in: .rect(cornerRadius: 6))

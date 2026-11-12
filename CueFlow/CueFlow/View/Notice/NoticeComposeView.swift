@@ -27,6 +27,15 @@ struct NoticeComposeView: View {
     @State private var title = ""
     @State private var content = ""
 
+    // 답장 · 전체 답장 · 전달로 열면 프로젝트 · 보낼 대상 · 제목 · 내용을 미리 채운다 (피그마 951:7518)
+    init(draft: NoticeDraft? = nil) {
+        guard let draft else { return }
+        _selectedProduction = State(initialValue: draft.production)
+        _recipient = State(initialValue: draft.recipient)
+        _title = State(initialValue: draft.title)
+        _content = State(initialValue: draft.body)
+    }
+
     // 프로젝트를 고르고 제목·내용을 다 써야 보낼 수 있다
     private var canSend: Bool {
         selectedProduction?.canEdit(userID: ICloudAccount.currentUserRecordName) == true   // 쓰는 중에 권한이 꺼질 수도 있어서
@@ -40,7 +49,7 @@ struct NoticeComposeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Text("공지사항")
-                    .font(.largeTitle.bold())
+                    .font(.appLargeTitle.bold())
                     .foregroundStyle(Color.neutral900)
                     .padding(.bottom, 10)   // 제목 → 칸 30
 
@@ -60,7 +69,7 @@ struct NoticeComposeView: View {
                 field("공지 제목") {
                     TextField("", text: $title, prompt: placeholder("공지 제목을 입력하세요."))
                         .textFieldStyle(.plain)
-                        .font(.body)
+                        .font(.appBody)
                         .foregroundStyle(Color.neutral900)
                         .padding(.horizontal, 25)
                         .frame(height: 50)
@@ -70,7 +79,7 @@ struct NoticeComposeView: View {
 
                 field("내용", labelTop: 0) {
                     TextEditor(text: $content)
-                        .font(.body)
+                        .font(.appBody)
                         .foregroundStyle(Color.neutral900)
                         .scrollContentBackground(.hidden)
                         .padding(.horizontal, 20)   // TextEditor 안쪽 여백(5)까지 더해서 피그마 25
@@ -95,7 +104,7 @@ struct NoticeComposeView: View {
                     Spacer()
                     Button(action: send) {
                         Text("보내기")
-                            .font(.body)
+                            .font(.appBody)
                             .foregroundStyle(Color.onPrimaryText)
                             .frame(width: 110, height: 30)
                             .background(Color.brandPrimary, in: RoundedRectangle(cornerRadius: 6))
@@ -127,7 +136,7 @@ struct NoticeComposeView: View {
     private var backButton: some View {
         Button { dismiss() } label: {
             Image(systemName: "arrow.left")
-                .font(.system(size: 24))
+                .font(.app(size: 24))
                 .foregroundStyle(Color.noticeMetaText)
                 .frame(width: 36, height: 36)
                 .contentShape(Rectangle())
@@ -147,11 +156,11 @@ struct NoticeComposeView: View {
         } label: {
             HStack(spacing: 11) {
                 Text(selectedProduction?.title ?? "프로젝트 선택")
-                    .font(.body.weight(.semibold))
+                    .font(.appBody.weight(.semibold))
                     .foregroundStyle(selectedProduction == nil ? Color.noticePlaceholder : Color.neutral900)
                     .lineLimit(1)
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 12))
+                    .font(.app(size: 12))
                     .foregroundStyle(Color.noticeIconText)
             }
             .padding(.horizontal, 19)
@@ -169,7 +178,7 @@ struct NoticeComposeView: View {
     // 칸 안내 글자 (피그마: 13 semibold neutral400)
     private func placeholder(_ text: String) -> Text {
         Text(text)
-            .font(.body.weight(.semibold))
+            .font(.appBody.weight(.semibold))
             .foregroundStyle(Color.noticePlaceholder)
     }
 
@@ -178,7 +187,7 @@ struct NoticeComposeView: View {
     private func field<Content: View>(_ label: String, labelTop: CGFloat = 15, @ViewBuilder content: () -> Content) -> some View {
         HStack(alignment: .top, spacing: 0) {
             Text(label)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.app(size: 15, weight: .semibold))
                 .foregroundStyle(Color.neutral800)
                 .frame(width: 91, alignment: .leading)
                 .padding(.top, labelTop)

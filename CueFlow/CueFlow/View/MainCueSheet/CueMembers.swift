@@ -73,7 +73,7 @@ struct MemberAvatar: View {
 
     var body: some View {
         Text(String(name.prefix(1)))
-            .font(.system(size: fontSize, weight: .semibold))
+            .font(.app(size: fontSize, weight: .semibold))
             .foregroundStyle(letterColor)
             .frame(width: size, height: size)
             .background(background, in: .circle)

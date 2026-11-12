@@ -17,6 +17,7 @@ struct NoticeDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var isHoveringTop = false   // 위쪽에 마우스를 올리면 버튼 줄이 보인다
+    @State private var draft: NoticeDraft?     // 답장 · 전체 답장 · 전달 → 미리 채운 쓰기 화면
 
     init(notice: Notice, notices: [Notice] = []) {
         self.notices = notices
@@ -42,13 +43,14 @@ struct NoticeDetailView: View {
                     // 피그마 951:7518: 위쪽 가운데 삭제 · 답장 · 전체 답장 · 전달
                     // 평소엔 숨기고, 위쪽(버튼 줄 ~ "받은 공지" 줄)에 마우스를 올리면 보인다 (공지 목록 별표처럼)
                     VStack(alignment: .leading, spacing: 22) {
+                        // 아이패드는 마우스가 없어서 항상 보인다
                         actionBar
                             .frame(maxWidth: .infinity)
-                            .opacity(isHoveringTop ? 1 : 0)
-                            .allowsHitTesting(isHoveringTop)
+                            .opacity(isHoveringTop || !Platform.hasHover ? 1 : 0)
+                            .allowsHitTesting(isHoveringTop || !Platform.hasHover)
 
                         Text("받은 공지")
-                            .font(.largeTitle.bold())
+                            .font(.appLargeTitle.bold())
                             .foregroundStyle(Color.neutral900)
                             .id("top")
                     }
@@ -86,18 +88,52 @@ struct NoticeDetailView: View {
             .onChange(of: notice, initial: true) { _, notice in
                 notice.markRead(in: modelContext)
             }
+            .navigationDestination(item: $draft) { draft in
+                NoticeComposeView(draft: draft)
+            }
         }
     }
 
-    // 삭제. 마우스를 올리면 회색 동그라미
-    // TODO: 답장 · 전체 답장 · 전달은 동작이 정해지면 넣기 (피그마 951:7518, 팀 미정이라 숨김)
+    // 삭제 · 답장 · 전체 답장 · 전달 (피그마 951:7518). 마우스를 올리면 회색 동그라미
+    // 공지는 편집 권한이 있는 공연에만 쓸 수 있어서(#120) 읽기 권한이면 답장 · 전달은 흐리게
     private var actionBar: some View {
         HStack(spacing: 0) {
             NoticeActionButton(systemImage: "trash", help: "삭제", action: deleteNotice)
+            if Platform.canWriteNotice {   // 아이패드는 받아 보기만 해서 삭제만 (#157)
+                replyButtons
+            }
         }
         .padding(3)
         .background(Color.neutral50, in: Capsule())
         .overlay(Capsule().strokeBorder(Color.neutral200, lineWidth: 0.5))
+    }
+
+    @ViewBuilder
+    private var replyButtons: some View {
+            actionDivider
+            NoticeActionButton(systemImage: "arrowshape.turn.up.backward", help: "답장") {
+                draft = .reply(to: notice)
+            }
+            .disabled(!canWrite || notice.isSent(byUserID: ICloudAccount.currentUserRecordName) || notice.author == nil)   // 내가 보낸 공지엔 답장 대신 전체 답장
+            NoticeActionButton(systemImage: "arrowshape.turn.up.left.2", help: "전체 답장") {
+                draft = .replyAll(to: notice)
+            }
+            .disabled(!canWrite)
+            NoticeActionButton(systemImage: "arrowshape.turn.up.forward", help: "전달") {
+                draft = .forward(notice)
+            }
+            .disabled(!canWrite)
+    }
+
+    private var actionDivider: some View {
+        Rectangle()
+            .fill(Color.neutral200)
+            .frame(width: 1, height: 14)
+            .padding(.horizontal, 2)
+    }
+
+    private var canWrite: Bool {
+        notice.production?.canEdit(userID: ICloudAccount.currentUserRecordName) == true
     }
 
     // 목록으로 돌아간 다음 지운다 (내가 보낸 공지면 읽음 기록 · iCloud까지, 남이 보낸 공지면 내 목록에서만 숨김)
@@ -118,14 +154,14 @@ struct NoticeDetailView: View {
                 VStack(alignment: .leading, spacing: 19) {
                     // 보낼 대상 태그: 전체공지 / 조명 공지 / 개인 공지
                     Text(notice.targetTag)
-                        .font(.subheadline.weight(.semibold))
+                        .font(.appSubheadline.weight(.semibold))
                         .foregroundStyle(Color.brandPrimaryText)
                         .padding(.horizontal, 15)
                         .frame(height: 27)
                         .background(Color.noticeTagBackground, in: Capsule())
 
                     Text(notice.title)
-                        .font(.largeTitle.bold())
+                        .font(.appLargeTitle.bold())
                         .foregroundStyle(Color.neutral900)
                 }
 
@@ -135,7 +171,7 @@ struct NoticeDetailView: View {
                 }
 
                 Text(notice.sentDateDetailText)
-                    .font(.callout)
+                    .font(.appCallout)
                     .foregroundStyle(Color.noticeSecondaryText)
             }
 
@@ -144,7 +180,7 @@ struct NoticeDetailView: View {
                 .frame(height: 1)
 
             Text(notice.body)
-                .font(.body)
+                .font(.appBody)
                 .foregroundStyle(Color.noticeMetaText)
                 .lineSpacing(6)
                 .textSelection(.enabled)   // 본문 글자를 드래그해서 복사할 수 있게
@@ -162,9 +198,9 @@ struct NoticeDetailView: View {
     private func infoRow(label: String, value: String) -> some View {
         HStack(spacing: 17) {
             Text(label)
-                .font(.body.weight(.semibold))
+                .font(.appBody.weight(.semibold))
             Text(value)
-                .font(.body)
+                .font(.appBody)
         }
         .foregroundStyle(Color.neutral900)
     }
@@ -182,7 +218,7 @@ struct NoticeActionButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 14))
+                .font(.app(size: 14))
                 .foregroundStyle(isEnabled ? Color.noticeMetaText : Color.neutral300)
                 .frame(width: 34, height: 26)
                 .background(isHovering && isEnabled ? Color.neutral200 : .clear, in: Capsule())
@@ -212,13 +248,13 @@ struct NoticeNeighborRow: View {
         Button(action: action) {
             HStack(spacing: 0) {
                 Image(systemName: direction == .previous ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 8, weight: .semibold))
+                    .font(.app(size: 8, weight: .semibold))
                     .foregroundStyle(Color.noticeIconText)
                     .frame(width: 30, alignment: .leading)
 
                 HStack(spacing: 10) {
                     Image(systemName: "envelope")
-                        .font(.footnote)
+                        .font(.appFootnote)
                     Text(notice.senderRoleAndName)
                 }
                 .frame(width: 149, alignment: .leading)
@@ -228,7 +264,7 @@ struct NoticeNeighborRow: View {
 
                 Spacer()
             }
-            .font(.subheadline)
+            .font(.appSubheadline)
             .foregroundStyle(isHovering ? Color.neutral900 : Color.noticeSecondaryText)
             .padding(.leading, 17)
             .frame(height: 45)

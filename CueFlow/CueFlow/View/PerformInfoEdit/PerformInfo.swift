@@ -82,10 +82,10 @@ extension PerformInfo {
             if isRequired {
                 Text("*")
                     .foregroundStyle(Color.noticePlaceholder)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.app(size: 16, weight: .semibold))
             }
         }
-        .font(.system(size: 17, weight: .bold))
+        .font(.app(size: 17, weight: .bold))
     }
     
     private func textField(_ placeholder: String, text: Binding<String>) -> some View {
@@ -129,7 +129,7 @@ extension PerformInfo {
         let isSelected = draft.genre == genre
         return Button { draft.genre = genre } label: {
             Text(genre)
-                .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                .font(.app(size: 13, weight: isSelected ? .semibold : .regular))
                 .foregroundStyle(isSelected ? Color.neutral900 : Color.noticeSecondaryText)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(isSelected ? Color.tagBackground : .clear, in: .rect(cornerRadius: 6))
@@ -151,7 +151,7 @@ extension PerformInfo {
                 .foregroundStyle(draft.lastShowDate == nil ? Color.noticePlaceholder : Color.neutral900)
             Spacer()
             Image(systemName: "chevron.down")
-                .font(.system(size: 12))
+                .font(.app(size: 12))
                 .foregroundStyle(.gray)
         }
         .formBox()
@@ -186,7 +186,7 @@ extension PerformInfo {
 private extension View {
     func formBox(padding: CGFloat = 14) -> some View {
         self
-            .font(.system(size: 13))
+            .font(.app(size: 13))
             .foregroundStyle(Color.neutral900)
             .padding(.horizontal, padding)
             .frame(height: 48)

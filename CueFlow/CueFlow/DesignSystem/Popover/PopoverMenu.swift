@@ -41,11 +41,11 @@ struct PopoverCheckList<Item: Hashable>: View {
         } label: {
             HStack(spacing: 2) {
                 Image(systemName: "checkmark")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.app(size: 10, weight: .semibold))
                     .frame(width: 12)
                     .opacity(item == selected ? 1 : 0)
                 Text(title(item))
-                    .font(.body.weight(.semibold))
+                    .font(.appBody.weight(.semibold))
             }
             .foregroundStyle(.primary)
             .contentShape(.rect)
@@ -81,7 +81,7 @@ struct PopoverMenuItem: View {
             action()
         } label: {
             Text(title)
-                .font(.body.weight(.medium))
+                .font(.appBody.weight(.medium))
                 .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(.rect)
