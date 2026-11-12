@@ -55,6 +55,7 @@ struct MainCueSheetView: View {
         .onChange(of: priorityScene) { if $1 != nil { historyCue = nil; isShowingUnread = false } }
         .onChange(of: isShowingUnread) { if $1 { historyCue = nil; priorityScene = nil } }
         .onChange(of: isSidebarHidden) { if $1 { closeSidebar() } }   // 왼쪽 사이드바를 가리면 오른쪽 사이드바도 닫기
+        .focusedSceneValue(\.partFilter, partFilterMenu)   // 메뉴 막대 보기 > 파트별 큐시트보기
     }
 }
 
@@ -259,6 +260,18 @@ extension MainCueSheetView {
             .frame(width: 25, height: 25)
             .background(Color.brandPrimarySubtle, in: .circle)
             .overlay(Circle().strokeBorder(.white, lineWidth: 1.5))
+    }
+}
+
+// 메뉴 막대 보기 > 파트별 큐시트보기 (파트 필터 바와 같은 값)
+
+extension MainCueSheetView {
+    private var partFilterMenu: PartFilterActions {
+        PartFilterActions(
+            parts: (production.parts ?? []).sorted { $0.order < $1.order },
+            selectedPart: selectedPart,
+            select: { selectedPart = $0 }
+        )
     }
 }
 

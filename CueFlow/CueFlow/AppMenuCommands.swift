@@ -19,6 +19,7 @@ struct AppMenuActions {
     var newProject: () -> Void
     var open: (Production) -> Void
     var toggleSidebar: () -> Void
+    var showShortcuts: () -> Void         // 도움말 > 키보드 단축키
     var close: (() -> Void)?              // 큐시트 · 리허설 · 새 프로젝트 중일 때만
     var showCueSheet: (() -> Void)?       // 리허설 중일 때만
     var showRehearsal: (() -> Void)?      // 큐시트를 보고 있을 때만
@@ -33,16 +34,26 @@ struct CueGridActions {
     var copy: () -> Void              // 선택한 큐 기억하기
     var cut: () -> Void               // 기억하고 지우기
     var paste: () -> Bool             // 마우스가 올라간 칸에 붙이기. 붙일 곳이 없으면 false
+    var export: (CueSheetExportFormat) -> Void   // 파일 > 다음으로 내보내기 (저장 창)
+}
+
+// 파트 필터 바에서 메뉴가 할 수 있는 일 (MainCueSheetView가 넣어 줌)
+struct PartFilterActions {
+    var parts: [Part]                 // 파트 필터 바와 같은 순서
+    var selectedPart: Part?           // nil = 전체
+    var select: (Part?) -> Void
 }
 
 extension FocusedValues {
     @Entry var appMenu: AppMenuActions?
     @Entry var cueGrid: CueGridActions?
+    @Entry var partFilter: PartFilterActions?
 }
 
 struct AppMenuCommands: Commands {
     @FocusedValue(\.appMenu) private var app   // ContentView가 넣어 줌
     @FocusedValue(\.cueGrid) private var cueGrid   // CueGrid가 넣어 줌 (큐시트 표가 보일 때)
+    @FocusedValue(\.partFilter) private var partFilter   // MainCueSheetView가 넣어 줌 (파트 필터 바)
     @AppStorage("showsCommentButton") private var showsComments = true   // 보기 > 댓글 표시 (CueCard와 같이 씀)
     var body: some Commands {
         appMenu
@@ -85,11 +96,11 @@ extension AppMenuCommands {
                 .disabled(app?.close == nil)
         }
         CommandGroup(replacing: .importExport) {
-            Menu("다음으로 내보내기") {
-                Button("PDF") {}
-                Button("이미지") {}
+            Menu("다음으로 내보내기") {   // 통합 큐시트 내보내기 버튼과 같은 저장 창
+                Button("CSV (엑셀)") { cueGrid?.export(.csv) }
+                Button("PDF") { cueGrid?.export(.pdf) }
             }
-            .disabled(true)
+            .disabled(cueGrid == nil)
             Button("프로젝트 설정…") {}
                 .disabled(true)
         }
@@ -223,10 +234,7 @@ extension AppMenuCommands {
                 .disabled(app?.showCueSheet == nil)
             Button("리허설모드 보기") { app?.showRehearsal?() }
                 .disabled(app?.showRehearsal == nil)
-            Menu("파트별 큐시트보기") {
-                Button("전체파트") {}
-            }
-            .disabled(true)
+            partMenu
             Button("미확인 사이드바 보기") {}
                 .disabled(true)
             Button("History 사이드바 보기") {}
@@ -242,7 +250,26 @@ extension AppMenuCommands {
             Divider()
         }
     }
-}
+    
+    // 파트별 큐시트보기 > 전체 | 무대 · 음향 … (파트 필터 바와 같은 선택에 체크)
+    private var partMenu: some View {
+        Menu("파트별 큐시트보기") {
+            Toggle("전체", isOn: partToggle(nil))
+            Divider()
+            ForEach(partFilter?.parts ?? []) { part in
+                Toggle(part.name, isOn: partToggle(part))
+            }
+        }
+        .disabled(partFilter == nil)
+    }
+
+    // 선택된 파트면 체크. 누르면 그 파트로 (이미 선택된 걸 눌러도 그대로)
+    private func partToggle(_ part: Part?) -> Binding<Bool> {
+        Binding(
+            get: { partFilter?.selectedPart == part },
+            set: { _ in partFilter?.select(part) }
+        )
+    }}
 
 // 도움말
 
@@ -252,9 +279,9 @@ extension AppMenuCommands {
         CommandGroup(replacing: .help) {
             Button("Cuedit 도움말") {}
                 .disabled(true)
-            Button("키보드 단축키") {}
+            Button("키보드 단축키") { app?.showShortcuts() }
                 .keyboardShortcut("/")
-                .disabled(true)
+                .disabled(app == nil)
             Divider()
             Button("Cuedit 피드백 제공 및 문제 신고") {}
                 .disabled(true)

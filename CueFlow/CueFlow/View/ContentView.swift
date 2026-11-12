@@ -60,6 +60,7 @@ struct ContentView: View {
     @State private var isComposingNotice = false
     @State private var cueFocus: SystemNotifications.CueFocus?   // 큐 수정 알림을 눌렀을 때 큐시트가 찾아갈 큐들
     @State private var sidebarVisibility: NavigationSplitViewVisibility = .all   // 메뉴 "사이드바 가리기"
+    @State private var isShowingShortcuts = false   // 도움말 > 키보드 단축키 안내창
 
     init(pendingInvite: PendingInvite? = nil) {
         _pendingInvite = State(initialValue: pendingInvite)
@@ -114,6 +115,7 @@ struct ContentView: View {
             }
         }
         .focusedSceneValue(\.appMenu, appMenu)   // 메뉴 막대에 지금 할 수 있는 일 넘기기
+        .overlay { shortcutsOverlay }   // 도움말 > 키보드 단축키 ⌘/
         // 다른 사람이 보낸 새 공지 · 내 파트 큐 수정이 iCloud로 오면 맥 시스템 알림 (#103)
         .onReceive(NotificationCenter.default.publisher(for: CloudSync.didReceiveNoticesNotification)) { notification in
             notifyNotices(notification.object as? [UUID] ?? [])
@@ -374,7 +376,8 @@ extension ContentView {
             recentProductions: Array(productions.sorted { $0.lastOpenedAt > $1.lastOpenedAt }.prefix(3)),
             newProject: { startNewProject() },
             open: { openFromMenu($0) },
-            toggleSidebar: { toggleSidebar() }
+            toggleSidebar: { toggleSidebar() },
+            showShortcuts: { isShowingShortcuts = true }
         )
         // 지금 화면에서 할 수 있을 때만 넣기 (안 넣으면 메뉴가 회색)
         if hasOpenScreen { actions.close = { closeOpenScreen() } }
@@ -426,6 +429,17 @@ extension ContentView {
     private func toggleSidebar() {
         withAnimation {
             sidebarVisibility = sidebarVisibility == .detailOnly ? .all : .detailOnly
+        }
+    }
+    
+    // 도움말 > 키보드 단축키: 뒤를 살짝 어둡게 하고 가운데에 안내창. 바깥을 누르면 닫힘
+    @ViewBuilder
+    private var shortcutsOverlay: some View {
+        if isShowingShortcuts {
+            Color.black.opacity(0.2)
+                .ignoresSafeArea()
+                .onTapGesture { isShowingShortcuts = false }
+                .overlay { KeyboardShortcutsView { isShowingShortcuts = false } }
         }
     }
 }

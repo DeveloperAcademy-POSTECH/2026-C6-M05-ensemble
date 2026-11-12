@@ -327,7 +327,8 @@ extension CueGrid {
             deleteSelected: { deleteSelectedCues() },
             copy: { copySelectedCues() },
             cut: { cutSelectedCues() },
-            paste: { pasteCues() }
+            paste: { pasteCues() },
+            export: { production.exportCueSheet(as: $0) }   // 내보내기 버튼과 같은 함수
         )
     }
 
