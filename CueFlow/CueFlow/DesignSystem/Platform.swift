@@ -59,3 +59,14 @@ extension View {
         #endif
     }
 }
+
+// 아이패드는 보기 전용 (#156): 공연 만들기 · 삭제, 큐 · 파트 · 씬 추가와 편집은 맥에서만.
+// 댓글 달기 · 큐 확인은 아이패드에서도 된다.
+enum Platform {
+    #if os(macOS)
+    static let canEditCueSheet = true
+    #else
+    static let canEditCueSheet = false
+    #endif
+}
+

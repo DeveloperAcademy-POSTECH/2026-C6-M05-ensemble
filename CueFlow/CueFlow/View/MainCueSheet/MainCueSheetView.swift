@@ -38,7 +38,8 @@ struct MainCueSheetView: View {
         .background(Color.appBackground)
         .appPopoverHost()   // 표 안 팝오버(파트 추가 · 수정)가 그려지는 곳
         .environment(\.myUserID, iCloudAccount.userRecordName)
-        .environment(\.canEditCues, production.canEdit(userID: iCloudAccount.userRecordName))
+        // 아이패드는 보기 전용 (#156): 큐 · 파트 · 씬 추가와 편집은 맥에서. 댓글 · 확인은 그대로 된다
+        .environment(\.canEditCues, Platform.canEditCueSheet && production.canEdit(userID: iCloudAccount.userRecordName))
         .onReceive(NotificationCenter.default.publisher(for: CloudSync.didApplyRemoteNotification)) { _ in
             remoteRevision += 1
         }
@@ -123,6 +124,9 @@ extension MainCueSheetView {
             Text(production.title)
                 .font(.title)
                 .foregroundStyle(Color.neutral900)
+            if !Platform.canEditCueSheet {
+                readOnlyChip
+            }
             Spacer()
             // 피그마 1349:3639: 멤버 · 공유하기 · 내보내기 아이콘
             HStack(spacing: 20) {
@@ -250,6 +254,17 @@ extension MainCueSheetView {
                 onSpotlight()
             }
         }
+    }
+
+    // 아이패드 공연 제목 옆: 왜 편집이 안 되는지 알려 주는 칩
+    private var readOnlyChip: some View {
+        Label("보기 전용 · 수정은 Mac에서", systemImage: "eye")
+            .font(.footnote.weight(.medium))
+            .foregroundStyle(Color.neutral700)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Color.neutral100, in: Capsule())
+            .padding(.leading, 8)
     }
 
     private func memberCircle(_ content: some View) -> some View {

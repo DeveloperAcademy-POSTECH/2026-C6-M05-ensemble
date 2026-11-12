@@ -73,7 +73,9 @@ struct HomeView: View {
         HStack(alignment: .top) {
             PageHeader(
                 title: "프로젝트",
-                subtitle: "새 공연을 만들거나 기존 프로젝트를 이어서 편집할 수 있습니다."
+                subtitle: Platform.canEditCueSheet
+                    ? "새 공연을 만들거나 기존 프로젝트를 이어서 편집할 수 있습니다."
+                    : "Mac에서 만든 공연의 큐시트를 보고, 댓글을 달고 확인할 수 있습니다."
             )
 
             Spacer()
@@ -98,14 +100,17 @@ struct HomeView: View {
                     .help("설정")
                 }
 
-                Button {
-                    onNewProject()
-                } label: {
-                    Label("새 프로젝트", systemImage: "plus")
+                // 공연 만들기는 맥에서만 (아이패드는 보기 전용, #156)
+                if Platform.canEditCueSheet {
+                    Button {
+                        onNewProject()
+                    } label: {
+                        Label("새 프로젝트", systemImage: "plus")
+                    }
+                    .buttonStyle(.primary)
+                    .frame(width: 125, height: 40)
+                    .padding(.leading, 11)
                 }
-                .buttonStyle(.primary)
-                .frame(width: 125, height: 40)
-                .padding(.leading, 11)
             }
             .padding(.top, 3)
         }
@@ -195,7 +200,7 @@ struct HomeView: View {
     // 공유받은 공연은 메뉴를 보이지 않는다 (지우면 만든 사람의 iCloud 폴더를 건드리게 된다)
     @ViewBuilder
     private func deleteMenu(for production: Production) -> some View {
-        if !production.isSharedWithMe {
+        if !production.isSharedWithMe, Platform.canEditCueSheet {   // 아이패드는 보기 전용이라 삭제도 맥에서
             Button("삭제하기", role: .destructive) { deletingProduction = production }
         }
     }
