@@ -11,7 +11,11 @@
 //  #69 리허설 동기화 모드: 공연 폴더에 "리허설 위치" 레코드도 같이 주고받는다 (SwiftData 모델 아님 → RehearsalSync)
 //
 
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import CloudKit
 import SwiftData
 import os
@@ -229,9 +233,17 @@ final class CloudSync {
 
     // 앱 창으로 돌아올 때마다 두 저장공간 다 새로 받아 온다
     // (다른 사람이 고친 건 원래 iCloud 알림(푸시)으로 오는데, 알림이 늦거나 안 와도 여기서 한 번 더 챙긴다)
+    private static var didBecomeActive: Notification.Name {
+        #if os(macOS)
+        NSApplication.didBecomeActiveNotification
+        #else
+        UIApplication.didBecomeActiveNotification
+        #endif
+    }
+
     private func observeAppActive() {
         activeObserver = NotificationCenter.default.addObserver(
-            forName: NSApplication.didBecomeActiveNotification, object: nil, queue: nil
+            forName: Self.didBecomeActive, object: nil, queue: nil
         ) { [weak self] _ in
             Task { @MainActor in
                 do {

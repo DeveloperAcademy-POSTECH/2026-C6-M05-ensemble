@@ -12,7 +12,11 @@
 import SwiftUI
 import CloudKit
 import SwiftData
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 
 struct SharePopover: View {
     let production: Production
@@ -266,17 +270,34 @@ extension SharePopover {
     // 메일 앱에 받는 사람 · 초대 링크를 채워서 연다
     private func sendEmail() {
         guard let url = share?.url, !trimmedEmail.isEmpty else { return }
+        let subject = "[Cuedit] \(production.title) 큐시트에 초대합니다"
+        let body = "\(production.title) 큐시트에 초대합니다. 아래 링크를 눌러 참여하세요.\n\n\(url.absoluteString)"
+        #if os(macOS)
         guard let service = NSSharingService(named: .composeEmail) else { return }
         service.recipients = [trimmedEmail]
-        service.subject = "[Cuedit] \(production.title) 큐시트에 초대합니다"
-        service.perform(withItems: ["\(production.title) 큐시트에 초대합니다. 아래 링크를 눌러 참여하세요.\n\n\(url.absoluteString)"])
+        service.subject = subject
+        service.perform(withItems: [body])
+        #else
+        // 아이패드: 메일 앱을 mailto 링크로 연다
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = trimmedEmail
+        components.queryItems = [URLQueryItem(name: "subject", value: subject), URLQueryItem(name: "body", value: body)]
+        if let mailURL = components.url {
+            UIApplication.shared.open(mailURL)
+        }
+        #endif
         email = ""
     }
 
     private func copyLink() {
         guard let url = share?.url else { return }
+        #if os(macOS)
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(url.absoluteString, forType: .string)
+        #else
+        UIPasteboard.general.string = url.absoluteString
+        #endif
         didCopy = true
     }
 }

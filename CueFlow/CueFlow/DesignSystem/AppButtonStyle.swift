@@ -45,7 +45,7 @@ struct SecondaryButtonStyle: ButtonStyle {
             .foregroundStyle(Color.brandPrimaryText)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
-                configuration.isPressed ? Color.brandPrimarySubtle : (colorScheme == .dark ? Color.neutral25 : Color(nsColor: .windowBackgroundColor)),   // 다크 Dark/Button #2C2C2E
+                configuration.isPressed ? Color.brandPrimarySubtle : (colorScheme == .dark ? Color.neutral25 : Color.windowBackground),   // 다크 Dark/Button #2C2C2E
                 in: RoundedRectangle(cornerRadius: 6)
             )
             .overlay {
@@ -88,7 +88,7 @@ struct TertiaryButtonStyle: ButtonStyle {
         if isFilled {
             return isPressed ? Color.brandPrimarySoft.opacity(0.4) : Color.brandPrimarySubtle   // 라이트 #E4E2FF
         }
-        return isPressed ? Color.neutral100 : (colorScheme == .dark ? Color.neutral25 : Color(nsColor: .windowBackgroundColor))   // 다크 Dark/Button #2C2C2E
+        return isPressed ? Color.neutral100 : (colorScheme == .dark ? Color.neutral25 : Color.windowBackground)   // 다크 Dark/Button #2C2C2E
     }
 
     func makeBody(configuration: Configuration) -> some View {

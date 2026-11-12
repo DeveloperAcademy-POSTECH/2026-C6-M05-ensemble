@@ -91,7 +91,9 @@ extension MainCueSheetView {
         Color.clear
             .frame(width: 8)
             .contentShape(.rect)
+            #if os(macOS)   // 커서 모양은 맥만 (#156)
             .pointerStyle(.columnResize)
+            #endif
             .gesture(DragGesture().onEnded { if $0.translation.width > 100 { closeSidebar() } })   // 오른쪽으로 100 넘게 밀면 닫힘
     }
 

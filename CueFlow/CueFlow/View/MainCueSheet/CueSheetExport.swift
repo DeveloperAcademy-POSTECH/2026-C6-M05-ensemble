@@ -6,7 +6,11 @@
 //  어떤 줄을 어떤 순서로 내보낼지는 Production+CueSheetExport.swift에서 정한다.
 //
 
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import SwiftUI
 
 // 내보낼 큐 한 줄

@@ -32,7 +32,7 @@ struct CueUnreadSidebar: View {
         .padding(.top, 20.5)   // 제목 줄(20) 가운데를 « 가운데(위에서 30.5)에 맞춤
         .frame(width: 313)
         .frame(maxHeight: .infinity, alignment: .top)
-        .onExitCommand(perform: onClose)   // 검색창에 커서가 있을 때도 Esc로 닫힘
+        .onEscape(perform: onClose)   // 검색창에 커서가 있을 때도 Esc로 닫힘
         .background(Color.neutral25.shadow(.drop(color: .black.opacity(0.25), radius: 2, y: 4)), in: .rect(cornerRadius: 10))
     }
 }

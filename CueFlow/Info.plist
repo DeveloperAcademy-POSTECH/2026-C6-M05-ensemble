@@ -5,5 +5,10 @@
 	<!-- 초대 링크(iCloud 공유 링크)를 누르면 이 앱이 열리게 한다 (#68). 나머지 항목은 빌드 설정(INFOPLIST_KEY_)에서 자동으로 채워진다 -->
 	<key>CKSharingSupported</key>
 	<true/>
+	<!-- 아이패드: 다른 사람이 고친 걸 iCloud 조용한 알림으로 바로 받는다 (CKSyncEngine, #156). 맥은 이 항목을 무시한다 -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

@@ -5,7 +5,11 @@
 //  큐시트 내보내기: 공연 데이터를 줄로 펴고, 저장 창을 띄워 파일로 저장한다.
 //
 
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import SwiftData
 import UniformTypeIdentifiers
 
@@ -44,6 +48,7 @@ extension Production {
     // 저장 창 → 고른 곳에 파일 저장. 취소하면 아무것도 안 함
     @MainActor
     func exportCueSheet(as format: CueSheetExportFormat) {
+        #if os(macOS)   // 아이패드 내보내기는 아직 없음 — 필요하면 fileExporter로 (#156)
         let panel = NSSavePanel()
         panel.title = "큐시트 내보내기"
         panel.allowedContentTypes = [format.contentType]
@@ -63,6 +68,7 @@ extension Production {
             alert.informativeText = error.localizedDescription
             alert.runModal()
         }
+        #endif
     }
 }
 

@@ -7,7 +7,11 @@
 //  링크로 앱을 열려면 Info.plist의 CKSharingSupported = YES 필요.
 //
 
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import CloudKit
 import Observation
 
@@ -27,6 +31,7 @@ final class ShareInvites {
     }
 }
 
+#if os(macOS)
 // 맥이 "초대 링크로 앱 열림"을 알려 주는 곳
 final class AppDelegate: NSObject, NSApplicationDelegate {
     // iCloud 알림(푸시)을 받겠다고 맥에 신청 → 다른 사람이 고치면 CKSyncEngine이 바로 받아 온다
@@ -42,3 +47,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 }
+#else
+// 아이패드: 앱 시작 · iCloud 알림 신청은 여기, 초대 링크는 화면(Scene) 쪽으로 온다
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        application.registerForRemoteNotifications()
+        SystemNotifications.shared.start()
+        return true
+    }
+
+    // 초대 링크를 받을 SceneDelegate를 연결
+    func application(
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        let configuration = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
+        configuration.delegateClass = SceneDelegate.self
+        return configuration
+    }
+}
+
+// 아이패드가 "초대 링크로 앱 열림"을 알려 주는 곳
+final class SceneDelegate: NSObject, UIWindowSceneDelegate {
+    // 앱이 꺼져 있다가 링크로 켜졌을 때
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        guard let metadata = connectionOptions.cloudKitShareMetadata else { return }
+        Task { @MainActor in
+            ShareInvites.shared.receive(metadata)
+        }
+    }
+
+    // 앱이 켜져 있을 때
+    func windowScene(_ windowScene: UIWindowScene, userDidAcceptCloudKitShareWith metadata: CKShare.Metadata) {
+        Task { @MainActor in
+            ShareInvites.shared.receive(metadata)
+        }
+    }
+}
+#endif

@@ -101,11 +101,18 @@ struct PopoverMenuDivider: View {
 
 // 우클릭했을 때 할 일
 // SwiftUI는 우클릭이 시스템 메뉴(contextMenu)뿐이라, 우클릭만 AppKit으로 받음
+// 아이패드는 우클릭 대신 길게 누르기
 extension View {
     func onRightClick(perform action: @escaping () -> Void) -> some View {
+        #if os(macOS)
         overlay { RightClickCatcher(action: action) }
+        #else
+        onLongPressGesture(perform: action)
+        #endif
     }
 }
+
+#if os(macOS)
 
 // 우클릭만 받고, 왼쪽 클릭 · 드래그 · 마우스 올리기는 아래 뷰로 그대로 통과시키는 투명 판
 struct RightClickCatcher: NSViewRepresentable {
@@ -124,6 +131,7 @@ struct RightClickCatcher: NSViewRepresentable {
         override func rightMouseDown(with event: NSEvent) { action() }
     }
 }
+#endif
 
 #Preview {
     VStack(alignment: .leading, spacing: 40) {

@@ -177,7 +177,7 @@ struct DarkModeToggle: View {
                     .padding(.horizontal, 6)
             }
             .frame(width: 94, height: 40)
-            .background(Color(nsColor: .labelColor).opacity(0.1), in: Capsule())   // 피그마 Track: Labels/Primary 10% (색상 표에 없는 시스템 색)
+            .background(Color.primary.opacity(0.1), in: Capsule())   // 피그마 Track: Labels/Primary 10% (색상 표에 없는 시스템 색)
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
