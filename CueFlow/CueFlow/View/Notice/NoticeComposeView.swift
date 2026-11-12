@@ -23,7 +23,7 @@ struct NoticeComposeView: View {
     }
 
     @State private var selectedProduction: Production?
-    @State private var recipient: NoticeRecipient = .all
+    @State private var recipients: [NoticeRecipient] = []   // 비어 있으면 전체
     @State private var title = ""
     @State private var content = ""
 
@@ -31,7 +31,7 @@ struct NoticeComposeView: View {
     init(draft: NoticeDraft? = nil) {
         guard let draft else { return }
         _selectedProduction = State(initialValue: draft.production)
-        _recipient = State(initialValue: draft.recipient)
+        _recipients = State(initialValue: draft.recipients)
         _title = State(initialValue: draft.title)
         _content = State(initialValue: draft.body)
     }
@@ -57,13 +57,13 @@ struct NoticeComposeView: View {
                     projectMenu
                         // 프로젝트를 바꾸면 이전 프로젝트의 파트·사람은 고를 수 없으니 전체로 되돌린다
                         .onChange(of: selectedProduction) {
-                            recipient = .all
+                            recipients = []
                         }
                 }
 
                 // 이름·파트 검색해서 고르기. 비워 두면 전체
                 field("보낼 대상") {
-                    NoticeRecipientField(production: selectedProduction, recipient: $recipient)
+                    NoticeRecipientField(production: selectedProduction, recipients: $recipients)
                 }
 
                 field("공지 제목") {
@@ -208,11 +208,7 @@ struct NoticeComposeView: View {
         )
         modelContext.insert(notice)
         notice.production = selectedProduction
-        switch recipient {
-        case .all: break                              // 둘 다 비워 두면 전체
-        case .part(let part): notice.targetPart = part
-        case .member(let member): notice.targetMember = member
-        }
+        notice.setRecipients(recipients)   // 비워 두면 전체
         // 보낸 사람 = 이 공연의 "나" 멤버 (없으면 만든다 · CueMembers). iCloud 로그인 안 됐으면 "알 수 없음"
         if let myID = ICloudAccount.currentUserRecordName, let production = selectedProduction {
             notice.author = modelContext.me(in: production, userID: myID)

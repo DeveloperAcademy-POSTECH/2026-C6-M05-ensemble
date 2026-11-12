@@ -3,7 +3,7 @@
 //  CueFlow
 //
 //  공지 상세의 답장 · 전체 답장 · 전달 → 쓰기 화면에 미리 채울 내용 (피그마 951:7518).
-//  보낼 대상은 한 곳(전체 / 파트 하나 / 사람 한 명)만 고를 수 있어서 그 안에서 정한다.
+//  보낼 대상은 여러 파트 · 여러 사람을 고를 수 있다 (비어 있으면 전체).
 //
 
 import Foundation
@@ -11,7 +11,7 @@ import Foundation
 struct NoticeDraft: Identifiable, Hashable {
     let id = UUID()
     var production: Production?
-    var recipient: NoticeRecipient
+    var recipients: [NoticeRecipient]   // 비어 있으면 전체
     var title: String
     var body: String
 
@@ -19,28 +19,22 @@ struct NoticeDraft: Identifiable, Hashable {
     static func reply(to notice: Notice) -> NoticeDraft {
         NoticeDraft(
             production: notice.production,
-            recipient: notice.author.map { .member($0) } ?? .all,
+            recipients: notice.author.map { [.member($0)] } ?? [],
             title: prefixed("RE: ", notice.title),
             body: quoted(notice)
         )
     }
 
-    // 전체 답장: 원래 받은 대상(전체 · 그 파트)에게. 개인 공지였으면 보낸 사람에게
+    // 전체 답장: 원래 받은 대상 + 보낸 사람. 전체 공지였으면 다시 전체
     static func replyAll(to notice: Notice) -> NoticeDraft {
-        let recipient: NoticeRecipient
-        if let part = notice.targetPart {
-            recipient = .part(part)
-        } else if notice.targetMember != nil, let author = notice.author,
-                  !notice.isSent(byUserID: ICloudAccount.currentUserRecordName) {
-            recipient = .member(author)
-        } else if let member = notice.targetMember {
-            recipient = .member(member)   // 내가 보낸 개인 공지 → 받았던 사람에게 다시
-        } else {
-            recipient = .all
+        var recipients = notice.recipients
+        let iSentIt = notice.isSent(byUserID: ICloudAccount.currentUserRecordName)
+        if !recipients.isEmpty, !iSentIt, let author = notice.author, !recipients.contains(.member(author)) {
+            recipients.append(.member(author))
         }
         return NoticeDraft(
             production: notice.production,
-            recipient: recipient,
+            recipients: recipients,
             title: prefixed("RE: ", notice.title),
             body: quoted(notice)
         )
@@ -50,7 +44,7 @@ struct NoticeDraft: Identifiable, Hashable {
     static func forward(_ notice: Notice) -> NoticeDraft {
         NoticeDraft(
             production: notice.production,
-            recipient: .all,
+            recipients: [],
             title: prefixed("FW: ", notice.title),
             body: quoted(notice)
         )

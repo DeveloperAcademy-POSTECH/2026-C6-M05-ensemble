@@ -111,6 +111,8 @@ enum CloudKey {
     static let noticeID = "noticeID"
     static let targetPartID = "targetPartID"       // 공지 받을 파트
     static let targetMemberID = "targetMemberID"   // 공지 받을 사람
+    static let targetPartIDs = "targetPartIDs"     // 공지 받을 파트들 (여러 개)
+    static let targetMemberIDs = "targetMemberIDs" // 공지 받을 사람들 (여러 개)
     static let partIDs = "partIDs"     // 멤버가 맡은 파트들 (여러 개)
 }
 
@@ -400,12 +402,16 @@ extension Notice: CloudRecordConvertible {
         record[CloudKey.authorID] = author?.id.uuidString
         record[CloudKey.targetPartID] = targetPart?.id.uuidString
         record[CloudKey.targetMemberID] = targetMember?.id.uuidString
+        record[CloudKey.targetPartIDs] = targetPartIDs.map(\.uuidString).cloudList
+        record[CloudKey.targetMemberIDs] = targetMemberIDs.map(\.uuidString).cloudList
     }
 
     func applyFields(from record: CKRecord) {
         title = record[CloudKey.title] as? String ?? ""
         body = record[CloudKey.body] as? String ?? ""
         sentAt = record[CloudKey.sentAt] as? Date ?? Date()
+        targetPartIDs = record.uuids(CloudKey.targetPartIDs)
+        targetMemberIDs = record.uuids(CloudKey.targetMemberIDs)
     }
 }
 
