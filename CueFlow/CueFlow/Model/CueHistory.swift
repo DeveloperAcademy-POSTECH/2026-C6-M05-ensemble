@@ -37,7 +37,7 @@ enum CurrentEditor {
     static func name(in production: Production?) -> String {
         let myID = ICloudAccount.currentUserRecordName
         let member = (production?.members ?? []).first { myID != nil && $0.iCloudUserID == myID }
-        if let name = member?.name, !name.isEmpty { return name }
+        if let name = member?.name, !name.isEmpty, name != "이름 없음" { return name }
         return NSFullUserName()
     }
 }

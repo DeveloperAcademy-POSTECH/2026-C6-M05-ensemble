@@ -260,7 +260,7 @@ extension SharePopover {
         do {
             let share = try await CloudShare.share(for: production)
             self.share = share
-            members = share.shareMembers
+            members = share.shareMembers(in: production)
         } catch {
             errorText = "iCloud에 로그인돼 있어야 공유할 수 있어요"
         }

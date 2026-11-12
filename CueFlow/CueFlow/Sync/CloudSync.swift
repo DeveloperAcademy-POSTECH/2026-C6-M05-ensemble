@@ -331,17 +331,18 @@ final class CloudSync {
             }
         }
 
-        for model in context.deletedModelsArray {
-            // 공연을 지우면 폴더째 지운다 (안의 씬 · 큐도 같이 사라짐)
-            if let production = model as? Production {
-                zoneChanges.append(.deleteZone(production.cloudZoneID))
-                continue
-            }
+        // 공연을 지우면 폴더째 지운다 (안의 씬 · 큐도 같이 사라짐)
+        // 공유받은 공연이면 "나가기"라서, 안의 씬 · 큐를 하나씩 지우는 요청은 보내지 않는다
+        // (보내면 만든 사람의 공연에서 진짜로 지워진다, #132)
+        let deletedZoneIDs = Set(context.deletedModelsArray.compactMap { ($0 as? Production)?.cloudZoneID })
+        zoneChanges += deletedZoneIDs.map { .deleteZone($0) }
+
+        for model in context.deletedModelsArray where !(model is Production) {
             guard let item = model as? any CloudRecordConvertible else { continue }
 
             // 씬을 지우면 안의 트리거 · 큐도 같이 지워지므로(cascade) 그것들도 iCloud에서 지운다
             for id in [item.id] + cascadedIDs(of: model) {
-                if let recordID = store.uploadedRecordID(for: id) {
+                if let recordID = store.uploadedRecordID(for: id), !deletedZoneIDs.contains(recordID.zoneID) {
                     recordChanges.append(.deleteRecord(recordID))
                 }
             }
@@ -821,7 +822,17 @@ final class CloudSync {
         guard let context else { return }
         guard let myID = try? await CKContainer(identifier: ICloudAccount.containerID).userRecordID().recordName else { return }
 
-        let productions = ((try? context.fetch(FetchDescriptor<Production>())) ?? []).filter {
+        let allProductions = (try? context.fetch(FetchDescriptor<Production>())) ?? []
+
+        // 예전에 iCloud가 이름을 안 알려 줘서 "이름 없음"으로 들어간 내 이름 → 맥 사용자 이름으로 고친다
+        for production in allProductions {
+            if let me = production.member(withUserID: myID), me.name == "이름 없음" {
+                me.name = CurrentEditor.name
+            }
+        }
+        try? context.save()
+
+        let productions = allProductions.filter {
             $0.isSharedWithMe && !($0.members ?? []).contains { $0.iCloudUserID == myID }
         }
         for production in productions {
