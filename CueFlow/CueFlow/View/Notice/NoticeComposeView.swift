@@ -27,6 +27,15 @@ struct NoticeComposeView: View {
     @State private var title = ""
     @State private var content = ""
 
+    // 답장 · 전체 답장 · 전달로 열면 프로젝트 · 보낼 대상 · 제목 · 내용을 미리 채운다 (피그마 951:7518)
+    init(draft: NoticeDraft? = nil) {
+        guard let draft else { return }
+        _selectedProduction = State(initialValue: draft.production)
+        _recipient = State(initialValue: draft.recipient)
+        _title = State(initialValue: draft.title)
+        _content = State(initialValue: draft.body)
+    }
+
     // 프로젝트를 고르고 제목·내용을 다 써야 보낼 수 있다
     private var canSend: Bool {
         selectedProduction?.canEdit(userID: ICloudAccount.currentUserRecordName) == true   // 쓰는 중에 권한이 꺼질 수도 있어서
