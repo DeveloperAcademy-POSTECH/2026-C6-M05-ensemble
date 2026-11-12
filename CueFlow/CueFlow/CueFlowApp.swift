@@ -13,9 +13,6 @@ struct CueFlowApp: App {
     // 초대 링크로 앱이 열리면 맥이 여기에 알려 준다 (#68)
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
-    // 사이드바 다크모드 스위치가 바꾸는 값
-    @AppStorage("isDarkMode") private var isDarkMode = false
-
     // 이 맥의 iCloud 로그인 상태 (앱 전체에서 같이 씀)
     @State private var iCloudAccount = ICloudAccount()
 
@@ -54,7 +51,6 @@ struct CueFlowApp: App {
         WindowGroup {
             ContentView()
                 .frame(minWidth: 1200)   // 이보다 좁으면 리허설 미니맵 이름이 겹친다 (#153)
-                .preferredColorScheme(isDarkMode ? .dark : .light)
                 .environment(iCloudAccount)
                 .task {
                     await iCloudAccount.refresh()
