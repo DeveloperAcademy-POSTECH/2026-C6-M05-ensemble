@@ -36,6 +36,9 @@ struct ContentView: View {
     // 초대를 수락한 공연. 있으면 사이드바 없이 역할 선택 화면만 보인다
     @State private var roleProductionID: UUID?
 
+    // iCloud 안내 띠를 ✕로 닫았는지. 앱을 다시 켜거나 iCloud 상태가 바뀌면 다시 보인다
+    @State private var isICloudBannerClosed = false
+
     // 저장된 공연 전부. 최근에 수정한 순서.
     @Query(sort: \Production.updatedAt, order: .reverse)
     private var productions: [Production]
@@ -103,9 +106,8 @@ struct ContentView: View {
                 .onDisappear { startsLeadingRehearsal = false }
             } else {
                 mainView
-                    // iCloud 로그인 안 된 맥이면 화면 맨 위에 안내 띠
-                    .safeAreaInset(edge: .top, spacing: 0) {
-                        ICloudStatusBanner(status: iCloudAccount.status)
+                    .onChange(of: iCloudAccount.status) {
+                        isICloudBannerClosed = false
                     }
                     .task {
                         UserTest.insertSampleIfNeeded(into: modelContext, isEmpty: productions.isEmpty)
@@ -218,7 +220,25 @@ struct ContentView: View {
             )
                 .navigationSplitViewColumnWidth(220)
         } detail: {
-            // 오른쪽: 선택된 메뉴에 따라 다른 화면
+            detailView
+                // iCloud 로그인 안 된 맥 · 아이패드면 오른쪽 내용 영역 맨 위에 안내 카드 (✕로 닫을 수 있음)
+                // 사이드바까지 덮으면 어색해서 내용 영역에만
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    if !isICloudBannerClosed {
+                        ICloudStatusBanner(status: iCloudAccount.status) {
+                            isICloudBannerClosed = true
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.top, 16)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+                }
+        }
+    }
+
+    // 오른쪽: 선택된 메뉴에 따라 다른 화면
+    @ViewBuilder
+    private var detailView: some View {
             switch selectedMenu {
             case .project:
                 if isCreatingProduction {
@@ -266,7 +286,6 @@ struct ContentView: View {
             case .help:
                 Text("도움말 화면")
             }
-        }
     }
 }
 
