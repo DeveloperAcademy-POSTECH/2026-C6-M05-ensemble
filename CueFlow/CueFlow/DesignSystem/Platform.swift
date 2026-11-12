@@ -65,9 +65,11 @@ extension View {
 enum Platform {
     #if os(macOS)
     static let canEditCueSheet = true
+    static let canWriteNotice = true   // 공지 쓰기 · 답장 · 전달. 아이패드는 받아 보기만
     static let hasHover = true    // 마우스를 올려야 보이는 버튼은 아이패드에서 항상 보이게
     #else
     static let canEditCueSheet = false
+    static let canWriteNotice = false
     static let hasHover = false
     #endif
 }

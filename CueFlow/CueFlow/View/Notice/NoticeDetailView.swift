@@ -99,6 +99,17 @@ struct NoticeDetailView: View {
     private var actionBar: some View {
         HStack(spacing: 0) {
             NoticeActionButton(systemImage: "trash", help: "삭제", action: deleteNotice)
+            if Platform.canWriteNotice {   // 아이패드는 받아 보기만 해서 삭제만 (#157)
+                replyButtons
+            }
+        }
+        .padding(3)
+        .background(Color.neutral50, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.neutral200, lineWidth: 0.5))
+    }
+
+    @ViewBuilder
+    private var replyButtons: some View {
             actionDivider
             NoticeActionButton(systemImage: "arrowshape.turn.up.backward", help: "답장") {
                 draft = .reply(to: notice)
@@ -112,10 +123,6 @@ struct NoticeDetailView: View {
                 draft = .forward(notice)
             }
             .disabled(!canWrite)
-        }
-        .padding(3)
-        .background(Color.neutral50, in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.neutral200, lineWidth: 0.5))
     }
 
     private var actionDivider: some View {
