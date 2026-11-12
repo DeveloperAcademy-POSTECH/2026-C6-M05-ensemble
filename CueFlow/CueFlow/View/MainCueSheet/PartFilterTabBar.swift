@@ -115,7 +115,7 @@ private struct PartChipButtonStyle: ButtonStyle {
     
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: isCompact ? 12 : 15, weight: .semibold))
+            .font(.app(size: isCompact ? 12 : 15, weight: .semibold))
             .foregroundStyle(Color.neutral900)
             .lineLimit(1)
             .padding(.horizontal, isCompact ? 16 : 14)

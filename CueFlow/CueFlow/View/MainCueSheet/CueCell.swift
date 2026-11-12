@@ -58,7 +58,7 @@ extension CueCell {
             Label("Add new", systemImage: "plus")
         }
         .buttonStyle(.plain)
-        .font(.body.weight(.medium))
+        .font(.appBody.weight(.medium))
         .foregroundStyle(Color.neutral900)
         .appPopover(isPresented: $isAddingCue, onOutsideTap: { closeRequest += 1 }) {   // 바깥 클릭은 입력창이 정함 (저장 · 경고 · 닫기)
             AddCueCardInfo(scene: scene, partName: part.name, closeRequest: closeRequest, onSave: onAddCue)

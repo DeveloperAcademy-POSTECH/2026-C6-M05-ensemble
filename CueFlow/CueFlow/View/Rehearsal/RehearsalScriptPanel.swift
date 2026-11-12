@@ -25,13 +25,13 @@ struct RehearsalScriptPanel: View {
             }
         }
         .overlay(alignment: .topTrailing) {
-            if canEdit {
+            if canImportScript {
                 Button(action: onEdit) {
                     HStack(spacing: 8) {
                         Image(systemName: "paperclip")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.app(size: 14, weight: .semibold))
                         Text("대본 입력")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.app(size: 15, weight: .semibold))
                     }
                 }
                     .buttonStyle(.plain)
@@ -93,20 +93,29 @@ struct RehearsalScriptPanel: View {
             }
     }
 
+    // 대본 입력은 맥에서만. 아이패드는 맥에서 넣은 대본을 보기만 한다 (#156)
+    private var canImportScript: Bool {
+        #if os(macOS)
+        canEdit
+        #else
+        false
+        #endif
+    }
+
     private var emptyView: some View {
         VStack(spacing: 10) {
             Text("이 장면의 대본이 없어요")
-                .font(.system(size: 15, weight: .semibold))
+                .font(.app(size: 15, weight: .semibold))
                 .foregroundStyle(Color.neutral900)
-            if canEdit {
+            if canImportScript {
                 Text("구글 닥스에서 복사해 붙여넣거나\n파일을 불러올 수 있어요")
-                    .font(.body)
+                    .font(.appBody)
                     .lineSpacing(2)
                     .foregroundStyle(Color.neutral600)
                     .multilineTextAlignment(.center)
                 Button(action: onEdit) {
                     Label("대본 가져오기", systemImage: "square.and.arrow.up")
-                        .font(.body.weight(.regular))
+                        .font(.appBody.weight(.regular))
                 }
                 .buttonStyle(.primary)
                 .frame(width: 120, height: 30)
@@ -126,7 +135,7 @@ struct ScriptLineView: View {
         VStack(alignment: .leading, spacing: 5) {
             if let speaker {
                 Text(speaker)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.app(size: 15, weight: .semibold))
                     .foregroundStyle(Color.neutral800)
             }
 
@@ -148,13 +157,13 @@ struct ScriptLineView: View {
             guard !piece.isEmpty else { return }
             var run = AttributedString(piece)
             if isDirection {
-                run.font = .system(size: fontSize)
+                run.font = .app(size: fontSize)
                 run.foregroundColor = Color.neutral900
             } else if depth > 0 {
-                run.font = .system(size: fontSize)
+                run.font = .app(size: fontSize)
                 run.foregroundColor = Color.neutral600
             } else {
-                run.font = .system(size: fontSize, weight: .bold)
+                run.font = .app(size: fontSize, weight: .bold)
             }
             result += run
             piece = ""

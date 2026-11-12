@@ -105,14 +105,14 @@ extension ParticipantsPopover {
             HStack(spacing: 15) {
                 avatar(myName, size: 36, fontSize: 18, color: .meAvatar)
                 Text("\(myName) (나)")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.app(size: 13, weight: .bold))
                     .foregroundStyle(Color.neutral900)
                     .lineLimit(1)
             }
             Spacer()
             Button(action: onSpotlight) {
                 Text("Spotlight me")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.app(size: 13, weight: .semibold))
                     .foregroundStyle(Color.spotlightText)
                     .frame(width: 99, height: 30)
                     .background(Color.spotlightBackground, in: RoundedRectangle(cornerRadius: 6))
@@ -129,7 +129,7 @@ extension ParticipantsPopover {
         HStack(spacing: 11) {
             avatar(member.name, size: 36, fontSize: 18, color: .brandPrimaryHover)
             Text(member.name)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.app(size: 14, weight: .semibold))
                 .foregroundStyle(Color.neutral900)
                 .lineLimit(1)
         }
@@ -142,11 +142,11 @@ extension ParticipantsPopover {
             avatar(member.name, size: 36, fontSize: 15, color: .visitorAvatar)
             VStack(alignment: .leading, spacing: 1) {
                 Text(member.name)
-                    .font(.system(size: 13.5, weight: .semibold))
+                    .font(.app(size: 13.5, weight: .semibold))
                     .foregroundStyle(Color.neutral900)
                     .lineLimit(1)
                 Text(seenText(member.lastSeenAt))
-                    .font(.system(size: 11.5))
+                    .font(.app(size: 11.5))
                     .foregroundStyle(Color.noticePlaceholder)
             }
         }
@@ -156,7 +156,7 @@ extension ParticipantsPopover {
     // 이름 첫 글자를 넣은 동그라미
     private func avatar(_ name: String, size: CGFloat, fontSize: CGFloat, color: Color) -> some View {
         Text(String(name.prefix(1)).uppercased())
-            .font(.system(size: fontSize, weight: .semibold))
+            .font(.app(size: fontSize, weight: .semibold))
             .foregroundStyle(.white)
             .frame(width: size, height: size)
             .background(color, in: .circle)
@@ -164,13 +164,13 @@ extension ParticipantsPopover {
 
     private func sectionTitle(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 11.5, weight: .semibold))
+            .font(.app(size: 11.5, weight: .semibold))
             .foregroundStyle(Color.noticeSecondaryText)
     }
 
     private func emptyText(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 11.5))
+            .font(.app(size: 11.5))
             .foregroundStyle(Color.noticePlaceholder)
     }
 

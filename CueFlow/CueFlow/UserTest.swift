@@ -24,6 +24,14 @@ enum UserTest {
     // 처음 실행했을 때 한 번만 예시 공연을 넣는다. 지워도 다시 생기지 않게 기록해 둔다.
     @MainActor
     static func insertSampleIfNeeded(into context: ModelContext, isEmpty: Bool) {
+        #if DEBUG
+        // 아이패드 시뮬레이터엔 메뉴 막대가 없어서: 실행 옵션 CUEFLOW_INSERT_SAMPLE=1이면 빈 앱에 예시 공연을 넣는다 (#157)
+        // 터미널: SIMCTL_CHILD_CUEFLOW_INSERT_SAMPLE=1 xcrun simctl launch booted Happymondayy.CueFlow
+        if ProcessInfo.processInfo.environment["CUEFLOW_INSERT_SAMPLE"] == "1", isEmpty {
+            context.insert(makeSampleProduction())
+            return
+        }
+        #endif
         guard insertsSampleOnFirstLaunch else { return }
         let key = "didInsertSampleProduction"
         guard isEmpty, !UserDefaults.standard.bool(forKey: key) else { return }

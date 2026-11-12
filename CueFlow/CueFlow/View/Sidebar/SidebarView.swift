@@ -22,7 +22,7 @@ struct SidebarView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Cuedit")
-                .font(.title3.weight(.semibold))
+                .font(.appTitle3.weight(.semibold))
                 .foregroundStyle(Color.brandPrimaryText)
                 .padding(.leading, 24)
                 .padding(.top, 23)
@@ -67,14 +67,14 @@ struct SidebarMenuRow: View {
                 Spacer()
                 if badgeCount > 0 {
                     Text("\(badgeCount)")
-                        .font(.caption.weight(.medium))
+                        .font(.appCaption.weight(.medium))
                         .foregroundStyle(.primary)
                         .frame(width: 24, height: 24)
                         .background(Color.brandPrimarySubtle, in: Circle())
                 }
             }
             // 피그마: 글자 13 semibold neutral900, 선택된 메뉴는 연보라 바탕
-            .font(.body.weight(.semibold))
+            .font(.appBody.weight(.semibold))
             .foregroundStyle(Color.neutral900)
             .padding(.leading, 14)
             .padding(.trailing, 4)
@@ -108,11 +108,11 @@ struct SidebarCueSheetGroup: View {
                     Text("큐시트")
                     Spacer()
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.app(size: 12, weight: .semibold))
                         .rotationEffect(.degrees(isExpanded ? 0 : -90))
                         .padding(.trailing, 10)
                 }
-                .font(.body.weight(.semibold))
+                .font(.appBody.weight(.semibold))
                 .foregroundStyle(Color.neutral900)
                 .padding(.leading, 14)
                 .frame(height: 35)
@@ -131,7 +131,7 @@ struct SidebarCueSheetGroup: View {
                                 .lineLimit(1)
                             Spacer()
                         }
-                        .font(.body)
+                        .font(.appBody)
                         .foregroundStyle(Color.neutral900)
                         .padding(.leading, 16)
                         .frame(height: 29)

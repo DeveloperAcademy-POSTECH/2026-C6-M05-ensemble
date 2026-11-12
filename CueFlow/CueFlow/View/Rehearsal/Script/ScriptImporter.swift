@@ -6,7 +6,11 @@
 //
 
 import Foundation
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import PDFKit
 import SwiftData
 import UniformTypeIdentifiers
@@ -26,12 +30,14 @@ enum ScriptImporter {
         switch url.pathExtension.lowercased() {
         case "pdf":
             return PDFDocument(url: url)?.string
-        case "docx":
+        #if os(macOS)
+        case "docx":   // 워드 읽기는 맥에만 있다. 대본 입력은 맥에서만 한다 (#156)
             return try? NSAttributedString(
                 url: url,
                 options: [.documentType: NSAttributedString.DocumentType.officeOpenXML],
                 documentAttributes: nil
             ).string
+        #endif
         case "rtf":
             return try? NSAttributedString(
                 url: url,

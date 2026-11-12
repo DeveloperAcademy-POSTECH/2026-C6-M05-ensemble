@@ -23,9 +23,18 @@ struct NoticeComposeView: View {
     }
 
     @State private var selectedProduction: Production?
-    @State private var recipient: NoticeRecipient = .all
+    @State private var recipients: [NoticeRecipient] = []   // 비어 있으면 전체
     @State private var title = ""
     @State private var content = ""
+
+    // 답장 · 전체 답장 · 전달로 열면 프로젝트 · 보낼 대상 · 제목 · 내용을 미리 채운다 (피그마 951:7518)
+    init(draft: NoticeDraft? = nil) {
+        guard let draft else { return }
+        _selectedProduction = State(initialValue: draft.production)
+        _recipients = State(initialValue: draft.recipients)
+        _title = State(initialValue: draft.title)
+        _content = State(initialValue: draft.body)
+    }
 
     // 프로젝트를 고르고 제목·내용을 다 써야 보낼 수 있다
     private var canSend: Bool {
@@ -40,7 +49,7 @@ struct NoticeComposeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Text("공지사항")
-                    .font(.largeTitle.bold())
+                    .font(.appLargeTitle.bold())
                     .foregroundStyle(Color.neutral900)
                     .padding(.bottom, 10)   // 제목 → 칸 30
 
@@ -48,19 +57,19 @@ struct NoticeComposeView: View {
                     projectMenu
                         // 프로젝트를 바꾸면 이전 프로젝트의 파트·사람은 고를 수 없으니 전체로 되돌린다
                         .onChange(of: selectedProduction) {
-                            recipient = .all
+                            recipients = []
                         }
                 }
 
                 // 이름·파트 검색해서 고르기. 비워 두면 전체
                 field("보낼 대상") {
-                    NoticeRecipientField(production: selectedProduction, recipient: $recipient)
+                    NoticeRecipientField(production: selectedProduction, recipients: $recipients)
                 }
 
                 field("공지 제목") {
                     TextField("", text: $title, prompt: placeholder("공지 제목을 입력하세요."))
                         .textFieldStyle(.plain)
-                        .font(.body)
+                        .font(.appBody)
                         .foregroundStyle(Color.neutral900)
                         .padding(.horizontal, 25)
                         .frame(height: 50)
@@ -70,7 +79,7 @@ struct NoticeComposeView: View {
 
                 field("내용", labelTop: 0) {
                     TextEditor(text: $content)
-                        .font(.body)
+                        .font(.appBody)
                         .foregroundStyle(Color.neutral900)
                         .scrollContentBackground(.hidden)
                         .padding(.horizontal, 20)   // TextEditor 안쪽 여백(5)까지 더해서 피그마 25
@@ -95,7 +104,7 @@ struct NoticeComposeView: View {
                     Spacer()
                     Button(action: send) {
                         Text("보내기")
-                            .font(.body)
+                            .font(.appBody)
                             .foregroundStyle(Color.onPrimaryText)
                             .frame(width: 110, height: 30)
                             .background(Color.brandPrimary, in: RoundedRectangle(cornerRadius: 6))
@@ -127,7 +136,7 @@ struct NoticeComposeView: View {
     private var backButton: some View {
         Button { dismiss() } label: {
             Image(systemName: "arrow.left")
-                .font(.system(size: 24))
+                .font(.app(size: 24))
                 .foregroundStyle(Color.noticeMetaText)
                 .frame(width: 36, height: 36)
                 .contentShape(Rectangle())
@@ -147,11 +156,11 @@ struct NoticeComposeView: View {
         } label: {
             HStack(spacing: 11) {
                 Text(selectedProduction?.title ?? "프로젝트 선택")
-                    .font(.body.weight(.semibold))
+                    .font(.appBody.weight(.semibold))
                     .foregroundStyle(selectedProduction == nil ? Color.noticePlaceholder : Color.neutral900)
                     .lineLimit(1)
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 12))
+                    .font(.app(size: 12))
                     .foregroundStyle(Color.noticeIconText)
             }
             .padding(.horizontal, 19)
@@ -169,7 +178,7 @@ struct NoticeComposeView: View {
     // 칸 안내 글자 (피그마: 13 semibold neutral400)
     private func placeholder(_ text: String) -> Text {
         Text(text)
-            .font(.body.weight(.semibold))
+            .font(.appBody.weight(.semibold))
             .foregroundStyle(Color.noticePlaceholder)
     }
 
@@ -178,7 +187,7 @@ struct NoticeComposeView: View {
     private func field<Content: View>(_ label: String, labelTop: CGFloat = 15, @ViewBuilder content: () -> Content) -> some View {
         HStack(alignment: .top, spacing: 0) {
             Text(label)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.app(size: 15, weight: .semibold))
                 .foregroundStyle(Color.neutral800)
                 .frame(width: 91, alignment: .leading)
                 .padding(.top, labelTop)
@@ -199,11 +208,7 @@ struct NoticeComposeView: View {
         )
         modelContext.insert(notice)
         notice.production = selectedProduction
-        switch recipient {
-        case .all: break                              // 둘 다 비워 두면 전체
-        case .part(let part): notice.targetPart = part
-        case .member(let member): notice.targetMember = member
-        }
+        notice.setRecipients(recipients)   // 비워 두면 전체
         // 보낸 사람 = 이 공연의 "나" 멤버 (없으면 만든다 · CueMembers). iCloud 로그인 안 됐으면 "알 수 없음"
         if let myID = ICloudAccount.currentUserRecordName, let production = selectedProduction {
             notice.author = modelContext.me(in: production, userID: myID)

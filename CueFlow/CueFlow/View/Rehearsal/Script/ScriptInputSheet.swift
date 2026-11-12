@@ -84,12 +84,12 @@ struct ScriptInputSheet: View {
 
             if let fileError {
                 Text(fileError)
-                    .font(.caption)
+                    .font(.appCaption)
                     .foregroundStyle(.red)
             }
 
             TextEditor(text: $text)
-                .font(.system(size: 17))
+                .font(.app(size: 17))
                 .lineSpacing(5)
                 .foregroundStyle(Color.neutral900)
                 .scrollContentBackground(.hidden)
@@ -99,7 +99,7 @@ struct ScriptInputSheet: View {
                 .overlay(alignment: .topLeading) {
                     if text.isEmpty {
                         Text("S#1 공장\n(판틴과 노동자들이 공장에서 일하고 있다.)\n판틴: 오늘도 일을 마쳐야 해.\nN#1 하루의 끝에서\n판틴: 코제트를 위해 버텨야 해.\n(판틴이 공장을 떠난다.)\n암전\n(노동자들이 퇴장하고 공장 작업대를 반출한다.)\nS#2 거리\n(판틴이 거리로 들어온다.)")
-                            .font(.system(size: 17))
+                            .font(.app(size: 17))
                             .lineSpacing(5)
                             .foregroundStyle(Color.neutral400)
                             .padding(.leading, 41)
@@ -127,7 +127,7 @@ struct ScriptInputSheet: View {
             isImportingFile = true
         } label: {
             Label("불러오기", systemImage: "arrow.down.document")
-                .font(.body)
+                .font(.appBody)
                 .foregroundStyle(Color.brandPrimaryText)
                 .frame(width: 95, height: 30)
                 .background(Color.neutral25, in: RoundedRectangle(cornerRadius: 6))
@@ -204,13 +204,13 @@ struct ScriptInputSheet: View {
                     HStack(spacing: 6) {
                         ProgressView().controlSize(.small)
                         Text("Apple Intelligence로 소품을 더 찾고 있어요")
-                            .font(.caption)
+                            .font(.appCaption)
                             .foregroundStyle(Color.neutral400)
                     }
                     .padding(.leading, 41)
                 } else if let aiMessage {
                     Text(aiMessage)
-                        .font(.caption)
+                        .font(.appCaption)
                         .foregroundStyle(Color.neutral400)
                         .padding(.leading, 41)
                 }
@@ -260,7 +260,7 @@ struct ScriptInputSheet: View {
     ) -> some View {
         HStack(spacing: 4) {
             Text(title)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.app(size: 15, weight: .semibold))
                 .foregroundStyle(Color.neutral900)
                 .frame(width: 37, alignment: .leading)
 
@@ -273,7 +273,7 @@ struct ScriptInputSheet: View {
                         } label: {
                             // 체크한 것: 연보라 바탕 + 보라 글자 / 뺀 것: 테두리만 + 회색 글자
                             Text(aiProps.contains(name) ? "✨ \(name)" : name)
-                                .font(.system(size: 10.5, weight: .medium))
+                                .font(.app(size: 10.5, weight: .medium))
                                 .foregroundStyle(isOn ? Color.brandPrimaryText : Color.neutral400)
                                 .padding(.horizontal, 8)
                                 .frame(height: 26)
@@ -307,11 +307,11 @@ struct ScriptInputSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 Text(sceneTitle(parsed))
-                    .font(.system(size: 17, weight: .bold))
+                    .font(.app(size: 17, weight: .bold))
                     .foregroundStyle(Color.neutral900)
                 if let badge = sceneBadge(parsed) {
                     Text(badge)
-                        .font(.system(size: 10.5, weight: .medium))
+                        .font(.app(size: 10.5, weight: .medium))
                         .foregroundStyle(Color.neutral900)
                         .padding(.horizontal, 8)
                         .frame(height: 26)
@@ -319,7 +319,7 @@ struct ScriptInputSheet: View {
                 }
                 Spacer()
                 Text("\(parsed.lines.count)줄")
-                    .font(.caption)
+                    .font(.appCaption)
                     .foregroundStyle(Color.neutral500)
             }
 
@@ -356,10 +356,10 @@ struct SheetHeader<Trailing: View>: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 11) {
                 Text(title)
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.app(size: 22, weight: .bold))
                     .foregroundStyle(Color.neutral900)
                 Text(subtitle)
-                    .font(.system(size: 17))
+                    .font(.app(size: 17))
                     .lineSpacing(3)
                     .foregroundStyle(Color.neutral600)
             }
@@ -386,7 +386,7 @@ struct SheetSoftButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: fontSize, weight: .semibold))
+            .font(.app(size: fontSize, weight: .semibold))
             .foregroundStyle(Color.brandPrimaryText)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.sheetSoftBackground, in: RoundedRectangle(cornerRadius: 6))
@@ -406,7 +406,7 @@ struct SheetBackButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: "chevron.left")
-                .font(.system(size: 22))
+                .font(.app(size: 22))
                 .foregroundStyle(Color.iconStrong)
                 .frame(width: 24, height: 24)
                 .contentShape(Rectangle())
@@ -429,7 +429,7 @@ private struct AddChip: View {
         if isEditing {
             TextField(placeholder, text: $text)
                 .textFieldStyle(.plain)
-                .font(.system(size: 10.5, weight: .medium))
+                .font(.app(size: 10.5, weight: .medium))
                 .focused($isFocused)
                 .padding(.horizontal, 10)
                 .frame(width: 90, height: 26)
@@ -447,7 +447,7 @@ private struct AddChip: View {
                 isEditing = true
             } label: {
                 Image(systemName: "plus")
-                    .font(.system(size: 10))
+                    .font(.app(size: 10))
                     .foregroundStyle(Color.neutral600)
                     .padding(.horizontal, 12)
                     .frame(height: 26)

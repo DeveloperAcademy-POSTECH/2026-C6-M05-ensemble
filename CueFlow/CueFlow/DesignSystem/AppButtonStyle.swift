@@ -21,7 +21,7 @@ struct PrimaryButtonStyle: ButtonStyle {
 
         var body: some View {
             configuration.label
-                .font(.body.weight(.semibold))
+                .font(.appBody.weight(.semibold))
                 .foregroundStyle(isEnabled ? Color.white : Color.buttonDisabledText)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(background, in: RoundedRectangle(cornerRadius: 6))
@@ -41,11 +41,11 @@ struct SecondaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.body)
+            .font(.appBody)
             .foregroundStyle(Color.brandPrimaryText)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
-                configuration.isPressed ? Color.brandPrimarySubtle : (colorScheme == .dark ? Color.neutral25 : Color(nsColor: .windowBackgroundColor)),   // 다크 Dark/Button #2C2C2E
+                configuration.isPressed ? Color.brandPrimarySubtle : (colorScheme == .dark ? Color.neutral25 : Color.windowBackground),   // 다크 Dark/Button #2C2C2E
                 in: RoundedRectangle(cornerRadius: 6)
             )
             .overlay {
@@ -60,7 +60,7 @@ struct SecondaryButtonStyle: ButtonStyle {
 struct SoftPrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.body)
+            .font(.appBody)
             .foregroundStyle(Color.softActionText)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
@@ -88,12 +88,12 @@ struct TertiaryButtonStyle: ButtonStyle {
         if isFilled {
             return isPressed ? Color.brandPrimarySoft.opacity(0.4) : Color.brandPrimarySubtle   // 라이트 #E4E2FF
         }
-        return isPressed ? Color.neutral100 : (colorScheme == .dark ? Color.neutral25 : Color(nsColor: .windowBackgroundColor))   // 다크 Dark/Button #2C2C2E
+        return isPressed ? Color.neutral100 : (colorScheme == .dark ? Color.neutral25 : Color.windowBackground)   // 다크 Dark/Button #2C2C2E
     }
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.body)
+            .font(.appBody)
             .foregroundStyle(isDarkFilled ? Color.softActionText : Color.neutral900)   // 다크 #141414
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(background(isPressed: configuration.isPressed), in: RoundedRectangle(cornerRadius: 6))

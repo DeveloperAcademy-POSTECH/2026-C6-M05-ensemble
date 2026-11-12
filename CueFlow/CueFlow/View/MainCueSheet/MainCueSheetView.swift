@@ -38,7 +38,8 @@ struct MainCueSheetView: View {
         .background(Color.appBackground)
         .appPopoverHost()   // 표 안 팝오버(파트 추가 · 수정)가 그려지는 곳
         .environment(\.myUserID, iCloudAccount.userRecordName)
-        .environment(\.canEditCues, production.canEdit(userID: iCloudAccount.userRecordName))
+        // 아이패드는 보기 전용 (#156): 큐 · 파트 · 씬 추가와 편집은 맥에서. 댓글 · 확인은 그대로 된다
+        .environment(\.canEditCues, Platform.canEditCueSheet && production.canEdit(userID: iCloudAccount.userRecordName))
         .onReceive(NotificationCenter.default.publisher(for: CloudSync.didApplyRemoteNotification)) { _ in
             remoteRevision += 1
         }
@@ -91,7 +92,9 @@ extension MainCueSheetView {
         Color.clear
             .frame(width: 8)
             .contentShape(.rect)
+            #if os(macOS)   // 커서 모양은 맥만 (#156)
             .pointerStyle(.columnResize)
+            #endif
             .gesture(DragGesture().onEnded { if $0.translation.width > 100 { closeSidebar() } })   // 오른쪽으로 100 넘게 밀면 닫힘
     }
 
@@ -119,8 +122,11 @@ extension MainCueSheetView {
     private var titleRow: some View {
         HStack {
             Text(production.title)
-                .font(.title)
+                .font(.appTitle)
                 .foregroundStyle(Color.neutral900)
+            if !Platform.canEditCueSheet {
+                readOnlyChip
+            }
             Spacer()
             // 피그마 1349:3639: 멤버 · 공유하기 · 내보내기 아이콘
             HStack(spacing: 20) {
@@ -161,7 +167,7 @@ extension MainCueSheetView {
     private var unreadButton: some View {
         Button { isShowingUnread.toggle() } label: {
             Text("미확인 \(unreadCount)건")
-                .font(.title3.weight(.semibold))
+                .font(.appTitle3.weight(.semibold))
                 .foregroundStyle(Color.brandPrimaryText)
                 .frame(width: 100, height: 36)
                 .background(Color.neutral25, in: .rect(cornerRadius: 6))
@@ -181,7 +187,7 @@ extension MainCueSheetView {
     private var shareButton: some View {
         Button { isShowingShare = true } label: {
             Text("공유하기")
-                .font(.body)                                   // Body/Regular 13
+                .font(.appBody)                                   // Body/Regular 13
                 .foregroundStyle(Color.softActionText)
                 .frame(width: 79, height: 28)
                 .background(Color.softAction, in: .rect(cornerRadius: 6))
@@ -204,7 +210,7 @@ extension MainCueSheetView {
             Button("PDF로 내보내기") { production.exportCueSheet(as: .pdf) }
         } label: {
             Image(systemName: "square.and.arrow.up")
-                .font(.system(size: 14))
+                .font(.app(size: 14))
                 .offset(y: -1)   // SF Symbol은 아래 여백 때문에 눈으로는 아래로 쏠려 보여서 1pt 올림 (피그마: 위 5 · 아래 4)
                 .foregroundStyle(Color.exportButtonIcon)
                 .frame(width: 16, height: 17)
@@ -235,7 +241,7 @@ extension MainCueSheetView {
                     }
                 }
                 Image(systemName: "chevron.down")
-                    .font(.caption2.weight(.semibold))
+                    .font(.appCaption2.weight(.semibold))
                     .foregroundStyle(Color.neutral500)
             }
             .contentShape(.rect)
@@ -250,9 +256,20 @@ extension MainCueSheetView {
         }
     }
 
+    // 아이패드 공연 제목 옆: 왜 편집이 안 되는지 알려 주는 칩
+    private var readOnlyChip: some View {
+        Label("보기 전용 · 수정은 Mac에서", systemImage: "eye")
+            .font(.appFootnote.weight(.medium))
+            .foregroundStyle(Color.neutral700)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Color.neutral100, in: Capsule())
+            .padding(.leading, 8)
+    }
+
     private func memberCircle(_ content: some View) -> some View {
         content
-            .font(.caption.weight(.semibold))
+            .font(.appCaption.weight(.semibold))
             .foregroundStyle(Color.brandPrimary)
             .frame(width: 25, height: 25)
             .background(Color.brandPrimarySubtle, in: .circle)

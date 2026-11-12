@@ -28,7 +28,7 @@ struct NoticeRow: View {
 
             // 보낸 사람 첫 글자 동그라미
             Text(String(sender.prefix(1)))
-                .font(.body.weight(.semibold))
+                .font(.appBody.weight(.semibold))
                 .foregroundStyle(Color.noticeSecondaryText)
                 .frame(width: 40, height: 40)
                 .background(Color.noticeNeighborHover, in: Circle())
@@ -36,7 +36,7 @@ struct NoticeRow: View {
             // 제목 + 미리보기 (위아래로 쌓기)
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.body.weight(.semibold))
+                    .font(.appBody.weight(.semibold))
                     .foregroundStyle(Color.neutral900)
                 Text(preview)
                     .foregroundStyle(Color.noticeSecondaryText)
@@ -49,7 +49,7 @@ struct NoticeRow: View {
                 // 별표: 누르면 중요 켜기/끄기
                 Button(action: onToggleStar) {
                     Image(systemName: isStarred ? "star.fill" : "star")
-                        .font(.system(size: isStarred ? 15 : 14))
+                        .font(.app(size: isStarred ? 15 : 14))
                         .foregroundStyle(isStarred ? Color.brandPrimaryHover : Color.neutral400)
                         .frame(width: 16)
                 }
@@ -63,7 +63,7 @@ struct NoticeRow: View {
             }
             .foregroundStyle(Color.noticeMetaText)
         }
-        .font(.body)
+        .font(.appBody)
         .lineLimit(1)
         .contentShape(Rectangle())   // 체크박스·별표 말고 줄 어디를 눌러도 상세로
         .onTapGesture(perform: onOpen)
@@ -76,7 +76,7 @@ struct NoticeRow: View {
             .overlay {
                 if isChecked {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.app(size: 11, weight: .bold))
                         .foregroundStyle(.white)
                 }
             }

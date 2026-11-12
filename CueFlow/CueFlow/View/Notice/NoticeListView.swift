@@ -27,8 +27,10 @@ struct NoticeListView: View {
     @State private var checkedIDs: Set<UUID> = []   // 체크박스로 고른 공지 (삭제용)
 
     // 공연이 하나라도 있는데 전부 읽기 권한이면 공지를 쓸 곳이 없다 → 작성하기 숨김 (#120)
+    // 아이패드는 공지를 받아 보기만 한다 (#157)
     private var canWriteNotice: Bool {
-        productions.isEmpty || productions.contains { $0.canEdit(userID: ICloudAccount.currentUserRecordName) }
+        guard Platform.canWriteNotice else { return false }
+        return productions.isEmpty || productions.contains { $0.canEdit(userID: ICloudAccount.currentUserRecordName) }
     }
 
     // 고른 필터에 맞는 공지
@@ -129,7 +131,7 @@ struct NoticeListView: View {
             checkedIDs.removeAll()
         }
         .buttonStyle(.plain)
-        .font(.title3)
+        .font(.appTitle3)
         .foregroundStyle(Color.noticeSecondaryText)
         .disabled(checkedIDs.isEmpty)
     }
@@ -158,7 +160,7 @@ struct NoticeListView: View {
                             .frame(width: 22, height: 22)
                             .background(isSelected ? Color.noticeCountSelected : Color.noticeCountIdle, in: Circle())
                     }
-                    .font(.body.weight(.semibold))
+                    .font(.appBody.weight(.semibold))
                     .foregroundStyle(isSelected ? Color.onPrimaryText : Color.brandPrimaryText)
                     .padding(.leading, 14)
                     .padding(.trailing, 10)

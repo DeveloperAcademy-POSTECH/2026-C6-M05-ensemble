@@ -41,11 +41,55 @@ extension Notice {
         production?.title ?? ""
     }
 
-    // 상세·알림 카드의 대상 태그: "전체공지" / "조명 공지" / "개인 공지"
+    // 상세·알림 카드의 대상 태그: "전체공지" / "조명 공지" / "조명 · 음향 공지" / "개인 공지" / "조명 외 공지"
     var targetTag: String {
-        if let part = targetPart { return "\(part.name) 공지" }
-        if targetMember != nil { return "개인 공지" }
-        return "전체공지"
+        let parts = recipientParts
+        let members = recipientMembers
+        if parts.isEmpty && members.isEmpty { return "전체공지" }
+        if parts.isEmpty { return "개인 공지" }
+        let names = parts.map(\.name).joined(separator: " · ")
+        return members.isEmpty ? "\(names) 공지" : "\(names) 외 공지"
+    }
+}
+
+// 받는 대상 여러 개 (파트 · 사람)
+extension Notice {
+    // 받을 파트들. 옛 앱이 보낸 공지는 targetPart 하나만 있다
+    var recipientParts: [Part] {
+        let all = production?.parts ?? []
+        var parts = targetPartIDs.compactMap { id in all.first { $0.id == id } }
+        if let targetPart, !parts.contains(targetPart) { parts.insert(targetPart, at: 0) }
+        return parts
+    }
+
+    var recipientMembers: [Member] {
+        let all = production?.members ?? []
+        var members = targetMemberIDs.compactMap { id in all.first { $0.id == id } }
+        if let targetMember, !members.contains(targetMember) { members.insert(targetMember, at: 0) }
+        return members
+    }
+
+    // 쓰기 화면 · 답장에서 쓰는 모양 (비어 있으면 전체)
+    var recipients: [NoticeRecipient] {
+        recipientParts.map { .part($0) } + recipientMembers.map { .member($0) }
+    }
+
+    // 보낼 대상 정하기. 하나뿐이면 옛 앱도 읽는 targetPart · targetMember에도 적는다
+    func setRecipients(_ recipients: [NoticeRecipient]) {
+        var parts: [Part] = []
+        var members: [Member] = []
+        for recipient in recipients {
+            switch recipient {
+            case .all: break
+            case .part(let part): if !parts.contains(part) { parts.append(part) }
+            case .member(let member): if !members.contains(member) { members.append(member) }
+            }
+        }
+        targetPartIDs = parts.map(\.id)
+        targetMemberIDs = members.map(\.id)
+        let isSingle = parts.count + members.count == 1
+        targetPart = isSingle ? parts.first : nil
+        targetMember = isSingle ? members.first : nil
     }
 }
 
@@ -62,14 +106,15 @@ extension Notice {
         userID != nil && author?.iCloudUserID == userID
     }
 
-    // 나한테 온 공지인지: 전체 공지 · 내 파트 공지 · 나한테 보낸 공지
+    // 나한테 온 공지인지: 전체 공지 · 내 파트가 들어간 공지 · 나를 고른 공지
     func isForMe(userID: String?) -> Bool {
-        if let targetMember { return userID != nil && targetMember.iCloudUserID == userID }
-        if let targetPart {
-            guard let me = production?.member(withUserID: userID) else { return false }
-            return (me.parts ?? []).contains(targetPart)
-        }
-        return true
+        let parts = recipientParts
+        let members = recipientMembers
+        if parts.isEmpty && members.isEmpty { return true }
+        guard let userID else { return false }
+        if members.contains(where: { $0.iCloudUserID == userID }) { return true }
+        guard let me = production?.member(withUserID: userID) else { return false }
+        return (me.parts ?? []).contains { parts.contains($0) }
     }
 
     // 안 읽은 공지 (내가 보낸 건 읽은 것으로 친다)
