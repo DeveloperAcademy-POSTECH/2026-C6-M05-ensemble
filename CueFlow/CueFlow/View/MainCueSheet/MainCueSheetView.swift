@@ -87,7 +87,7 @@ extension MainCueSheetView {
     }
 }
 
-// 오른쪽 사이드바: History (큐 카드 우클릭) · 우선순위 (씬 열 ⓝ) · 미확인 수정사항
+// 오른쪽 사이드바: History (큐 카드 우클릭) · 우선순위 · 미확인 수정사항
 
 extension MainCueSheetView {
     @ViewBuilder
@@ -104,7 +104,6 @@ extension MainCueSheetView {
 
     private var sidebar: some View {
         sidebarContent
-            .overlay(alignment: .leading) { sidebarEdge }
             .overlay(alignment: .topLeading) {
                 if historyCue != nil || priorityScene != nil || isShowingUnread { closeButton }   // 사이드바가 열려 있을 때만
             }
@@ -115,17 +114,6 @@ extension MainCueSheetView {
         SidebarCloseButton(action: closeSidebar)
             .padding(.leading, 16)
             .padding(.top, 21)
-    }
-
-    // 왼쪽 구분선 손잡이 (마우스를 올리면 ↔ 커서)
-    private var sidebarEdge: some View {
-        Color.clear
-            .frame(width: 8)
-            .contentShape(.rect)
-            #if os(macOS)   // 커서 모양은 맥만 (#156)
-            .pointerStyle(.columnResize)
-            #endif
-            .gesture(DragGesture().onEnded { if $0.translation.width > 100 { closeSidebar() } })   // 오른쪽으로 100 넘게 밀면 닫힘
     }
 
     // 큐 수정 알림을 눌러서 왔을 때: 다른 파트만 보고 있었으면 "전체"로 풀고, 표에 그 큐들을 넘긴다
