@@ -22,7 +22,7 @@ struct ContentView: View {
 
     // 새 공연 만들기 중이면 홈 대신 셀리나의 생성 흐름(기본정보 → 파트 → 씬 → 확인 → 완료)이 보인다
     @State private var isCreatingProduction = false
-
+    
     @Environment(\.modelContext) private var modelContext
     @Environment(ICloudAccount.self) private var iCloudAccount
 
