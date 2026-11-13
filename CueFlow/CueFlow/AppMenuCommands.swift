@@ -283,8 +283,7 @@ extension AppMenuCommands {
                 .keyboardShortcut("/")
                 .disabled(app == nil)
             Divider()
-            Button("Cuedit 피드백 제공 및 문제 신고") {}
-                .disabled(true)
+            Link("Cuedit 피드백 제공 및 문제 신고", destination: URL(string: "https://forms.gle/BjVYA5FPXXREpEMw7")!)   // 누르면 브라우저로 열림
         }
     }
 }
