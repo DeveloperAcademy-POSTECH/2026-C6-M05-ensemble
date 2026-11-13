@@ -2,7 +2,8 @@
 //  SidebarView.swift
 //  CueFlow
 //
-//  왼쪽 사이드바. Q-Sheet 제목, 메뉴 목록(홈 · 큐시트 · 공지사항 · 도움말), 다크모드 버튼.
+//  왼쪽 사이드바. Q-Sheet 제목, 메뉴 목록(홈 · 큐시트 · 공지사항 · 도움말).
+//  라이트 · 다크는 앱 안 스위치 없이 맥 시스템 설정을 따른다 (#155, HIG Dark Mode).
 //  큐시트는 화면이 아니라 펼치기 목록 — 공연 이름을 누르면 그 공연 통합 큐시트로 간다.
 //  공연 안(큐시트)에 들어가 있으면 어느 메뉴도 선택 표시를 하지 않는다 (피그마 · 팀 결정).
 //
@@ -45,10 +46,6 @@ struct SidebarView: View {
             .padding(.top, 15)
 
             Spacer()
-
-            DarkModeToggle()
-                .padding(.leading, 28)
-                .padding(.bottom, 37)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(colorScheme == .dark ? AnyShapeStyle(Color.gridHeader) : AnyShapeStyle(.background))   // 다크: 피그마 bg-sidebar #252527
@@ -144,44 +141,6 @@ struct SidebarCueSheetGroup: View {
                 }
             }
         }
-    }
-}
-
-// 사이드바 왼쪽 아래 다크모드 스위치. 라이트면 손잡이 왼쪽 + 달, 다크면 손잡이 오른쪽 + 해.
-// 값은 앱 전체가 같이 쓰도록 AppStorage에 저장한다 (CueFlowApp에서 화면 모드에 적용).
-struct DarkModeToggle: View {
-    @AppStorage("isDarkMode") private var isDarkMode = false
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isDarkMode.toggle()
-            }
-        } label: {
-            ZStack(alignment: isDarkMode ? .trailing : .leading) {
-                // 아이콘: 손잡이 반대쪽에 보인다
-                Image(systemName: isDarkMode ? "sun.min" : "moon")
-                    .font(.app(size: 15))
-                    .foregroundStyle(.primary)
-                    .frame(width: 30)
-                    .frame(maxWidth: .infinity, alignment: isDarkMode ? .leading : .trailing)
-                    .padding(.horizontal, 6)
-
-                // 손잡이
-                Capsule()
-                    // 피그마 Knob 40×28: 라이트 흰색 · 다크 #5C5C63 (같은 짝 색이 색상 표에 없어서 나눠 씀)
-                    .fill(colorScheme == .dark ? Color.neutral300 : Color.surfaceWhite)
-                    .frame(width: 40, height: 28)
-                    .shadow(color: .black.opacity(0.05), radius: 18, y: 3)   // 피그마 Y 3 · 흐림 36 · 검정 5%
-                    .padding(.horizontal, 6)
-            }
-            .frame(width: 94, height: 40)
-            .background(Color.primary.opacity(0.1), in: Capsule())   // 피그마 Track: Labels/Primary 10% (색상 표에 없는 시스템 색)
-            .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .help(isDarkMode ? "라이트 모드로 바꾸기" : "다크 모드로 바꾸기")
     }
 }
 
