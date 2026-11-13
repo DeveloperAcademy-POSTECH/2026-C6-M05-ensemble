@@ -8,7 +8,11 @@
 //  알림을 누르면 그 공지 / 그 공연 큐시트로 (ContentView).
 //
 
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import UserNotifications
 
 final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
@@ -170,7 +174,9 @@ final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
             target = nil
         }
         await MainActor.run {
-            NSApp.activate()
+            #if os(macOS)
+            NSApp.activate()   // 아이패드는 알림을 누르면 알아서 앞으로 온다
+            #endif
             if let target {
                 NotificationCenter.default.post(name: Self.openNotification, object: target)
             }

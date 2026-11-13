@@ -42,7 +42,7 @@ extension CuePrioritySidebar {
             sceneChip
                 .padding(.top, 34)   // « 버튼(위 21, 높이 19) 아래 7 → 위에서 47 (바깥 여백 13 + 34)
             Text(scene.title)
-                .font(.body)
+                .font(.appBody)
                 .foregroundStyle(Color.sidebarBackIcon)
                 .padding(.top, 9)
         }
@@ -61,10 +61,10 @@ extension CuePrioritySidebar {
     private var sceneChipLabel: some View {
         HStack(spacing: 4) {
             Text(scene.code(in: sortedScenes))   // "S#1", "N#1" … 단축어만
-                .font(.body.weight(.semibold))
+                .font(.appBody.weight(.semibold))
                 .foregroundStyle(Color.neutral900)
             Image(systemName: "chevron.down")
-                .font(.system(size: 8, weight: .semibold))
+                .font(.app(size: 8, weight: .semibold))
                 .foregroundStyle(Color.noticeSecondaryText)
         }
         .padding(.horizontal, 13)
@@ -105,7 +105,7 @@ extension CuePrioritySidebar {
 
     private func slotNumber(_ number: Int) -> some View {
         Text("\(number)")
-            .font(.system(size: 10, weight: .bold))
+            .font(.app(size: 10, weight: .bold))
             .foregroundStyle(Color.noticeIconText)
             .frame(width: 20)
             .frame(maxHeight: .infinity)
@@ -120,7 +120,7 @@ extension CuePrioritySidebar {
 
     private var addSlotLabel: some View {
         Text("+")
-            .font(.system(size: 16))
+            .font(.app(size: 16))
             .foregroundStyle(Color.noticeSecondaryText)
             .frame(maxWidth: .infinity, minHeight: 89)
             .background(alignment: .leading) { Color.neutral200.frame(width: 20) }
@@ -209,11 +209,11 @@ extension PriorityCueCard {
             numberCircle
             VStack(alignment: .leading, spacing: 5) {
                 Text(cue.trigger?.text ?? "")
-                    .font(.body)
+                    .font(.appBody)
                     .foregroundStyle(Color.neutral800)
                     .lineLimit(1)
                 Text(cue.title)
-                    .font(.body.weight(.semibold))
+                    .font(.appBody.weight(.semibold))
                     .foregroundStyle(Color.neutral900)
                     .lineLimit(1)
             }
@@ -224,14 +224,14 @@ extension PriorityCueCard {
 
     private var dragHandle: some View {
         Image(systemName: "line.3.horizontal")
-            .font(.system(size: 12))
+            .font(.app(size: 12))
             .foregroundStyle(Color.neutral800)
             .padding(.leading, 13)
     }
 
     private var numberCircle: some View {
         Text(String(format: "%02d", number))
-            .font(.callout.weight(.medium))
+            .font(.appCallout.weight(.medium))
             .foregroundStyle(partColor.number)
             .frame(width: 23, height: 23)
             .background(partColor.background, in: .circle)
@@ -239,7 +239,7 @@ extension PriorityCueCard {
 
     private var positionTag: some View {
         Text(cue.position.rawValue)
-            .font(.callout.weight(.medium))
+            .font(.appCallout.weight(.medium))
             .foregroundStyle(partColor.number)
             .padding(.horizontal, 5)
             .frame(height: 23)

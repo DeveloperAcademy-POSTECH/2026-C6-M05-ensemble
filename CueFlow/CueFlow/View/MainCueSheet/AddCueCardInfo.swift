@@ -81,9 +81,9 @@ extension AddCueCardInfo {
         HStack(spacing: 4) {
             Text(position?.rawValue ?? "위치")
             Image(systemName: "chevron.down")
-                .font(.caption2)
+                .font(.appCaption2)
         }
-        .font(.callout)
+        .font(.appCallout)
         .foregroundStyle(showPositionWarning ? Color.error : Color.noticeMetaText)
         .padding(.horizontal, 8)
         .frame(height: 25)
@@ -95,9 +95,9 @@ extension AddCueCardInfo {
     private func warning(_ text: String) -> some View {
         HStack(spacing: 4) {
             Image(systemName: "info.circle")
-                .font(.system(size: 14))
+                .font(.app(size: 14))
             Text(text)
-                .font(.system(size: 10))
+                .font(.app(size: 10))
         }
         .foregroundStyle(Color.error)
     }
@@ -107,7 +107,7 @@ extension AddCueCardInfo {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 0) {
                 Text(title)
-                    .font(.body.weight(.semibold))
+                    .font(.appBody.weight(.semibold))
                     .foregroundStyle(Color.neutral800)
                 if isRequired { requiredMark }
             }
@@ -118,7 +118,7 @@ extension AddCueCardInfo {
     // 필수 표시 * (피그마: SemiBold 16, 평소 neutral400 · 비우고 저장하려 하면 error)
     private var requiredMark: some View {
         Text("*")
-            .font(.system(size: 16, weight: .semibold))
+            .font(.app(size: 16, weight: .semibold))
             .foregroundStyle(showCueWarning ? Color.error : Color.neutral400)
     }
     
@@ -170,7 +170,7 @@ extension AddCueCardInfo {
     private func suggestionRow(_ text: String) -> some View {
         Button { pickSuggestion(text) } label: {
             Text(text)
-                .font(.callout)
+                .font(.appCallout)
                 .foregroundStyle(Color.neutral800)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)

@@ -27,10 +27,10 @@ extension InfoComplete {
     private var message: some View {
         VStack(spacing: 10) {
             Text("프로젝트가 생성되었습니다")
-                .font(.system(size: 28, weight: .bold))
+                .font(.app(size: 28, weight: .bold))
                 .foregroundStyle(Color.neutral900)
             Text("파트별 큐와 변경 내용이 통합되었고, 필수 담당자의 확인이 완료되었습니다.")
-                .font(.system(size: 15))
+                .font(.app(size: 15))
                 .foregroundStyle(Color.noticeSecondaryText)
         }
         .multilineTextAlignment(.center)

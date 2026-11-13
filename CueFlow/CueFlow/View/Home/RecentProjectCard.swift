@@ -24,17 +24,17 @@ struct RecentProjectCard: View {
             // 피그마 글자: 10 regular neutral400 / 17 bold neutral700 / 12 semibold neutral500 / 11 semibold neutral600
             VStack(alignment: .leading, spacing: 6) {
                 Text(lastWorked)
-                    .font(.footnote)
+                    .font(.appFootnote)
                     .foregroundStyle(Color.neutral400)
 
                 HStack(spacing: 5) {
                     Text(title)
-                        .font(.title2.bold())
+                        .font(.appTitle2.bold())
                         .foregroundStyle(Color.neutral700)
                     HStack(spacing: 7) {
                         ForEach(tags.filter { !$0.isEmpty }, id: \.self) { tag in
                             Text(tag)
-                                .font(.callout.weight(.semibold))
+                                .font(.appCallout.weight(.semibold))
                                 .foregroundStyle(Color.tagText)
                                 .padding(.horizontal, 6)
                                 .frame(height: 25)
@@ -47,12 +47,12 @@ struct RecentProjectCard: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 4) {
                     Image(systemName: "calendar")
-                        .font(.callout)
+                        .font(.appCallout)
                     Text(schedule)
-                        .font(.subheadline.weight(.semibold))
+                        .font(.appSubheadline.weight(.semibold))
                     if !seats.isEmpty {
                         Text(seats)
-                            .font(.subheadline.weight(.semibold))
+                            .font(.appSubheadline.weight(.semibold))
                             .foregroundStyle(Color.neutral400)
                             .layoutPriority(1)   // 공연장 이름이 길어도 객석 수는 잘리지 않게
                     }
@@ -63,7 +63,7 @@ struct RecentProjectCard: View {
 
                 if let runningTime {
                     Text(runningTime)
-                        .font(.subheadline.weight(.semibold))
+                        .font(.appSubheadline.weight(.semibold))
                         .foregroundStyle(Color.neutral600)
                 }
             }
@@ -85,10 +85,11 @@ struct RecentProjectCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 213)
         .background {
-            // 피그마: 바탕 #FBFBFF, 그림자 2·2·1 #D1D1D6 → 색상 표에서 가장 가까운 neutral25 · neutral300
+            // 피그마: 바탕 #FBFBFF, 그림자 X2 Y2 흐림 2 — 라이트 #D1D1D6 · 다크 검정 50%
+            // → 색상 표에서 같은 짝인 inviteShadow (라이트 #CDD5DF · 다크 검정 50%). SwiftUI radius = 피그마 흐림의 절반
             RoundedRectangle(cornerRadius: 6)
                 .fill(Color.neutral25)
-                .shadow(color: Color.neutral300, radius: 0.5, x: 2, y: 2)
+                .shadow(color: Color.inviteShadow, radius: 1, x: 2, y: 2)
         }
     }
 }
@@ -100,7 +101,7 @@ private struct ProjectCardButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.body.weight(.semibold))
+            .font(.appBody.weight(.semibold))
             .foregroundStyle(Color.brandPrimaryText)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(background(isPressed: configuration.isPressed), in: RoundedRectangle(cornerRadius: 6))

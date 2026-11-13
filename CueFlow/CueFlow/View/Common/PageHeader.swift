@@ -14,11 +14,11 @@ struct PageHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.largeTitle.bold())
+                .font(.appLargeTitle.bold())
                 .foregroundStyle(Color.neutral900)
 
             Text(subtitle)
-                .font(.title3)
+                .font(.appTitle3)
                 .foregroundStyle(Color.neutral500)
         }
     }

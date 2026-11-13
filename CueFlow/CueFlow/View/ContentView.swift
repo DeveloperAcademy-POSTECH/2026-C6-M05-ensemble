@@ -36,6 +36,12 @@ struct ContentView: View {
     // 초대를 수락한 공연. 있으면 사이드바 없이 역할 선택 화면만 보인다
     @State private var roleProductionID: UUID?
 
+    // iCloud 안내 띠를 ✕로 닫았는지. 앱을 다시 켜거나 iCloud 상태가 바뀌면 다시 보인다
+    @State private var isICloudBannerClosed = false
+
+    // 아이패드 위쪽 탭에서 지금 고른 탭
+    @State private var iPadTab: IPadTab = .home
+
     // 저장된 공연 전부. 최근에 수정한 순서.
     @Query(sort: \Production.updatedAt, order: .reverse)
     private var productions: [Production]
@@ -105,9 +111,8 @@ struct ContentView: View {
                 .onDisappear { startsLeadingRehearsal = false }
             } else {
                 mainView
-                    // iCloud 로그인 안 된 맥이면 화면 맨 위에 안내 띠
-                    .safeAreaInset(edge: .top, spacing: 0) {
-                        ICloudStatusBanner(status: iCloudAccount.status)
+                    .onChange(of: iCloudAccount.status) {
+                        isICloudBannerClosed = false
                     }
                     .task {
                         UserTest.insertSampleIfNeeded(into: modelContext, isEmpty: productions.isEmpty)
@@ -123,6 +128,8 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: CloudSync.didReceiveCueChangesNotification)) { notification in
             notifyCueChanges(notification.object as? [UUID] ?? [])
         }
+        // 아이패드: 카톡에서 초대 링크를 복사하고 앱을 열면 "참여할까요?" (#166)
+        .clipboardInviteCheck()
         // 알림을 누르면 그 공지 / 그 공연 큐시트로
         .onReceive(NotificationCenter.default.publisher(for: SystemNotifications.openNotification)) { notification in
             open(notification.object as? SystemNotifications.Target)
@@ -203,8 +210,10 @@ struct ContentView: View {
         )
     }
 
-    // 사이드바 + 내용 영역
+    // 맥: 사이드바 + 내용 영역 / 아이패드: 위쪽 탭(홈 · 큐시트 · 공지사항) (#156 · 피그마 2669:17744)
+    @ViewBuilder
     private var mainView: some View {
+        #if os(macOS)
         NavigationSplitView(columnVisibility: $sidebarVisibility) {
             // 왼쪽: 사이드바
             SidebarView(
@@ -217,59 +226,180 @@ struct ContentView: View {
                     isCreatingProduction = false
                     openedProduction = production
                 },
-                // 공지 목록 "안읽음" 숫자와 같은 기준 (내가 보낸 건 읽은 것으로)
-                unreadNoticeCount: visibleNotices.filter { $0.isUnread(byUserID: iCloudAccount.userRecordName) }.count
+                unreadNoticeCount: unreadNoticeCount
             )
                 .navigationSplitViewColumnWidth(220)
         } detail: {
             // 오른쪽: 선택된 메뉴에 따라 다른 화면
-            switch selectedMenu {
-            case .project:
-                if isCreatingProduction {
-                    NewProjectFlow(
-                        onGoHome: { isCreatingProduction = false },
-                        onOpenCueSheet: {
-                            isCreatingProduction = false
-                            openedProduction = $0
-                        }
-                    )
-                } else if let openedProduction {
-                    MainCueSheetView(
-                        production: openedProduction,
-                        cueFocus: $cueFocus,
-                        onRehearsal: { rehearsingProduction = openedProduction },
-                        onSpotlight: {
-                            startsLeadingRehearsal = true
-                            rehearsingProduction = openedProduction
-                        },
-                        isSidebarHidden: sidebarVisibility == .detailOnly
-                    )
-                    .id(openedProduction.id)   // 사이드바에서 다른 공연으로 바로 옮기면 화면 상태(파트 필터 등)를 새로
-                } else if productions.isEmpty && !showsHomeWhenEmpty {
-                    HomeEmptyView(
-                        onGoHome: { showsHomeWhenEmpty = true },
-                        onNewProject: { isCreatingProduction = true }
-                    )
-                } else {
-                    HomeView(
-                        productions: productions,
-                        onRehearsal: { rehearsingProduction = $0 },
-                        onOpen: { openedProduction = $0 },
-                        onNewProject: { isCreatingProduction = true }
-                    )
+            Group {
+                switch selectedMenu {
+                case .project:
+                    if isCreatingProduction || openedProduction == nil {
+                        homeContent
+                    } else {
+                        cueSheetContent
+                    }
+                case .notice:
+                    noticeContent
+                case .help:
+                    Text("도움말 화면")
                 }
-            case .notice:
-                // NavigationStack: 목록 → 상세로 들어갔다가 뒤로 돌아올 수 있게
-                NavigationStack {
-                    NoticeListView(
-                        notices: visibleNotices,
-                        openRequest: $noticeToOpen,
-                        openedNotice: $openedNotice,
-                        isComposing: $isComposingNotice
-                    )
+            }
+            .modifier(iCloudBannerInset)
+        }
+        #else
+        TabView(selection: iPadTabSelection) {
+            Tab(IPadTab.home.title, systemImage: "house", value: IPadTab.home) {
+                homeContent
+                    .modifier(iCloudBannerInset)
+            }
+            Tab(IPadTab.cueSheet.title, systemImage: "square.grid.2x2", value: IPadTab.cueSheet) {
+                cueSheetContent
+                    .modifier(iCloudBannerInset)
+            }
+            Tab(IPadTab.notice.title, systemImage: "envelope", value: IPadTab.notice) {
+                noticeContent
+                    .modifier(iCloudBannerInset)
+            }
+            .badge(unreadNoticeCount)
+        }
+        .tabViewStyle(.tabBarOnly)   // 사이드바로 바꾸는 버튼 없이 위쪽 탭만
+        // 알림으로 공지를 열거나(→ 공지사항) 처음 화면으로 돌아가면(→ 홈) 탭도 같이
+        .onChange(of: selectedMenu) { _, menu in
+            if menu == .notice {
+                iPadTab = .notice
+            } else if iPadTab == .notice {
+                iPadTab = .home
+            }
+        }
+        #endif
+    }
+
+    // 공연 큐시트 열기. 아이패드는 큐시트 탭으로 넘어간다
+    // (이미 열어 둔 같은 공연을 다시 눌러도 넘어가게 — 값이 안 바뀌면 onChange가 안 불려서 직접 바꾼다)
+    private func openCueSheet(_ production: Production) {
+        openedProduction = production
+        #if os(iOS)
+        iPadTab = .cueSheet
+        #endif
+    }
+
+    // 공지 목록 "안읽음" 숫자와 같은 기준 (내가 보낸 건 읽은 것으로)
+    private var unreadNoticeCount: Int {
+        visibleNotices.filter { $0.isUnread(byUserID: iCloudAccount.userRecordName) }.count
+    }
+
+    // iCloud 로그인 안 된 맥 · 아이패드면 내용 영역 맨 위에 안내 카드 (✕로 닫을 수 있음)
+    // 사이드바까지 덮으면 어색해서 내용 영역에만
+    private var iCloudBannerInset: ICloudBannerInset {
+        ICloudBannerInset(status: iCloudAccount.status, isClosed: $isICloudBannerClosed)
+    }
+
+    // 홈: 새 공연 만들기 / 빈 화면 / 홈
+    @ViewBuilder
+    private var homeContent: some View {
+        if isCreatingProduction {
+            NewProjectFlow(
+                onGoHome: { isCreatingProduction = false },
+                onOpenCueSheet: {
+                    isCreatingProduction = false
+                    openCueSheet($0)
                 }
-            case .help:
-                Text("도움말 화면")
+            )
+        } else if productions.isEmpty && !showsHomeWhenEmpty {
+            HomeEmptyView(
+                onGoHome: { showsHomeWhenEmpty = true },
+                onNewProject: { isCreatingProduction = true }
+            )
+        } else {
+            HomeView(
+                productions: productions,
+                onRehearsal: { rehearsingProduction = $0 },
+                onOpen: { openCueSheet($0) },
+                onNewProject: { isCreatingProduction = true }
+            )
+        }
+    }
+
+    // 큐시트: 열어 둔 공연. 아이패드 큐시트 탭은 연 공연이 없으면 가장 최근에 연 공연
+    @ViewBuilder
+    private var cueSheetContent: some View {
+        if let production = openedProduction ?? productions.max(by: { $0.lastOpenedAt < $1.lastOpenedAt }) {
+            MainCueSheetView(
+                production: production,
+                cueFocus: $cueFocus,
+                onRehearsal: { rehearsingProduction = production },
+                onSpotlight: {
+                    startsLeadingRehearsal = true
+                    rehearsingProduction = production
+                },
+                isSidebarHidden: sidebarVisibility == .detailOnly
+            )
+            .id(production.id)   // 다른 공연으로 바로 옮기면 화면 상태(파트 필터 등)를 새로
+        } else {
+            ContentUnavailableView(
+                "아직 큐시트가 없어요",
+                systemImage: "square.grid.2x2",
+                description: Text("홈에서 새 프로젝트를 만들면 여기에서 큐시트를 볼 수 있어요.")
+            )
+        }
+    }
+
+    // 공지사항. NavigationStack: 목록 → 상세로 들어갔다가 뒤로 돌아올 수 있게
+    private var noticeContent: some View {
+        NavigationStack {
+            NoticeListView(
+                notices: visibleNotices,
+                openRequest: $noticeToOpen,
+                openedNotice: $openedNotice,
+                isComposing: $isComposingNotice
+            )
+        }
+    }
+
+    #if os(iOS)
+    // 아이패드 위쪽 탭을 누르면: 공지사항 ↔ 홈 · 큐시트 사이에서 selectedMenu도 같이 바꾼다
+    // (공지 상세가 쌓여 있으면 먼저 닫는 switchMenu를 그대로 쓰려고)
+    private var iPadTabSelection: Binding<IPadTab> {
+        Binding(
+            get: { iPadTab },
+            set: { tab in
+                iPadTab = tab
+                switchMenu(to: tab == .notice ? .notice : .project)
+                if tab != .home { isCreatingProduction = false }
+            }
+        )
+    }
+    #endif
+}
+
+// 아이패드 위쪽 탭 (#156)
+enum IPadTab: Hashable {
+    case home, cueSheet, notice
+
+    var title: String {
+        switch self {
+        case .home: "홈"
+        case .cueSheet: "큐시트"
+        case .notice: "공지사항"
+        }
+    }
+}
+
+// 내용 영역 맨 위 iCloud 안내 카드
+struct ICloudBannerInset: ViewModifier {
+    let status: ICloudAccount.Status
+    @Binding var isClosed: Bool
+
+    func body(content: Content) -> some View {
+        content.safeAreaInset(edge: .top, spacing: 0) {
+            if !isClosed {
+                ICloudStatusBanner(status: status) {
+                    isClosed = true
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
     }
@@ -348,7 +478,7 @@ extension ContentView {
             rehearsingProduction = nil
             isCreatingProduction = false
             switchMenu(to: .project)
-            openedProduction = production
+            openCueSheet(production)
             cueFocus = focus
         case nil:
             break

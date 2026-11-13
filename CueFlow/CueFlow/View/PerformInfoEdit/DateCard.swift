@@ -32,13 +32,13 @@ struct DateCard: View {
         VStack(spacing: 8) {
             Text(String(calendar.component(.year, from: month)) + " "
                  + month.formatted(.dateTime.month(.wide).locale(Locale(identifier: "en_US"))))
-            .font(.system(size: 13, weight: .semibold))
+            .font(.app(size: 13, weight: .semibold))
             .foregroundStyle(Color.neutral900)
             
             HStack(spacing: 0) {
                 ForEach(weekdays.indices, id: \.self) { index in
                     Text(weekdays[index])
-                        .font(.system(size: 11))
+                        .font(.app(size: 11))
                         .foregroundStyle(Color.noticePlaceholder)
                         .frame(width: 32)
                 }
@@ -61,7 +61,7 @@ struct DateCard: View {
     private func dayCell(_ date: Date) -> some View {
         let isEdge = pickedStart.map { isSame(date, $0) } ?? (endDate != nil && (isSame(date, startDate) || isSame(date, endDate)))
         return Text("\(calendar.component(.day, from: date))")
-            .font(.system(size: 12, weight: isEdge ? .semibold : .regular))
+            .font(.app(size: 12, weight: isEdge ? .semibold : .regular))
             .foregroundStyle(isEdge ? .white : Color.neutral900)
             .frame(width: 32, height: 32)
             .background { if isEdge { Circle().fill(Color.brandPrimary) } }
