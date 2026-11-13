@@ -275,9 +275,11 @@ final class CloudSync {
 
     // 엔진은 모았다가 몇 초 뒤에 올린다 → 고치자마자 바로 올리게
     // (지금은 willSave 안이라 저장이 끝난 다음 차례에 올라간다)
+    // Task.detached: 엔진이 우리를 부르는 중(이벤트 처리 중)에 저장되면 일반 Task는 "그 안"으로 쳐져서
+    // sendChanges를 기다리는 순간 CloudKit이 앱을 죽인다 (BUG IN CLIENT OF CLOUDKIT, #166에서 발견) → 따로 떨어진 Task로
     private func sendNow(hasChanges: Bool) {
         guard hasChanges else { return }
-        Task { @MainActor [weak self] in
+        Task.detached { @MainActor [weak self] in
             do {
                 try await self?.privateEngine?.sendChanges()
                 try await self?.sharedEngine?.sendChanges()
@@ -912,7 +914,10 @@ final class CloudSync {
                 logger.info("부모를 못 찾아 아직 못 이은 레코드: \(self.unlinkedRecords.count)개")
             }
             if isShared {
-                Task { await addMeToSharedProductions() }
+                // 멤버를 넣으면 저장 → 올리기로 이어진다. 엔진 이벤트 안에서 올리기를 기다리면 앱이 죽어서 떨어진 Task로 (#166)
+                Task.detached { @MainActor [weak self] in
+                    await self?.addMeToSharedProductions()
+                }
             }
 
         default:
