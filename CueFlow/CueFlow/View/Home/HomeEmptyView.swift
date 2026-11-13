@@ -37,9 +37,15 @@ struct HomeEmptyView: View {
                     .multilineTextAlignment(.center)
             }
 
-            Button("홈으로 가기", action: onGoHome)
-                .buttonStyle(.secondary)
-                .frame(width: 200, height: 40)
+            HStack(spacing: 15) {
+                Button("홈으로 가기", action: onGoHome)
+                    .buttonStyle(.secondary)
+                    .frame(width: 200, height: 40)
+
+                // 카톡으로 받은 초대 링크 붙여 넣기
+                JoinByLinkButton()
+                    .frame(width: 200, height: 40)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
