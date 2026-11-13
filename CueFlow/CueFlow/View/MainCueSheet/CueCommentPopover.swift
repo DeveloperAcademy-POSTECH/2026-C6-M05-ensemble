@@ -67,7 +67,7 @@ extension CueCommentPopover {
                 if !isReply { replyCount(comment) }
             }
             Text(comment.text)
-                .font(.system(size: 12))
+                .font(.app(size: 12))
                 .lineSpacing(2)
                 .foregroundStyle(Color.neutral900)
                 .fixedSize(horizontal: false, vertical: true)
@@ -80,10 +80,10 @@ extension CueCommentPopover {
             avatar(name)
             VStack(alignment: .leading, spacing: 2) {
                 Text(name)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.app(size: 12, weight: .semibold))
                     .foregroundStyle(Color.neutral900)
                 Text(date.commentText)
-                    .font(.system(size: 10))
+                    .font(.app(size: 10))
                     .foregroundStyle(Color.noticeIconText)
             }
         }
@@ -98,7 +98,7 @@ extension CueCommentPopover {
         let count = comment.replies?.count ?? 0
         if count > 0 {
             Text("답글 \(count)개")
-                .font(.system(size: 10))
+                .font(.app(size: 10))
                 .foregroundStyle(Color.noticeIconText)
         }
     }
@@ -106,7 +106,7 @@ extension CueCommentPopover {
     private func replyButton(_ comment: Comment) -> some View {
         Button("답글") { replyTarget = comment }
             .buttonStyle(.plain)
-            .font(.system(size: 10, weight: .semibold))
+            .font(.app(size: 10, weight: .semibold))
             .foregroundStyle(replyTarget == comment ? Color.brandPrimaryText : Color.neutral900)
     }
 }
@@ -142,7 +142,7 @@ extension CueCommentPopover {
     private func smallButton(_ title: String, isFilled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.callout.weight(.semibold))
+                .font(.appCallout.weight(.semibold))
                 .foregroundStyle(isFilled ? Color.noticeMetaText : Color.commentButtonIdleText)
                 .frame(width: 56, height: 26)
                 .background(isFilled ? Color.commentButtonFilled : Color.neutral25, in: .rect(cornerRadius: 6))

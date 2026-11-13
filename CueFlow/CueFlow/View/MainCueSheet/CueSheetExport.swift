@@ -6,7 +6,11 @@
 //  어떤 줄을 어떤 순서로 내보낼지는 Production+CueSheetExport.swift에서 정한다.
 //
 
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import SwiftUI
 
 // 내보낼 큐 한 줄
@@ -48,7 +52,7 @@ enum CueSheetExport {
 
         let writer = CueSheetPDFWriter(context: context)
         writer.startPage()
-        writer.draw(Text(title).font(.system(size: 18, weight: .bold)).padding(.bottom, 10))
+        writer.draw(Text(title).font(.app(size: 18, weight: .bold)).padding(.bottom, 10))
         writer.draw(CueSheetPDFHeader())
 
         var currentScene: String?
@@ -90,7 +94,7 @@ private final class CueSheetPDFWriter {
         context.beginPDFPage(nil)
         pageNumber += 1
         y = PDFLayout.margin
-        place(Text("\(pageNumber)").font(.system(size: 9)).foregroundStyle(.gray)
+        place(Text("\(pageNumber)").font(.app(size: 9)).foregroundStyle(.gray)
             .frame(maxWidth: .infinity, alignment: .trailing),
               atBottom: PDFLayout.pageHeight - 22)
     }
@@ -156,7 +160,7 @@ private final class CueSheetPDFWriter {
 private struct CueSheetPDFHeader: View {
     var body: some View {
         CueSheetPDFColumns(values: ["번호", "파트", "트리거", "큐 내용", "위치"])
-            .font(.system(size: 10, weight: .semibold))
+            .font(.app(size: 10, weight: .semibold))
             .background(Color(white: 0.92))
     }
 }
@@ -166,7 +170,7 @@ private struct CueSheetPDFSceneTitle: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 12, weight: .bold))
+            .font(.app(size: 12, weight: .bold))
             .padding(.top, 12)
             .padding(.bottom, 5)
     }
@@ -177,7 +181,7 @@ private struct CueSheetPDFRow: View {
 
     var body: some View {
         CueSheetPDFColumns(values: [row.number, row.part, row.trigger, row.title, row.position])
-            .font(.system(size: 10))
+            .font(.app(size: 10))
             .overlay(alignment: .bottom) { Color(white: 0.8).frame(height: 0.5) }
     }
 }

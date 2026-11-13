@@ -37,7 +37,7 @@ struct CueHistorySidebar: View {
 extension CueHistorySidebar {
     private var header: some View {
         Text("History")
-            .font(.title3.weight(.semibold))
+            .font(.appTitle3.weight(.semibold))
             .foregroundStyle(Color.neutral900)
             .padding(.leading, 45)   // « (왼쪽 16 + 폭 19) + 간격 10
             .padding(.top, 20.5)     // 제목 줄(20) 가운데를 « 가운데(위에서 30.5)에 맞춤
@@ -46,11 +46,11 @@ extension CueHistorySidebar {
     private var searchField: some View {
         HStack(spacing: 2) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .font(.app(size: 13, weight: .medium, design: .rounded))
                 .foregroundStyle(Color.neutral900)
             TextField("", text: $searchText)
                 .textFieldStyle(.plain)
-                .font(.callout)
+                .font(.appCallout)
         }
         .padding(.leading, 8)
         .frame(height: 24)
@@ -87,28 +87,28 @@ extension CueHistorySidebar {
                 .fill(cue.part?.color.accent ?? Color.neutral300)
                 .frame(width: 8, height: 8)
             Text(sceneText)
-                .font(.subheadline)
+                .font(.appSubheadline)
                 .foregroundStyle(Color.noticeIconText)
         }
     }
 
     private var cueTitleText: some View {
         Text(cue.title)
-            .font(.system(size: 14.5, weight: .medium))
+            .font(.app(size: 14.5, weight: .medium))
             .foregroundStyle(Color.neutral900)
             .lineLimit(1)
     }
 
     private var triggerText: some View {
         Text(cue.trigger?.text ?? "")
-            .font(.subheadline)
+            .font(.appSubheadline)
             .foregroundStyle(Color.noticeIconText)
             .lineLimit(1)
     }
 
     private var positionTag: some View {
         Text(cue.position.rawValue)
-            .font(.subheadline)
+            .font(.appSubheadline)
             .foregroundStyle(Color.noticeIconText)
             .padding(.horizontal, 8)
             .frame(height: 20)
@@ -119,7 +119,7 @@ extension CueHistorySidebar {
 
     private var currentVersionLabel: some View {
         Text("현재 버전")
-            .font(.caption)
+            .font(.appCaption)
             .foregroundStyle(Color.noticePlaceholder)
             .padding(.bottom, 21)
             .padding(.trailing, 11)
@@ -147,7 +147,7 @@ extension CueHistorySidebar {
     private func dayGroup(_ date: String) -> some View {
         VStack(alignment: .leading, spacing: 19) {
             Text(date)
-                .font(.caption)
+                .font(.appCaption)
                 .foregroundStyle(Color.noticeSecondaryText)
                 .padding(.leading, 3)
             historyList(histories(on: date))
@@ -189,7 +189,7 @@ extension CueHistorySidebar {
             historyTexts(history)
             Spacer(minLength: 0)
             Text(timeText(history.date))
-                .font(.caption)
+                .font(.appCaption)
                 .foregroundStyle(Color.noticePlaceholder)
         }
         .frame(width: 270)
@@ -198,10 +198,10 @@ extension CueHistorySidebar {
     private func historyTexts(_ history: CueHistory) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(history.title)
-                .font(.callout.weight(.semibold))
+                .font(.appCallout.weight(.semibold))
                 .foregroundStyle(Color.neutral900)
             Text(history.detail)
-                .font(.caption)
+                .font(.appCaption)
                 .foregroundStyle(Color.noticeSecondaryText)
         }
     }
@@ -237,7 +237,7 @@ extension CueHistorySidebar {
                 .foregroundStyle(valueColor)
                 .lineLimit(1)
         }
-        .font(.caption)
+        .font(.appCaption)
     }
 }
 

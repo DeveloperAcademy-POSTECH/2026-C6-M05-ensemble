@@ -11,7 +11,11 @@
 //  #69 리허설 동기화 모드: 공연 폴더에 "리허설 위치" 레코드도 같이 주고받는다 (SwiftData 모델 아님 → RehearsalSync)
 //
 
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import CloudKit
 import SwiftData
 import os
@@ -236,9 +240,17 @@ final class CloudSync {
 
     // 앱 창으로 돌아올 때마다 두 저장공간 다 새로 받아 온다
     // (다른 사람이 고친 건 원래 iCloud 알림(푸시)으로 오는데, 알림이 늦거나 안 와도 여기서 한 번 더 챙긴다)
+    private static var didBecomeActive: Notification.Name {
+        #if os(macOS)
+        NSApplication.didBecomeActiveNotification
+        #else
+        UIApplication.didBecomeActiveNotification
+        #endif
+    }
+
     private func observeAppActive() {
         activeObserver = NotificationCenter.default.addObserver(
-            forName: NSApplication.didBecomeActiveNotification, object: nil, queue: nil
+            forName: Self.didBecomeActive, object: nil, queue: nil
         ) { [weak self] _ in
             Task { @MainActor in
                 do {
@@ -293,9 +305,11 @@ final class CloudSync {
 
     // 엔진은 모았다가 몇 초 뒤에 올린다 → 고치자마자 바로 올리게
     // (지금은 willSave 안이라 저장이 끝난 다음 차례에 올라간다)
+    // Task.detached: 엔진이 우리를 부르는 중(이벤트 처리 중)에 저장되면 일반 Task는 "그 안"으로 쳐져서
+    // sendChanges를 기다리는 순간 CloudKit이 앱을 죽인다 (BUG IN CLIENT OF CLOUDKIT, #166에서 발견) → 따로 떨어진 Task로
     private func sendNow(hasChanges: Bool) {
         guard hasChanges else { return }
-        Task { @MainActor [weak self] in
+        Task.detached { @MainActor [weak self] in
             do {
                 try await self?.privateEngine?.sendChanges()
                 try await self?.sharedEngine?.sendChanges()
@@ -349,17 +363,18 @@ final class CloudSync {
             }
         }
 
-        for model in context.deletedModelsArray {
-            // 공연을 지우면 폴더째 지운다 (안의 씬 · 큐도 같이 사라짐)
-            if let production = model as? Production {
-                zoneChanges.append(.deleteZone(production.cloudZoneID))
-                continue
-            }
+        // 공연을 지우면 폴더째 지운다 (안의 씬 · 큐도 같이 사라짐)
+        // 공유받은 공연이면 "나가기"라서, 안의 씬 · 큐를 하나씩 지우는 요청은 보내지 않는다
+        // (보내면 만든 사람의 공연에서 진짜로 지워진다, #132)
+        let deletedZoneIDs = Set(context.deletedModelsArray.compactMap { ($0 as? Production)?.cloudZoneID })
+        zoneChanges += deletedZoneIDs.map { .deleteZone($0) }
+
+        for model in context.deletedModelsArray where !(model is Production) {
             guard let item = model as? any CloudRecordConvertible else { continue }
 
             // 씬을 지우면 안의 트리거 · 큐도 같이 지워지므로(cascade) 그것들도 iCloud에서 지운다
             for id in [item.id] + cascadedIDs(of: model) {
-                if let recordID = store.uploadedRecordID(for: id) {
+                if let recordID = store.uploadedRecordID(for: id), !deletedZoneIDs.contains(recordID.zoneID) {
                     recordChanges.append(.deleteRecord(recordID))
                 }
             }
@@ -839,7 +854,17 @@ final class CloudSync {
         guard let context else { return }
         guard let myID = try? await CKContainer(identifier: ICloudAccount.containerID).userRecordID().recordName else { return }
 
-        let productions = ((try? context.fetch(FetchDescriptor<Production>())) ?? []).filter {
+        let allProductions = (try? context.fetch(FetchDescriptor<Production>())) ?? []
+
+        // 예전에 iCloud가 이름을 안 알려 줘서 "이름 없음"으로 들어간 내 이름 → 맥 사용자 이름으로 고친다
+        for production in allProductions {
+            if let me = production.member(withUserID: myID), me.name == "이름 없음" {
+                me.name = CurrentEditor.name
+            }
+        }
+        try? context.save()
+
+        let productions = allProductions.filter {
             $0.isSharedWithMe && !($0.members ?? []).contains { $0.iCloudUserID == myID }
         }
         for production in productions {
@@ -920,7 +945,10 @@ final class CloudSync {
                 logger.info("부모를 못 찾아 아직 못 이은 레코드: \(self.unlinkedRecords.count)개")
             }
             if isShared {
-                Task { await addMeToSharedProductions() }
+                // 멤버를 넣으면 저장 → 올리기로 이어진다. 엔진 이벤트 안에서 올리기를 기다리면 앱이 죽어서 떨어진 Task로 (#166)
+                Task.detached { @MainActor [weak self] in
+                    await self?.addMeToSharedProductions()
+                }
             }
             markSynced()   // 설정 > 마지막 동기화
 

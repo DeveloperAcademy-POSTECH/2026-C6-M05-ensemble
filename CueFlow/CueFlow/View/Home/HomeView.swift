@@ -96,7 +96,9 @@ struct HomeView: View {
         HStack(alignment: .top) {
             PageHeader(
                 title: "프로젝트",
-                subtitle: "새 공연을 만들거나 기존 프로젝트를 이어서 편집할 수 있습니다."
+                subtitle: Platform.canEditCueSheet
+                    ? "새 공연을 만들거나 기존 프로젝트를 이어서 편집할 수 있습니다."
+                    : "Mac에서 만든 공연의 큐시트를 보고, 댓글을 달고 확인할 수 있습니다."
             )
 
             Spacer()
@@ -112,7 +114,7 @@ struct HomeView: View {
                         // TODO: 설정 화면 (동작 미정)
                     } label: {
                         Image(systemName: "gearshape")
-                            .font(.system(size: 18))
+                            .font(.app(size: 18))
                             .foregroundStyle(Color.brandPrimary)
                             .frame(width: 40, height: 40)
                             .contentShape(Rectangle())
@@ -121,14 +123,24 @@ struct HomeView: View {
                     .help("설정")
                 }
 
-                Button {
-                    onNewProject()
-                } label: {
-                    Label("새 프로젝트", systemImage: "plus")
+                // 카톡으로 받은 초대 링크 붙여 넣기 (아이패드는 이걸로 공연에 들어온다)
+                if !Platform.canEditCueSheet {
+                    JoinByLinkButton()
+                        .frame(width: 140, height: 40)
+                        .padding(.leading, 11)
                 }
-                .buttonStyle(.primary)
-                .frame(width: 125, height: 40)
-                .padding(.leading, 11)
+
+                // 공연 만들기는 맥에서만 (아이패드는 보기 전용, #156)
+                if Platform.canEditCueSheet {
+                    Button {
+                        onNewProject()
+                    } label: {
+                        Label("새 프로젝트", systemImage: "plus")
+                    }
+                    .buttonStyle(.primary)
+                    .frame(width: 125, height: 40)
+                    .padding(.leading, 11)
+                }
             }
             .padding(.top, 3)
         }
@@ -137,7 +149,7 @@ struct HomeView: View {
     private var recentProjects: some View {
         VStack(alignment: .leading, spacing: 19) {
             Text("최근에 열어본 프로젝트")
-                .font(.system(size: 20, weight: .semibold))   // 피그마 20pt (macOS 기본 스타일에 없음)
+                .font(.app(size: 20, weight: .semibold))   // 피그마 20pt (macOS 기본 스타일에 없음)
                 .foregroundStyle(Color.neutral900)
 
             HStack(spacing: 22) {
@@ -173,7 +185,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("생성한 프로젝트")
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.app(size: 20, weight: .semibold))
                     .foregroundStyle(Color.neutral900)
                 Spacer()
                 filterMenu
@@ -188,7 +200,7 @@ struct HomeView: View {
                 Text("소유자")
                     .frame(width: ProjectListColumn.ownerWidth)
             }
-            .font(.body)
+            .font(.appBody)
             .foregroundStyle(Color.neutral500)
             .padding(.trailing, ProjectListColumn.trailingPadding)
             .padding(.top, 21)
@@ -214,15 +226,15 @@ struct HomeView: View {
         }
     }
 
-        // 우클릭 메뉴: 프로젝트 설정은 모두, 삭제는 내가 만든 공연만
-        // 공유받은 공연은 삭제를 보이지 않는다 (지우면 만든 사람의 iCloud 폴더를 건드리게 된다)
-        @ViewBuilder
-        private func deleteMenu(for production: Production) -> some View {
-            Button("프로젝트 설정") { settingProduction = production }
-            if !production.isSharedWithMe {
-                Button("삭제하기", role: .destructive) { deletingProduction = production }
-            }
+    // 우클릭 메뉴: 프로젝트 설정은 모두, 삭제는 내가 만든 공연만
+    // 공유받은 공연은 삭제를 보이지 않는다 (지우면 만든 사람의 iCloud 폴더를 건드리게 된다)
+    @ViewBuilder
+    private func deleteMenu(for production: Production) -> some View {
+        Button("프로젝트 설정") { settingProduction = production }
+        if !production.isSharedWithMe, Platform.canEditCueSheet {   // 아이패드는 보기 전용이라 삭제도 맥에서
+            Button("삭제하기", role: .destructive) { deletingProduction = production }
         }
+    }
 
     // 지우고 저장하면 CloudSync가 iCloud 폴더째 지운다 → 함께 쓰는 사람에게서도 사라진다
     private func deleteProduction() {
@@ -242,9 +254,9 @@ struct HomeView: View {
         } label: {
             HStack(spacing: 11) {
                 Text(filter.rawValue)
-                    .font(.title2)
+                    .font(.appTitle2)
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 12))
+                    .font(.app(size: 12))
             }
             .foregroundStyle(Color.neutral500)
             .padding(.leading, 20)
@@ -267,7 +279,7 @@ struct NotificationBellButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: "bell")
-                .font(.system(size: 18))
+                .font(.app(size: 18))
                 .foregroundStyle(Color.brandPrimary)
                 .frame(width: 40, height: 40)
                 .overlay {

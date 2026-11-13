@@ -27,10 +27,14 @@ struct MainCueSheetView: View {
         VStack(alignment: .leading, spacing: 0) {
             titleRow
             filterRow
-            CueGrid(production: production, selectedPart: selectedPart, remoteRevision: remoteRevision, onShowHistory: { historyCue = $0 }, onEscape: { isShowingUnread = false }, priorityScene: $priorityScene, focus: gridFocus)
-                .padding(.top, -12)   // 위 여유(12)만큼 올려서 표 위치는 피그마 그대로
-                .padding(.trailing, -35)   // 표는 바깥 여백(35)을 무시하고 창 오른쪽 끝까지
-                .overlay(alignment: .trailing) { sidebar.padding(.bottom, 20).padding(.trailing, -15) }   // 사이드바는 창 오른쪽 · 아래에서 20씩 (기준이 바깥 여백 35 안쪽이라 -15)
+            if isEmptyOnIPad {
+                emptyCueSheet
+            } else {
+                CueGrid(production: production, selectedPart: selectedPart, remoteRevision: remoteRevision, onShowHistory: { historyCue = $0 }, onEscape: { isShowingUnread = false }, priorityScene: $priorityScene, focus: gridFocus)
+                    .padding(.top, -12)   // 위 여유(12)만큼 올려서 표 위치는 피그마 그대로
+                    .padding(.trailing, -35)   // 표는 바깥 여백(35)을 무시하고 창 오른쪽 끝까지
+                    .overlay(alignment: .trailing) { sidebar.padding(.bottom, 20).padding(.trailing, -15) }   // 사이드바는 창 오른쪽 · 아래에서 20씩 (기준이 바깥 여백 35 안쪽이라 -15)
+            }
         }
         .padding(.horizontal, 35)
         .padding(.top, 16)
@@ -38,7 +42,8 @@ struct MainCueSheetView: View {
         .background(Color.appBackground)
         .appPopoverHost()   // 표 안 팝오버(파트 추가 · 수정)가 그려지는 곳
         .environment(\.myUserID, iCloudAccount.userRecordName)
-        .environment(\.canEditCues, production.canEdit(userID: iCloudAccount.userRecordName))
+        // 아이패드는 보기 전용 (#156): 큐 · 파트 · 씬 추가와 편집은 맥에서. 댓글 · 확인은 그대로 된다
+        .environment(\.canEditCues, Platform.canEditCueSheet && production.canEdit(userID: iCloudAccount.userRecordName))
         .onReceive(NotificationCenter.default.publisher(for: CloudSync.didApplyRemoteNotification)) { _ in
             remoteRevision += 1
         }
@@ -53,6 +58,32 @@ struct MainCueSheetView: View {
         .onChange(of: historyCue) { if $1 != nil { priorityScene = nil; isShowingUnread = false } }     // 사이드바는 하나만
         .onChange(of: priorityScene) { if $1 != nil { historyCue = nil; isShowingUnread = false } }
         .onChange(of: isShowingUnread) { if $1 { historyCue = nil; priorityScene = nil } }
+    }
+}
+
+// 아이패드 빈 큐시트 안내 (#167)
+// 아이패드는 파트 · 씬을 추가할 수 없어서, 빈 표만 덩그러니 있으면 고장 난 것처럼 보인다.
+// 맥은 그대로 빈 표 (+ 파트 추가 · + 씬 추가를 눌러야 해서)
+// TODO: 피그마에 없는 화면 → 디자인 나오면 맞추기
+
+extension MainCueSheetView {
+    private var isEmptyOnIPad: Bool {
+        !Platform.canEditCueSheet && (production.parts ?? []).isEmpty && (production.scenes ?? []).isEmpty
+    }
+
+    private var emptyCueSheet: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "tablecells")
+                .font(.app(size: 44))
+                .foregroundStyle(Color.brandPrimary)
+            Text("아직 큐시트가 비어 있어요")
+                .font(.app(size: 22, weight: .bold))
+                .foregroundStyle(Color.neutral900)
+            Text("Mac에서 파트와 씬을 추가하면 여기에 바로 나타나요.")
+                .font(.appTitle3)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -91,7 +122,9 @@ extension MainCueSheetView {
         Color.clear
             .frame(width: 8)
             .contentShape(.rect)
+            #if os(macOS)   // 커서 모양은 맥만 (#156)
             .pointerStyle(.columnResize)
+            #endif
             .gesture(DragGesture().onEnded { if $0.translation.width > 100 { closeSidebar() } })   // 오른쪽으로 100 넘게 밀면 닫힘
     }
 
@@ -119,7 +152,7 @@ extension MainCueSheetView {
     private var titleRow: some View {
         HStack {
             Text(production.title)
-                .font(.title)
+                .font(.appTitle)
                 .foregroundStyle(Color.neutral900)
             Spacer()
             // 피그마 1349:3639: 멤버 · 공유하기 · 내보내기 아이콘
@@ -161,7 +194,7 @@ extension MainCueSheetView {
     private var unreadButton: some View {
         Button { isShowingUnread.toggle() } label: {
             Text("미확인 \(unreadCount)건")
-                .font(.title3.weight(.semibold))
+                .font(.appTitle3.weight(.semibold))
                 .foregroundStyle(Color.brandPrimaryText)
                 .frame(width: 100, height: 36)
                 .background(Color.neutral25, in: .rect(cornerRadius: 6))
@@ -181,7 +214,7 @@ extension MainCueSheetView {
     private var shareButton: some View {
         Button { isShowingShare = true } label: {
             Text("공유하기")
-                .font(.body)                                   // Body/Regular 13
+                .font(.appBody)                                   // Body/Regular 13
                 .foregroundStyle(Color.softActionText)
                 .frame(width: 79, height: 28)
                 .background(Color.softAction, in: .rect(cornerRadius: 6))
@@ -204,7 +237,7 @@ extension MainCueSheetView {
             Button("PDF로 내보내기") { production.exportCueSheet(as: .pdf) }
         } label: {
             Image(systemName: "square.and.arrow.up")
-                .font(.system(size: 14))
+                .font(.app(size: 14))
                 .offset(y: -1)   // SF Symbol은 아래 여백 때문에 눈으로는 아래로 쏠려 보여서 1pt 올림 (피그마: 위 5 · 아래 4)
                 .foregroundStyle(Color.exportButtonIcon)
                 .frame(width: 16, height: 17)
@@ -235,7 +268,7 @@ extension MainCueSheetView {
                     }
                 }
                 Image(systemName: "chevron.down")
-                    .font(.caption2.weight(.semibold))
+                    .font(.appCaption2.weight(.semibold))
                     .foregroundStyle(Color.neutral500)
             }
             .contentShape(.rect)
@@ -252,7 +285,7 @@ extension MainCueSheetView {
 
     private func memberCircle(_ content: some View) -> some View {
         content
-            .font(.caption.weight(.semibold))
+            .font(.appCaption.weight(.semibold))
             .foregroundStyle(Color.brandPrimary)
             .frame(width: 25, height: 25)
             .background(Color.brandPrimarySubtle, in: .circle)

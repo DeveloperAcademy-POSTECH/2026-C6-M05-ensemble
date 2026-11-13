@@ -50,10 +50,10 @@ extension CreateStepLayout {
     private var header: some View {
         VStack(alignment: .leading, spacing: 9) {
             Text(title)
-                .font(.system(size: 26, weight: .bold))
+                .font(.app(size: 26, weight: .bold))
                 .foregroundStyle(Color.neutral900)
             Text(subtitle)
-                .font(.system(size: 17))
+                .font(.app(size: 17))
                 .foregroundStyle(Color.noticeSecondaryText)
         }
     }
@@ -72,12 +72,12 @@ extension CreateStepLayout {
         let isCurrent = number == currentStep
         return HStack(spacing: 10) {
             Text("\(number)")
-                .font(.system(size: 10, weight: .medium))
+                .font(.app(size: 10, weight: .medium))
                 .foregroundStyle(isCurrent ? Color.stepCurrentText : Color.stepIdleText)
                 .frame(width: 24, height: 24)
                 .background(isCurrent ? Color.stepCurrent : Color.stepIdle, in: .circle)
             Text(title)
-                .font(.system(size: 11, weight: isCurrent ? .semibold : .regular))
+                .font(.app(size: 11, weight: isCurrent ? .semibold : .regular))
                 .foregroundStyle(isCurrent ? Color.neutral900 : Color.stepLabelIdle)
         }
     }

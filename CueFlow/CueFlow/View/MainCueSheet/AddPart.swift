@@ -32,7 +32,7 @@ extension AddPart {
     private var nameSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("파트")
-                .font(.body.weight(.semibold))
+                .font(.appBody.weight(.semibold))
                 .foregroundStyle(Color.neutral800)
             nameField
         }

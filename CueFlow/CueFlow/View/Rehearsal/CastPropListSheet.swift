@@ -71,11 +71,11 @@ private struct NameListColumn: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 4) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 16))
+                    .font(.app(size: 16))
                 Text(title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.app(size: 15, weight: .semibold))
                 Text("\(names.count)개")
-                    .font(.system(size: 15))
+                    .font(.app(size: 15))
                     .foregroundStyle(Color.neutral500)
                     .padding(.leading, 6)
             }
@@ -85,11 +85,11 @@ private struct NameListColumn: View {
                 HStack {
                     TextField("\(title)을 추가해주세요", text: $newName)
                         .textFieldStyle(.plain)
-                        .font(.body)
+                        .font(.appBody)
                         .foregroundStyle(Color.neutral900)
                         .onSubmit(add)
                     Image(systemName: "arrow.turn.down.left")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.app(size: 11, weight: .semibold))
                         .foregroundStyle(Color.sheetFieldIcon)
                 }
                 .padding(.horizontal, 15)
@@ -98,7 +98,7 @@ private struct NameListColumn: View {
 
                 Button(action: add) {
                     Text("등록")
-                        .font(.body.weight(.semibold))
+                        .font(.appBody.weight(.semibold))
                         .foregroundStyle(Color.brandPrimaryText)
                         .frame(width: 60, height: 36)
                         .background(Color.sheetRegisterBackground, in: RoundedRectangle(cornerRadius: 6))
@@ -114,7 +114,7 @@ private struct NameListColumn: View {
 
             if names.isEmpty {
                 Text("아직 없어요")
-                    .font(.caption)
+                    .font(.appCaption)
                     .foregroundStyle(Color.neutral400)
                     .padding(.top, 27)
             } else {
@@ -147,13 +147,13 @@ private struct NameTile: View {
     var body: some View {
         HStack {
             Text(name)
-                .font(.system(size: 15))
+                .font(.app(size: 15))
                 .foregroundStyle(Color.neutral900)
                 .lineLimit(1)
             Spacer(minLength: 4)
             Button(action: onDelete) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 8))
+                    .font(.app(size: 8))
                     .foregroundStyle(Color.stageCellNumber)
                     .frame(width: 16, height: 16)
                     .contentShape(Rectangle())

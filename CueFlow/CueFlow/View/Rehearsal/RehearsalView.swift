@@ -218,7 +218,7 @@ struct RehearsalView: View {
     private var header: some View {
         HStack(spacing: 0) {
             Text(production.title)
-                .font(.system(size: 22, weight: .regular))   // 피그마 22pt (macOS 기본 스타일에 없음)
+                .font(.app(size: 22, weight: .regular))   // 피그마 22pt (macOS 기본 스타일에 없음)
                 .foregroundStyle(Color.neutral900)
 
             if let syncStatusText {
@@ -234,7 +234,7 @@ struct RehearsalView: View {
             // 피그마 리허설모드: 흰 바탕 + 연보라 테두리(tertiary) + 15 Semibold. 글자 #151144는 색상 표에 없어 tertiary 기본 neutral900
             Button(action: onExit) {
                 Text("리허설 모드 종료")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.app(size: 15, weight: .semibold))
             }
             .buttonStyle(.tertiary)
             .frame(width: 130, height: 36)
@@ -263,7 +263,7 @@ struct RehearsalView: View {
     private func stepButton(systemImage: String, help: String, isEnabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.app(size: 13, weight: .semibold))
                 .frame(width: 36, height: 34)
                 .contentShape(Rectangle())
         }
@@ -284,15 +284,15 @@ struct RehearsalView: View {
         } label: {
             HStack(spacing: 10) {
                 Text("장면")
-                    .font(.callout)
+                    .font(.appCallout)
                     .foregroundStyle(Color.neutral400)
                 Text(currentScene?.displayName(in: scenes) ?? "장면 없음")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.app(size: 14, weight: .medium))
                     .foregroundStyle(Color.neutral900)
                     .lineLimit(1)
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 11))
+                    .font(.app(size: 11))
                     .foregroundStyle(.secondary)
             }
             .padding(.leading, 14)
@@ -323,6 +323,11 @@ extension RehearsalView {
         RehearsalSync.shared.position(of: production.id)
     }
 
+    // 총 연출자 + 편집 권한을 받은 멤버만 진행할 수 있다 (#132)
+    private var canLead: Bool {
+        production.canLeadRehearsal(userID: myID)
+    }
+
     private var isLeading: Bool {
         guard let myID, let syncPosition else { return false }
         return syncPosition.leaderID == myID
@@ -350,7 +355,7 @@ extension RehearsalView {
     }
 
     private func startLeading() {
-        guard let myID, let scene = currentScene else { return }
+        guard canLead, let myID, let scene = currentScene else { return }
         RehearsalSync.shared.lead(
             productionID: production.id, leaderID: myID, leaderName: myName,
             sceneID: scene.id, triggerID: currentSteps.indices.contains(triggerIndex) ? currentSteps[triggerIndex].first?.id : nil   // 지금 큐 묶음의 첫 큐
@@ -427,13 +432,16 @@ extension RehearsalView {
                 Button("진행 끝내기") {
                     RehearsalSync.shared.stopLeading(productionID: production.id)
                 }
-            } else {
+            } else if canLead {
                 Button(isLedByOther ? "내가 대신 진행하기" : "내가 진행하기", action: startLeading)
+            } else {
+                Button("편집 권한이 있어야 진행할 수 있어요") {}
+                    .disabled(true)
             }
         } label: {
             // 피그마 동기화 모드 버튼 130×36 (primary 모양)
             Text("동기화 모드")
-                .font(.body.weight(.semibold))
+                .font(.appBody.weight(.semibold))
                 .foregroundStyle(.white)
                 .frame(width: 130, height: 36)
                 .background(Color.brandPrimary, in: RoundedRectangle(cornerRadius: 6))
@@ -455,7 +463,7 @@ extension RehearsalView {
                 .fill(Color.brandPrimary)
                 .frame(width: 7, height: 7)
             Text(text)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.app(size: 13, weight: .semibold))
                 .foregroundStyle(Color.brandPrimaryText)
                 .lineLimit(1)
         }
@@ -481,7 +489,7 @@ struct RehearsalCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             if let title {
                 Text(title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.app(size: 15, weight: .semibold))
                     .foregroundStyle(Color.neutral700)
                     .padding(.horizontal, 22)
                     .frame(height: 54)

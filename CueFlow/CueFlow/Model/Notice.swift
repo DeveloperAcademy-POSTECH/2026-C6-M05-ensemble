@@ -21,9 +21,14 @@ final class Notice {
     var production: Production?                // 어느 공연의 공지인지
     var author: Member?                    // 누가 보냈는지
 
-    // 보낼 대상. 둘 다 비어 있으면 프로젝트 전체 멤버, 하나만 채워진다.
+    // 보낼 대상. 다 비어 있으면 프로젝트 전체 멤버.
+    // 여러 파트 · 여러 사람에게 보낼 수 있다 (targetPartIDs · targetMemberIDs).
+    // targetPart · targetMember는 옛 버전 앱이 읽는 칸이라 남겨 둔다: 대상이 하나일 때만 채운다
+    // (여러 명이면 비워 둠 → 옛 앱에선 전체 공지로 보임. 못 받는 사람이 생기는 것보다 낫다)
     var targetPart: Part?                       // 특정 파트에게 (예: 조명)
     var targetMember: Member?                   // 특정 사람에게
+    var targetPartIDs: [UUID] = []              // 받을 파트들
+    var targetMemberIDs: [UUID] = []            // 받을 사람들
 
     // 읽음 기록들. 공지를 지우면 읽음 기록도 같이 지운다.
     @Relationship(deleteRule: .cascade, inverse: \NoticeRead.notice)

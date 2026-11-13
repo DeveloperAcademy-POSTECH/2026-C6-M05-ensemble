@@ -244,7 +244,7 @@ extension AppSetting {
                 .focused($isEmailFocused)
                 .onAppear { isEmailFocused = true }
                 .onSubmit { saveEmail() }
-                .onExitCommand { isEditingEmail = false }
+                .onEscape { isEditingEmail = false }
         } else {
             Text(email.isEmpty ? "이메일 추가" : email)
                 .foregroundStyle(email.isEmpty ? Color.neutral400 : Color.neutral900)

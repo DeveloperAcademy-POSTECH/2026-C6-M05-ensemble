@@ -105,23 +105,34 @@ extension ParticipantsPopover {
             HStack(spacing: 15) {
                 avatar(myName, size: 36, fontSize: 18, color: .meAvatar)
                 Text("\(myName) (나)")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.app(size: 13, weight: .bold))
                     .foregroundStyle(Color.neutral900)
                     .lineLimit(1)
             }
             Spacer()
             Button(action: onSpotlight) {
                 Text("Spotlight me")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.app(size: 13, weight: .semibold))
                     .foregroundStyle(Color.spotlightText)
                     .frame(width: 99, height: 30)
                     .background(Color.spotlightBackground, in: RoundedRectangle(cornerRadius: 6))
             }
             .buttonStyle(.plain)
-            .disabled(myUserID == nil)
-            .opacity(myUserID == nil ? 0.5 : 1)
-            .help(myUserID == nil ? "iCloud에 로그인해야 쓸 수 있어요" : "리허설 모드를 열고 내가 진행해요. 다른 사람 화면이 따라와요")
+            .disabled(!canSpotlight)
+            .opacity(canSpotlight ? 1 : 0.5)
+            .help(spotlightHelp)
         }
+    }
+
+    // 진행은 총 연출자 + 편집 권한을 받은 멤버만 (#132)
+    private var canSpotlight: Bool {
+        myUserID != nil && production.canLeadRehearsal(userID: myUserID)
+    }
+
+    private var spotlightHelp: String {
+        if myUserID == nil { return "iCloud에 로그인해야 쓸 수 있어요" }
+        if !canSpotlight { return "편집 권한이 있어야 리허설을 진행할 수 있어요" }
+        return "리허설 모드를 열고 내가 진행해요. 다른 사람 화면이 따라와요"
     }
 
     // 현재 보고 있는 사람 한 줄: 보라 동그라미 + 이름
@@ -129,7 +140,7 @@ extension ParticipantsPopover {
         HStack(spacing: 11) {
             avatar(member.name, size: 36, fontSize: 18, color: .brandPrimaryHover)
             Text(member.name)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.app(size: 14, weight: .semibold))
                 .foregroundStyle(Color.neutral900)
                 .lineLimit(1)
         }
@@ -142,11 +153,11 @@ extension ParticipantsPopover {
             avatar(member.name, size: 36, fontSize: 15, color: .visitorAvatar)
             VStack(alignment: .leading, spacing: 1) {
                 Text(member.name)
-                    .font(.system(size: 13.5, weight: .semibold))
+                    .font(.app(size: 13.5, weight: .semibold))
                     .foregroundStyle(Color.neutral900)
                     .lineLimit(1)
                 Text(seenText(member.lastSeenAt))
-                    .font(.system(size: 11.5))
+                    .font(.app(size: 11.5))
                     .foregroundStyle(Color.noticePlaceholder)
             }
         }
@@ -156,7 +167,7 @@ extension ParticipantsPopover {
     // 이름 첫 글자를 넣은 동그라미
     private func avatar(_ name: String, size: CGFloat, fontSize: CGFloat, color: Color) -> some View {
         Text(String(name.prefix(1)).uppercased())
-            .font(.system(size: fontSize, weight: .semibold))
+            .font(.app(size: fontSize, weight: .semibold))
             .foregroundStyle(.white)
             .frame(width: size, height: size)
             .background(color, in: .circle)
@@ -164,13 +175,13 @@ extension ParticipantsPopover {
 
     private func sectionTitle(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 11.5, weight: .semibold))
+            .font(.app(size: 11.5, weight: .semibold))
             .foregroundStyle(Color.noticeSecondaryText)
     }
 
     private func emptyText(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 11.5))
+            .font(.app(size: 11.5))
             .foregroundStyle(Color.noticePlaceholder)
     }
 

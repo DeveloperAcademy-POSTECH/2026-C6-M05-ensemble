@@ -78,7 +78,7 @@ struct RehearsalStageMap: View {
         VStack(spacing: 0) {
             HStack {
                 Text("무대 미니맵")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.app(size: 15, weight: .semibold))
                     .foregroundStyle(Color.neutral900)
                 Spacer()
                 if let onToggleExpand {
@@ -86,7 +86,7 @@ struct RehearsalStageMap: View {
                         Image(systemName: isExpanded
                               ? "arrow.down.right.and.arrow.up.left.rectangle"
                               : "arrow.up.left.and.arrow.down.right.rectangle")
-                            .font(.system(size: 17))   // 피그마 확대 화면 24 ÷ 1.375
+                            .font(.app(size: 17))   // 피그마 확대 화면 24 ÷ 1.375
                             .foregroundStyle(Color.neutral900)
                             .frame(width: 36, height: 36)
                             .contentShape(Rectangle())
@@ -101,9 +101,9 @@ struct RehearsalStageMap: View {
                     } label: {
                         HStack(spacing: 2) {
                             Image(systemName: "square.and.pencil")
-                                .font(.system(size: 16))
+                                .font(.app(size: 16))
                             Text("수정하기")
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(.app(size: 15, weight: .semibold))
                         }
                         .foregroundStyle(Color.neutral900)
                         .padding(.horizontal, 8)
@@ -136,11 +136,11 @@ struct RehearsalStageMap: View {
     private var emptyView: some View {
         VStack(spacing: 10) {
             Text("첫 무대 배치를 시작해보세요")
-                .font(.system(size: 20, weight: .semibold))
+                .font(.app(size: 20, weight: .semibold))
                 .tracking(-0.45)
                 .foregroundStyle(Color.neutral900)
             Text("배우와 소품을 추가하고 무대 위 원하는 위치에 배치해보세요.\n첫 무대 배치 이후 장면별 무대 구성을 한눈에 확인할 수 있어요.")
-                .font(.system(size: 17))
+                .font(.app(size: 17))
                 .lineSpacing(4)
                 .foregroundStyle(Color.neutral700)
                 .multilineTextAlignment(.center)
@@ -149,7 +149,7 @@ struct RehearsalStageMap: View {
                     editing = .firstSetup
                 } label: {
                     Text("배치하기")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.app(size: 15, weight: .semibold))
                         .foregroundStyle(Color.brandPrimaryText)
                         .frame(width: 104, height: 35)
                         .background(Color.sheetRegisterBackground, in: RoundedRectangle(cornerRadius: 6))

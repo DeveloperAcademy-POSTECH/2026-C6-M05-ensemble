@@ -131,7 +131,7 @@ private struct StagePlacementEditor: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("무대 미니맵")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.app(size: 15, weight: .semibold))
                             .foregroundStyle(Color.neutral500)
                         StageMinimap(
                             marks: marks,
@@ -171,13 +171,13 @@ private struct StagePlacementEditor: View {
             HStack(spacing: 6) {
                 HStack(spacing: 4) {
                     Image(systemName: systemImage)
-                        .font(.system(size: 16))
+                        .font(.app(size: 16))
                     Text(title)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.app(size: 15, weight: .semibold))
                 }
                 .foregroundStyle(Color.neutral900)
                 Text("\(names.count)개")
-                    .font(.body)
+                    .font(.appBody)
                     .foregroundStyle(Color.neutral500)
             }
 
@@ -229,7 +229,7 @@ private struct StageNameCard: View {
 
     var body: some View {
         Text(name)
-            .font(.system(size: 15))
+            .font(.app(size: 15))
             .foregroundStyle(isSelected || isHovered ? Color.brandPrimaryText : Color.neutral900)
             .lineLimit(1)
             .padding(.horizontal, 11)

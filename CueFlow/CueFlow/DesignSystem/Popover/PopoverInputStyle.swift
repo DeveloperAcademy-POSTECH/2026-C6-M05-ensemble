@@ -15,7 +15,7 @@ extension View {
             Image(systemName: "return")
                 .foregroundStyle(Color.neutral300)
         }
-        .font(.callout)
+        .font(.appCallout)
         .foregroundStyle(Color.neutral800)
         .padding(.horizontal, 12)
         .padding(.vertical, 7)       // 글이 길어지면 줄이 늘어나며 칸도 같이 커짐

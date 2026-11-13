@@ -14,7 +14,7 @@ struct SidebarCloseButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: "chevron.left.2")
-                .font(.system(size: 16))
+                .font(.app(size: 16))
                 .foregroundStyle(Color.neutral900)
                 .frame(width: 19, height: 19)
                 .contentShape(.rect)

@@ -59,7 +59,7 @@ extension SceneRow {
         HStack(spacing: 16) {
             SceneKindChip(kind: scene.kind)
             Text("\(code)  \(scene.title)")
-                .font(.system(size: 17))
+                .font(.app(size: 17))
                 .foregroundStyle(Color.neutral900)
         }
         .padding(.horizontal, 16)
@@ -67,12 +67,15 @@ extension SceneRow {
         .background(Color.surfaceWhite, in: .rect(cornerRadius: 10))
     }
 
+    // 끌 수 있다는 표시로 손 모양 커서 (맥만. 아이패드는 그대로)
     private func updateCursor(isHovering: Bool) {
+        #if os(macOS)
         if isHovering {
             NSCursor.openHand.push()
         } else {
             NSCursor.pop()
         }
+        #endif
     }
 }
 
@@ -91,7 +94,7 @@ extension SceneRow {
 
     private var codeText: some View {
         Text(code)
-            .font(.system(size: 17))
+            .font(.app(size: 17))
             .foregroundStyle(Color.sceneCodeText)
             .frame(width: 36, alignment: .leading)
     }
@@ -108,7 +111,7 @@ extension SceneRow {
 
     private var titleLabel: some View {
         Text(scene.title)
-            .font(.system(size: 17))
+            .font(.app(size: 17))
             .foregroundStyle(Color.neutral900)
             .lineLimit(1)
             .contentShape(.rect)
@@ -118,19 +121,19 @@ extension SceneRow {
     private var titleField: some View {
         TextField("", text: $editingTitle)
             .textFieldStyle(.plain)
-            .font(.system(size: 17))
+            .font(.app(size: 17))
             .foregroundStyle(Color.neutral900)
             .focused($isTitleFocused)
             .onAppear { isTitleFocused = true }
             .onSubmit { finishTitleEdit() }                    // Enter: 저장
-            .onExitCommand { isEditingTitle = false }          // Esc: 취소
+            .onEscape { isEditingTitle = false }          // Esc: 취소
             .onChange(of: isTitleFocused) { saveIfBlurred() }  // 다른 곳 클릭: 저장
     }
 
     private var deleteButton: some View {
         Button(action: onDelete) {
             Image(systemName: "xmark")
-                .font(.system(size: 16, weight: .semibold))
+                .font(.app(size: 16, weight: .semibold))
                 .foregroundStyle(Color.sceneDelete)
                 .contentShape(.rect)
         }
