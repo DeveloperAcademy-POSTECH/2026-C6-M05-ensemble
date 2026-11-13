@@ -73,10 +73,14 @@ enum CloudShare {
 extension Production {
     // 공유에 들어온 사람을 이 공연의 멤버로 (iCloud 계정 ID로 "나"를 찾을 수 있게). 이미 있으면 그대로
     // 저장하면 CloudSync가 iCloud에 올려서 다른 사람에게도 보인다
+    // participant는 항상 공유의 "나"(currentUserParticipant)다
     func addMember(_ participant: CKShare.Participant?) {
         guard let participant, let context = modelContext,
-              let userID = participant.userIdentity.userRecordID?.recordName,
-              userID != CKCurrentUserDefaultName,   // "나"라는 자리표시 이름이면 진짜 계정 ID가 아니라 건너뜀
+              let rawID = participant.userIdentity.userRecordID?.recordName else { return }
+        // iCloud는 "나"를 진짜 계정 ID 대신 "__defaultOwner__"라는 자리표시 이름으로 줄 때가 있다
+        // (초대받은 아이패드에서 확인, 11/13) → 내 진짜 계정 ID로 바꿔 넣는다. 그래야 역할 저장 때 "나"를 찾는다
+        let userID = rawID == CKCurrentUserDefaultName ? ICloudAccount.currentUserRecordName : rawID
+        guard let userID,
               !(members ?? []).contains(where: { $0.iCloudUserID == userID }) else { return }
 
         let member = Member(name: participant.displayName, role: "")
