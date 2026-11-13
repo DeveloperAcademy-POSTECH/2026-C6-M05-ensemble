@@ -124,6 +124,8 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: CloudSync.didReceiveCueChangesNotification)) { notification in
             notifyCueChanges(notification.object as? [UUID] ?? [])
         }
+        // 아이패드: 카톡에서 초대 링크를 복사하고 앱을 열면 "참여할까요?" (#166)
+        .clipboardInviteCheck()
         // 알림을 누르면 그 공지 / 그 공연 큐시트로
         .onReceive(NotificationCenter.default.publisher(for: SystemNotifications.openNotification)) { notification in
             open(notification.object as? SystemNotifications.Target)

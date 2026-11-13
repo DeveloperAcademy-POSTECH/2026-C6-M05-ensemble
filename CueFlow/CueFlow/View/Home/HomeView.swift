@@ -100,6 +100,13 @@ struct HomeView: View {
                     .help("설정")
                 }
 
+                // 카톡으로 받은 초대 링크 붙여 넣기 (아이패드는 이걸로 공연에 들어온다)
+                if !Platform.canEditCueSheet {
+                    JoinByLinkButton()
+                        .frame(width: 140, height: 40)
+                        .padding(.leading, 11)
+                }
+
                 // 공연 만들기는 맥에서만 (아이패드는 보기 전용, #156)
                 if Platform.canEditCueSheet {
                     Button {
