@@ -169,7 +169,7 @@ extension CueGrid {
             scene: scene,
             isHovering: isHovered(part: part, scene: scene),
             onAddCue: { addCue(part: part, scene: scene, triggerText: $0, cueTitle: $1, position: $2) },
-            onShowHistory: onShowHistory,
+            menuActions: cueCardMenu,
             selectedCueIDs: selectedCueIDs,
             onSelectCue: { selectCue($0, isShiftPressed: $1) }
         )
@@ -366,6 +366,30 @@ extension CueGrid {
     // 이 칸에 마우스가 올라가 있는지
     private func isHovered(part: Part, scene: ShowScene) -> Bool {
         hoveredCell?.part == part && hoveredCell?.scene == scene
+    }
+    
+    // 큐 카드 우클릭 메뉴 (CueCell → CueCard). 우클릭한 카드가 선택에 없으면 그 카드만 선택하고 한다
+    private var cueCardMenu: CueCardMenuActions {
+        CueCardMenuActions(
+            cut: { selectForMenu($0); cutSelectedCues() },
+            copy: { selectForMenu($0); copySelectedCues() },
+            paste: { pasteCues(beside: $0) },
+            delete: { selectForMenu($0); deleteSelectedCues() },
+            showPriority: { priorityScene = $0.trigger?.scene },
+            showHistory: onShowHistory
+        )
+    }
+
+    private func selectForMenu(_ cue: Cue) {
+        if !selectedCueIDs.contains(cue.id) { selectedCueIDs = [cue.id] }
+    }
+
+    // 우클릭한 카드가 있는 칸(같은 파트 · 같은 씬)에 기억한 큐 붙이기
+    private func pasteCues(beside cue: Cue) {
+        guard canEdit, let part = cue.part, let scene = cue.trigger?.scene else { return }
+        for copied in CueClipboard.shared.cues {
+            addCue(part: part, scene: scene, triggerText: copied.triggerText, cueTitle: copied.title, position: copied.position)
+        }
     }
 }
 

@@ -22,9 +22,11 @@ struct AppMenuActions {
     var open: (Production) -> Void
     var toggleSidebar: () -> Void
     var showShortcuts: () -> Void         // 도움말 > 키보드 단축키
+    var showSettings: () -> Void          // Cuedit > 설정… ⌘,
     var close: (() -> Void)?              // 큐시트 · 리허설 · 새 프로젝트 중일 때만
     var showCueSheet: (() -> Void)?       // 리허설 중일 때만
     var showRehearsal: (() -> Void)?      // 큐시트를 보고 있을 때만
+    var showProjectSetting: (() -> Void)? // 큐시트를 보고 있을 때만 (파일 > 프로젝트 설정…)
 }
 
 // 큐시트 표에서 메뉴가 할 수 있는 일 (CueGrid가 넣어 줌)
@@ -71,12 +73,12 @@ struct AppMenuCommands: Commands {
 // Cuedit
 
 extension AppMenuCommands {
-    // 설정… ⌘, (설정 창을 만들면 Settings 씬으로 바꾼다)
+    // 설정… ⌘, → 앱 설정 화면 (ContentView가 창 전체에 띄움)
     private var appMenu: some Commands {
         CommandGroup(replacing: .appSettings) {
-            Button("설정…") {}
+            Button("설정…") { app?.showSettings() }
                 .keyboardShortcut(",")
-                .disabled(true)
+                .disabled(app == nil)
         }
     }
 }
@@ -105,8 +107,8 @@ extension AppMenuCommands {
                 Button("PDF") { cueGrid?.export(.pdf) }
             }
             .disabled(cueGrid == nil)
-            Button("프로젝트 설정…") {}
-                .disabled(true)
+            Button("프로젝트 설정…") { app?.showProjectSetting?() }   // 메인 큐시트에서만 → 그 공연의 프로젝트 설정
+                .disabled(app?.showProjectSetting == nil)
         }
         CommandGroup(replacing: .printItem) {
             Button("프린트…", systemImage: "printer") {}
@@ -143,6 +145,7 @@ extension AppMenuCommands {
                 .keyboardShortcut("v")
                 .disabled(!canPaste)
             Button("삭제") { deleteSelection() }
+                .keyboardShortcut(.delete)   // ⌘⌫ (큐 카드 우클릭 메뉴와 같게)
                 .disabled(!canEditSelection)
             Divider()
             Button("모두 선택") { selectAll() }
