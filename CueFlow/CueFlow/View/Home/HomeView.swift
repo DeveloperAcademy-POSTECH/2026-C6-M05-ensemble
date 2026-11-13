@@ -26,6 +26,7 @@ struct HomeView: View {
 
     @State private var filter: ProjectFilter = .recent
     @State private var deletingProduction: Production?   // 삭제 확인 창에 띄울 공연
+    @State private var settingProduction: Production?    // 프로젝트 설정 카드에 띄울 공연
     @Environment(\.modelContext) private var modelContext
 
     // 최근에 열어본 프로젝트 3개
@@ -58,6 +59,7 @@ struct HomeView: View {
             .padding(.top, 37)
             .padding(.bottom, 40)
         }
+        .overlay { settingOverlay }
         .alert(
             "\(deletingProduction?.title ?? "")을(를) 삭제할까요?",
             isPresented: Binding(get: { deletingProduction != nil }, set: { if !$0 { deletingProduction = nil } })
@@ -66,6 +68,27 @@ struct HomeView: View {
             Button("삭제", role: .destructive) { deleteProduction() }
         } message: {
             Text("큐시트 · 대본 · 공지가 모두 지워지고, 함께 쓰는 사람들에게서도 사라져요. 되돌릴 수 없어요.")
+        }
+    }
+    
+    // 우클릭 → "프로젝트 설정" 카드 (화면 가운데)
+    @ViewBuilder
+    private var settingOverlay: some View {
+        if let settingProduction {
+            ProjectSetting(
+                production: settingProduction,
+                onClose: { self.settingProduction = nil },
+                onDelete: {
+                    self.settingProduction = nil
+                    deletingProduction = settingProduction   // 기존 삭제 확인 창 그대로 씀
+                },
+                onLeave: {
+                    self.settingProduction = nil
+                    // 공유받은 공연을 지우면 CloudSync가 폴더만 지움 = 나가기 (방장 데이터는 그대로)
+                    modelContext.delete(settingProduction)
+                    try? modelContext.save()
+                }
+            )
         }
     }
 
@@ -191,14 +214,15 @@ struct HomeView: View {
         }
     }
 
-    // 우클릭 메뉴: 내가 만든 공연만 삭제할 수 있다
-    // 공유받은 공연은 메뉴를 보이지 않는다 (지우면 만든 사람의 iCloud 폴더를 건드리게 된다)
-    @ViewBuilder
-    private func deleteMenu(for production: Production) -> some View {
-        if !production.isSharedWithMe {
-            Button("삭제하기", role: .destructive) { deletingProduction = production }
+        // 우클릭 메뉴: 프로젝트 설정은 모두, 삭제는 내가 만든 공연만
+        // 공유받은 공연은 삭제를 보이지 않는다 (지우면 만든 사람의 iCloud 폴더를 건드리게 된다)
+        @ViewBuilder
+        private func deleteMenu(for production: Production) -> some View {
+            Button("프로젝트 설정") { settingProduction = production }
+            if !production.isSharedWithMe {
+                Button("삭제하기", role: .destructive) { deletingProduction = production }
+            }
         }
-    }
 
     // 지우고 저장하면 CloudSync가 iCloud 폴더째 지운다 → 함께 쓰는 사람에게서도 사라진다
     private func deleteProduction() {
