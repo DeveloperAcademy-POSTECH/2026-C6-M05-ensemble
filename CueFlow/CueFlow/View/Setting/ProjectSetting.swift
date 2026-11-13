@@ -5,7 +5,7 @@
 //  Created by 김나현 on 11/12/26.
 //
 //  홈 목록 우클릭 → "프로젝트 설정". 단축키 창처럼 화면 가운데 카드로 뜬다.
-//  공연 정보 보기 · 수정 + 스태프 관리(역할 · 권한) + 나가기 / 삭제하기
+//  공연 정보 보기 · 수정 + 나가기 / 삭제하기
 //
 
 import SwiftData
@@ -23,22 +23,14 @@ struct ProjectSetting: View {
     @State private var isEditing = false
     @State private var draft = ProductionDraft()
     @State private var isConfirmingLeave = false
-
-    private static let roles = ["감독", "스태프"]
-
-    // 공연을 만든 사람만 역할 · 권한을 바꿀 수 있다
+    
+    // 공연을 만든 사람이면 삭제하기, 초대받은 사람이면 나가기
     private var isCreator: Bool { !production.isSharedWithMe }
-
-    private var members: [Member] {
-        (production.members ?? []).sorted { $0.name < $1.name }
-    }
-
     var body: some View {
         ZStack {
             Color.black.opacity(0.3)
                 .ignoresSafeArea()
                 .onTapGesture { onClose() }   // 카드 바깥을 누르면 닫힘
-
             card
         }
         .onAppear { draft = ProductionDraft(production) }
@@ -82,11 +74,8 @@ struct ProjectSetting: View {
             ProductionForm(draft: $draft)
                 .allowsHitTesting(isEditing)   // 보기 상태에선 값만 보이고 안 눌림
 
-            staffSection
-                .padding(.top, 60)
-
             exitButton
-                .padding(.top, 28)
+                .padding(.top, 60)
         }
         .padding(.bottom, 61)
     }
@@ -113,9 +102,8 @@ extension ProjectSetting {
                     .font(.system(size: 16))
             }
             .foregroundStyle(Color.neutral900)
-            .padding(.horizontal, 11)
-            .padding(.vertical, 7)
-            .background(Color.brandPrimarySubtle, in: .rect(cornerRadius: 6))
+            .frame(width: 105, height: 35)   // 피그마 크기 고정 (아이콘이 바뀌어도 그대로)
+            .background(isEditing ? Color.brandPrimarySubtle : Color.neutral200, in: .rect(cornerRadius: 6))   // 수정하기 회색 → 저장하기 보라
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -139,140 +127,6 @@ extension ProjectSetting {
 
     private func save() {
         try? production.modelContext?.save()
-    }
-}
-
-// 스태프 관리 표
-
-extension ProjectSetting {
-    private var staffSection: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("스태프 관리")
-                .font(.system(size: 17, weight: .bold))
-                .foregroundStyle(Color.neutral800)
-            staffTable
-        }
-    }
-
-    private var staffTable: some View {
-        VStack(spacing: 0) {
-            tableHeader
-            ForEach(Array(members.enumerated()), id: \.element.id) { index, member in
-                Color.neutral300.frame(height: 1)   // 줄 사이 구분선 (마지막 줄 아래는 없음)
-                staffRow(member, index: index)
-            }
-        }
-        .frame(width: 800)
-        .background(Color.surfaceWhite, in: .rect(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.neutral300))
-    }
-
-    private var tableHeader: some View {
-        HStack(spacing: 0) {
-            Color.clear.frame(width: 58)
-            Text("이름").column(114, leading: 12.5)
-            Text("계정").column(298, leading: 25.5)
-            Text("역할").column(164, leading: 17)
-            Text("권한").column(170, leading: 17)
-        }
-        .font(.system(size: 13, weight: .semibold))
-        .foregroundStyle(Color.neutral900)
-        .frame(height: 44)
-    }
-
-    private func staffRow(_ member: Member, index: Int) -> some View {
-        HStack(spacing: 0) {
-            avatar(member, index: index)
-                .frame(width: 58)
-            Text(member.name).column(114, leading: 12.5)
-            Text(accountText(member)).column(298, leading: 25.5)
-            roleCell(member).column(164, leading: 17)
-            permissionCell(member).column(170, leading: 17)
-        }
-        .font(.system(size: 13))
-        .foregroundStyle(Color.neutral900)
-        .frame(height: 51)
-    }
-
-    // 이름 첫 글자 동그라미 (줄마다 색을 번갈아)
-    private func avatar(_ member: Member, index: Int) -> some View {
-        Text(String(member.name.prefix(1)))
-            .font(.system(size: 13))
-            .foregroundStyle(Color.brandPrimaryText)
-            .frame(width: 31, height: 31)
-            .background(index.isMultiple(of: 2) ? Color.brandPrimarySubtle : Color.brandPrimaryDisabled, in: Circle())
-    }
-
-    // 다른 사람 이메일은 아직 받을 방법이 없어서 내 줄만 (앱 설정에서 입력한 값)
-    private func accountText(_ member: Member) -> String {
-        guard isMe(member), !myEmail.isEmpty else { return "-" }
-        return myEmail
-    }
-
-    private func isMe(_ member: Member) -> Bool {
-        guard let myID = iCloudAccount.userRecordName else { return false }
-        return member.iCloudUserID == myID
-    }
-}
-
-// 역할 · 권한 드롭다운 (만든 사람만 바꿀 수 있고, 나머지는 값만 보임)
-
-extension ProjectSetting {
-    private func roleCell(_ member: Member) -> some View {
-        dropdown(member.role.isEmpty ? "스태프" : member.role, isEnabled: isCreator) {
-            ForEach(Self.roles, id: \.self) { role in
-                Button(role) {
-                    member.role = role
-                    save()
-                }
-            }
-        }
-    }
-
-    // 만든 사람 자기 줄은 항상 편집가능 (바꿀 수 없음)
-    private func permissionCell(_ member: Member) -> some View {
-        let isCreatorRow = isCreator && isMe(member)
-        let title = isCreatorRow || member.canEdit ? "편집가능" : "읽기 전용"
-        return dropdown(title, isEnabled: isCreator && !isCreatorRow) {
-            Button("편집가능") { setCanEdit(member, true) }
-            Button("읽기 전용") { setCanEdit(member, false) }
-        }
-    }
-
-    private func setCanEdit(_ member: Member, _ canEdit: Bool) {
-        member.canEdit = canEdit
-        save()
-    }
-
-    @ViewBuilder
-    private func dropdown<Items: View>(_ title: String, isEnabled: Bool,
-                                       @ViewBuilder items: () -> Items) -> some View {
-        if isEnabled {
-            Menu { items() } label: { dropdownLabel(title, showsChevron: true) }
-                .menuStyle(.button)
-                .buttonStyle(.plain)
-                .menuIndicator(.hidden)
-                .fixedSize()
-        } else {
-            dropdownLabel(title, showsChevron: false)
-        }
-    }
-
-    private func dropdownLabel(_ title: String, showsChevron: Bool) -> some View {
-        HStack(spacing: 0) {
-            Text(title)
-            Spacer(minLength: 4)
-            if showsChevron {
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 12))
-            }
-        }
-        .font(.system(size: 13))
-        .foregroundStyle(Color.neutral900)
-        .padding(.horizontal, 12)
-        .frame(width: 89, height: 31)
-        .background(Color.neutral100, in: .rect(cornerRadius: 16))
-        .contentShape(.rect)
     }
 }
 
@@ -309,14 +163,6 @@ extension ProductionDraft {
                   firstShowDate: production.firstShowDate, lastShowDate: production.lastShowDate,
                   venue: production.venue, seatCount: production.seatCount,
                   organizer: production.organizer, runningTime: production.runningTime)
-    }
-}
-
-// 표 칸: 왼쪽 여백 + 고정 폭
-private extension View {
-    func column(_ width: CGFloat, leading: CGFloat) -> some View {
-        padding(.leading, leading)
-            .frame(width: width, alignment: .leading)
     }
 }
 
