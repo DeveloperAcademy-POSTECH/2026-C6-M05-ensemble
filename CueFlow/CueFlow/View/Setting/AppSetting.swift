@@ -290,7 +290,7 @@ extension AppSetting {
 
 extension AppSetting {
     // 문의 피드백 보내기 링크 (정해지면 채우기. 비어 있으면 그 줄은 회색 · 안 눌림)
-    private static let feedbackURL = URL(string: "")   // 예: "mailto:주소@도메인" 또는 설문 링크
+    private static let feedbackURL = URL(string: "https://forms.gle/zeZRTK8zozSVS2px9")   // 정보 > 문의 피드백 보내기 (도움말 메뉴와 같은 주소)
 
     // 버전 / 개인정보 처리방침 / 문의 피드백 보내기 (한 줄 56, 카드 높이 168)
     private var infoSection: some View {
