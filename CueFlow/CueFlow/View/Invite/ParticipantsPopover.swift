@@ -118,10 +118,21 @@ extension ParticipantsPopover {
                     .background(Color.spotlightBackground, in: RoundedRectangle(cornerRadius: 6))
             }
             .buttonStyle(.plain)
-            .disabled(myUserID == nil)
-            .opacity(myUserID == nil ? 0.5 : 1)
-            .help(myUserID == nil ? "iCloud에 로그인해야 쓸 수 있어요" : "리허설 모드를 열고 내가 진행해요. 다른 사람 화면이 따라와요")
+            .disabled(!canSpotlight)
+            .opacity(canSpotlight ? 1 : 0.5)
+            .help(spotlightHelp)
         }
+    }
+
+    // 진행은 총 연출자 + 편집 권한을 받은 멤버만 (#132)
+    private var canSpotlight: Bool {
+        myUserID != nil && production.canLeadRehearsal(userID: myUserID)
+    }
+
+    private var spotlightHelp: String {
+        if myUserID == nil { return "iCloud에 로그인해야 쓸 수 있어요" }
+        if !canSpotlight { return "편집 권한이 있어야 리허설을 진행할 수 있어요" }
+        return "리허설 모드를 열고 내가 진행해요. 다른 사람 화면이 따라와요"
     }
 
     // 현재 보고 있는 사람 한 줄: 보라 동그라미 + 이름

@@ -323,6 +323,11 @@ extension RehearsalView {
         RehearsalSync.shared.position(of: production.id)
     }
 
+    // 총 연출자 + 편집 권한을 받은 멤버만 진행할 수 있다 (#132)
+    private var canLead: Bool {
+        production.canLeadRehearsal(userID: myID)
+    }
+
     private var isLeading: Bool {
         guard let myID, let syncPosition else { return false }
         return syncPosition.leaderID == myID
@@ -350,7 +355,7 @@ extension RehearsalView {
     }
 
     private func startLeading() {
-        guard let myID, let scene = currentScene else { return }
+        guard canLead, let myID, let scene = currentScene else { return }
         RehearsalSync.shared.lead(
             productionID: production.id, leaderID: myID, leaderName: myName,
             sceneID: scene.id, triggerID: currentSteps.indices.contains(triggerIndex) ? currentSteps[triggerIndex].first?.id : nil   // 지금 큐 묶음의 첫 큐
@@ -427,8 +432,11 @@ extension RehearsalView {
                 Button("진행 끝내기") {
                     RehearsalSync.shared.stopLeading(productionID: production.id)
                 }
-            } else {
+            } else if canLead {
                 Button(isLedByOther ? "내가 대신 진행하기" : "내가 진행하기", action: startLeading)
+            } else {
+                Button("편집 권한이 있어야 진행할 수 있어요") {}
+                    .disabled(true)
             }
         } label: {
             // 피그마 동기화 모드 버튼 130×36 (primary 모양)

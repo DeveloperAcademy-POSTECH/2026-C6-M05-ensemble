@@ -27,6 +27,11 @@ extension Production {
     func canEdit(userID: String?) -> Bool {
         !isSharedWithMe || member(withUserID: userID)?.canEdit == true
     }
+
+    // 리허설을 진행(동기화 모드 · Spotlight me)할 수 있는지. 총 연출자 + 편집 권한을 받은 멤버만 (#132)
+    func canLeadRehearsal(userID: String?) -> Bool {
+        canEdit(userID: userID)
+    }
 }
 
 extension ModelContext {

@@ -79,7 +79,8 @@ extension Production {
               userID != CKCurrentUserDefaultName,   // "나"라는 자리표시 이름이면 진짜 계정 ID가 아니라 건너뜀
               !(members ?? []).contains(where: { $0.iCloudUserID == userID }) else { return }
 
-        let member = Member(name: participant.displayName, role: "")
+        // 링크로 공유하면 iCloud가 이름을 안 알려 줄 때가 많다 → "이름 없음" 대신 맥 사용자 이름
+        let member = Member(name: participant.iCloudName ?? CurrentEditor.name, role: "")
         member.iCloudUserID = userID
         member.production = self
         context.insert(member)
@@ -100,29 +101,39 @@ struct ShareMember: Identifiable {
 
 extension CKShare {
     // 들어와 있는 사람들 (소유자 먼저). 링크만 받고 아직 수락 안 한 사람은 빼고
-    var shareMembers: [ShareMember] {
+    func shareMembers(in production: Production) -> [ShareMember] {
         participants
             .filter { $0.role == .owner || $0.acceptanceStatus == .accepted }
             .sorted { ($0.role == .owner ? 0 : 1) < ($1.role == .owner ? 0 : 1) }
             .map { participant in
-                ShareMember(
+                let isMe = participant == currentUserParticipant
+                let userID = participant.userIdentity.userRecordID?.recordName
+                return ShareMember(
                     id: participant.participantID,
-                    name: participant.displayName,
-                    isMe: participant == currentUserParticipant,
+                    name: participant.iCloudName ?? appName(isMe: isMe, userID: userID, in: production),
+                    isMe: isMe,
                     isOwner: participant.role == .owner,
-                    userID: participant.userIdentity.userRecordID?.recordName
+                    userID: userID
                 )
             }
+    }
+
+    // iCloud가 이름을 안 알려 주면 앱에 저장된 이름 (참여자 현황 창과 같은 이름)
+    // 나 → 내 멤버 이름 · 없으면 맥 사용자 이름 / 다른 사람 → 그 사람 멤버 이름
+    private func appName(isMe: Bool, userID: String?, in production: Production) -> String {
+        if isMe { return CurrentEditor.name(in: production) }
+        if let name = production.member(withUserID: userID)?.name, !name.isEmpty, name != "이름 없음" { return name }
+        return "이름 없음"
     }
 }
 
 extension CKShare.Participant {
-    // iCloud 이름 → 없으면 이메일 → 없으면 "이름 없음"
-    var displayName: String {
+    // iCloud 이름 → 없으면 이메일 → 둘 다 없으면 nil (링크 공유는 iCloud가 이름을 안 알려 줄 때가 많다)
+    var iCloudName: String? {
         if let components = userIdentity.nameComponents {
             let name = PersonNameComponentsFormatter().string(from: components)
             if !name.isEmpty { return name }
         }
-        return userIdentity.lookupInfo?.emailAddress ?? "이름 없음"
+        return userIdentity.lookupInfo?.emailAddress
     }
 }

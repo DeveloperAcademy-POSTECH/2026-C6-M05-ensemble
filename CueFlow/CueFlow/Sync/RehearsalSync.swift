@@ -51,7 +51,7 @@ final class RehearsalSync {
     // MARK: - 진행하는 사람
 
     // 진행 시작 · 큐 넘길 때마다 부른다
-    // TODO: 멤버 역할이 생기면 감독(연출 · 무대감독)만 진행할 수 있게
+    // 누가 진행할 수 있는지는 화면에서 Production.canLeadRehearsal로 막는다 (#132)
     func lead(productionID: UUID, leaderID: String, leaderName: String, sceneID: UUID, triggerID: UUID?) {
         #if DEBUG
         fakeSent[productionID] = nil   // 진짜로 진행하면 가짜 진행자는 그만
