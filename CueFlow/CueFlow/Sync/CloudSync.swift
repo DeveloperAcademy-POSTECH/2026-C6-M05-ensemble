@@ -30,6 +30,10 @@ final class CloudSync {
     static let didReceiveNoticesNotification = Notification.Name("CloudSync.didReceiveNotices")
     // 다른 사람이 고친 큐가 왔다 → 내 파트면 시스템 알림 (#103). object = [UUID] 큐 id
     static let didReceiveCueChangesNotification = Notification.Name("CloudSync.didReceiveCueChanges")
+    // 설정 > 지금 동기화 버튼 → 바로 받고 올리기
+    static let syncNowNotification = Notification.Name("CloudSync.syncNow")
+    // 마지막으로 주고받기가 끝난 시간 (1970년부터 초). 설정 > 마지막 동기화
+    static let lastSyncKey = "lastSyncDate"
 
     private let logger = Logger(subsystem: "Happymondayy.CueFlow", category: "CloudSync")
     private let store = CloudSyncStore()
@@ -41,6 +45,7 @@ final class CloudSync {
     private var acceptObserver: NSObjectProtocol?
     private var rehearsalObserver: NSObjectProtocol?
     private var activeObserver: NSObjectProtocol?
+    private var syncNowObserver: NSObjectProtocol?   // 설정 > 지금 동기화
     private var pollTask: Task<Void, Never>?
     private var rehearsalPollTask: Task<Void, Never>?
     private var saveTask: Task<Void, Never>?
@@ -78,6 +83,7 @@ final class CloudSync {
         observeAccepts()
         observeRehearsal()
         observeAppActive()
+        observeSyncNow()
         startPolling()
         startRehearsalPolling()
         startSaving()
@@ -111,13 +117,14 @@ final class CloudSync {
     // 동기화를 멈추고 "어디까지 주고받았는지" 기억을 지운다 (이 맥의 공연은 그대로)
     // 다음에 start하면 처음 동기화처럼 이 맥의 공연을 전부 다시 올린다 — 다른 계정과 섞이지 않게
     func stop() {
-        for observer in [saveObserver, acceptObserver, rehearsalObserver, activeObserver].compactMap({ $0 }) {
+        for observer in [saveObserver, acceptObserver, rehearsalObserver, activeObserver, syncNowObserver].compactMap({ $0 }) {
             NotificationCenter.default.removeObserver(observer)
         }
         saveObserver = nil
         acceptObserver = nil
         rehearsalObserver = nil
         activeObserver = nil
+        syncNowObserver = nil
         pollTask?.cancel()
         pollTask = nil
         rehearsalPollTask?.cancel()
@@ -254,6 +261,29 @@ final class CloudSync {
                 }
             }
         }
+    }
+    
+    // 설정 > 지금 동기화를 누르면 → 두 저장공간 다 바로 받고 올리기
+    private func observeSyncNow() {
+        syncNowObserver = NotificationCenter.default.addObserver(
+            forName: Self.syncNowNotification, object: nil, queue: nil
+        ) { [weak self] _ in
+            Task { @MainActor in
+                do {
+                    try await self?.privateEngine?.fetchChanges()
+                    try await self?.sharedEngine?.fetchChanges()
+                    try await self?.privateEngine?.sendChanges()
+                    try await self?.sharedEngine?.sendChanges()
+                } catch {
+                    self?.logger.error("지금 동기화 실패: \(error)")
+                }
+            }
+        }
+    }
+
+    // 주고받기가 끝난 시간 저장 → 설정 > 마지막 동기화 (AppSetting의 @AppStorage와 같은 키)
+    private func markSynced() {
+        UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: Self.lastSyncKey)
     }
 
     // 큐시트 화면들은 직접 저장하지 않고 SwiftData 자동 저장에 맡기는데, 자동 저장은 언제 될지 모른다
@@ -873,6 +903,7 @@ final class CloudSync {
             if !sent.savedRecords.isEmpty || !sent.deletedRecordIDs.isEmpty {
                 logger.info("올림: 저장 \(sent.savedRecords.count)개, 삭제 \(sent.deletedRecordIDs.count)개")
             }
+            markSynced()   // 설정 > 마지막 동기화
 
         case .accountChange(let change):
             // 두 엔진이 둘 다 알려 주므로 한쪽(내 공연 엔진)에서만 처리
@@ -919,6 +950,7 @@ final class CloudSync {
                     await self?.addMeToSharedProductions()
                 }
             }
+            markSynced()   // 설정 > 마지막 동기화
 
         default:
             break

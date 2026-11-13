@@ -21,6 +21,13 @@ final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
     // 알림을 눌렀을 때 → ContentView가 그 화면을 연다. object = Target
     static let openNotification = Notification.Name("SystemNotifications.open")
 
+    
+    // 설정 > 앱 알림 스위치 (AppSetting의 @AppStorage와 같은 키). 처음엔 켜짐
+    static let enabledKey = "isAppNotificationOn"
+    static var isEnabled: Bool {
+        UserDefaults.standard.object(forKey: enabledKey) as? Bool ?? true
+    }
+    
     #if DEBUG
     // 메뉴 막대 "개발용 → 가짜 새 공지 / 가짜 큐 수정" → ContentView가 알림을 띄운다
     static let fakeNoticeNotification = Notification.Name("SystemNotifications.fakeNotice")
@@ -148,7 +155,9 @@ final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
         add(id: id, content: content)
     }
 
+    // 설정 > 앱 알림을 끄면 아무 알림도 안 띄운다 (공지 · 큐 수정 모두 여기를 거침)
     private func add(id: String, content: UNNotificationContent) {
+        guard Self.isEnabled else { return }
         center.add(UNNotificationRequest(identifier: id, content: content, trigger: nil))
     }
 

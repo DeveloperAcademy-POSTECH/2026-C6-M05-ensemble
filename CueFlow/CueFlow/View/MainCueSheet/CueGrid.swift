@@ -117,7 +117,6 @@ extension CueGrid {
         .id(scene.id)   // 사이드바에서 고른 씬 열로 스크롤할 때 찾는 이름표
         .onTapGesture(count: 2) { if canEdit { editingScene = scene } }   // 더블클릭하면 수정 팝오버
         .onTapGesture { selectColumn(scene) }   // 한 번 누르면 이 씬 열 선택
-        .overlay(alignment: .topTrailing) { selectedMark(for: scene) }
         .appPopover(isPresented: isEditing(scene)) {
             AddScene(title: scene.title, kind: scene.kind) { scene.title = $0; scene.kind = $1 }
         }
@@ -246,7 +245,7 @@ extension CueGrid {
     
     // 우선순위 사이드바에서 다른 씬을 고르면: 그 열을 선택하고 화면을 그 열로 옮김
     private func moveToColumn(_ scene: ShowScene?, proxy: ScrollViewProxy) {
-        guard let scene, scene != selectedScene else { return }   // 오른쪽 상단 버튼으로 연 경우(이미 선택된 열)는 그대로
+        guard let scene, scene != selectedScene else { return }   // 이미 선택된 열이면 그대로
         selectedScene = scene
         withAnimation { proxy.scrollTo(scene.id, anchor: .leading) }
     }
@@ -265,28 +264,6 @@ extension CueGrid {
             try? await Task.sleep(for: .milliseconds(300))   // 방금 연 큐시트면 표가 다 그려진 뒤에
             withAnimation { proxy.scrollTo(first.id, anchor: .center) }
         }
-    }
-
-    // 고른 씬 머리칸 오른쪽 위 흔들리는 ⓝ 버튼 → 우선순위 사이드바 열기 / 닫기
-    @ViewBuilder
-    private func selectedMark(for scene: ShowScene) -> some View {
-        if selectedScene == scene {
-            Button { togglePriority(scene) } label: { priorityIcon }
-                .buttonStyle(.plain)
-                .padding(.top, 11)
-                .padding(.trailing, 13)
-        }
-    }
-    
-    private var priorityIcon: some View {
-        Image(systemName: "number.circle")
-            .font(.app(size: 16))
-            .foregroundStyle(Color.brandPrimaryText)
-            .wiggle()
-    }
-    
-    private func togglePriority(_ scene: ShowScene) {
-        priorityScene = priorityScene == scene ? nil : scene
     }
     
     // 열 선택 해제 (우선순위 사이드바도 닫힘)

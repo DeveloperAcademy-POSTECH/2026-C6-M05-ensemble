@@ -36,16 +36,28 @@ struct PerformInfo: View {
             onPrevious: onPrevious,
             onNext: onNext
         ) {
-            formFields
-                .padding(.top, 50)
+            ProductionForm(draft: $draft)                .padding(.top, 50)
         }
         .appPopoverHost()   // 달력 팝오버가 그려지는 곳
     }
 }
 
+// 공연 정보 입력칸 묶음. 새 공연 만들기 1단계와 프로젝트 설정에서 같이 쓴다
+struct ProductionForm: View {
+    @Binding var draft: ProductionDraft
+
+    @State private var isPickingDate = false   // 공연일 달력이 열려 있는지
+
+    private static let genres = ["뮤지컬", "연극", "무용", "콘서트", "기타"]
+
+    var body: some View {
+        formFields
+    }
+}
+
 // 입력칸들
 
-extension PerformInfo {
+extension ProductionForm {
     private var formFields: some View {
         VStack(alignment: .leading, spacing: 25) {
             labeledField("공연명", isRequired: true) { textField("레미제라블", text: $draft.title) }
@@ -113,7 +125,7 @@ extension PerformInfo {
 
 // 공연유형 · 공연일
 
-extension PerformInfo {
+extension ProductionForm {
     // 뮤지컬 · 연극 · 무용 · 콘서트 · 기타 중 하나 고르기
     private var genrePicker: some View {
         HStack(spacing: 8.75) {
