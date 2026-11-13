@@ -29,6 +29,7 @@ enum CloudShare {
         let zoneID = production.cloudZoneID
         if let existing = try await fetchShare(in: zoneID, from: database) {
             production.addMember(existing.currentUserParticipant)
+            production.fillMemberNames(from: existing)
             return existing
         }
         // 공유받은 공연은 주인이 이미 공유를 만들어 둔 상태 → 없으면 주인이 공유를 끊은 것
@@ -56,7 +57,15 @@ enum CloudShare {
 
     // 공유받은 공연에서 "나" (이름·iCloud 계정). 공유가 없으면 nil
     static func myParticipant(in production: Production) async throws -> CKShare.Participant? {
-        try await fetchShare(in: production.cloudZoneID, from: database(for: production))?.currentUserParticipant
+        let share = try await fetchShare(in: production.cloudZoneID, from: database(for: production))
+        if let share { production.fillMemberNames(from: share) }
+        return share?.currentUserParticipant
+    }
+
+    // 공유 중인 공연이면 iCloud가 알려 주는 참여자 이름으로 빈 멤버 이름을 채운다 (공유가 없으면 아무것도 안 함)
+    static func refreshMemberNames(in production: Production) async throws {
+        guard let share = try await fetchShare(in: production.cloudZoneID, from: database(for: production)) else { return }
+        production.fillMemberNames(from: share)
     }
 
     // 폴더 공유는 이름이 정해져 있다 (CKRecordNameZoneWideShare). 없으면 nil
@@ -70,7 +79,40 @@ enum CloudShare {
     }
 }
 
+extension Member {
+    static let unknownName = "이름 없음"
+
+    // 진짜 이름이 아닌 자리표시 이름 (iCloud가 이름을 안 줬을 때 들어간 값)
+    // "Mobile User" = 아이패드의 NSFullUserName() (#173 전에 들어간 이름)
+    static func isPlaceholderName(_ name: String) -> Bool {
+        name.isEmpty || name == unknownName || name == "Mobile User"
+    }
+}
+
 extension Production {
+    // iCloud가 공유 참여자 이름을 알려 주면, 이름이 비어 있는 멤버(이름 없음 · Mobile User)에 채운다 (#173)
+    // 링크로 들어온 사람은 자기 기기에서는 자기 이름을 못 받는 경우가 많아서, 다른 사람 기기가 채워 준다
+    func fillMemberNames(from share: CKShare) {
+        guard let context = modelContext else { return }
+        var changed = false
+        for participant in share.participants {
+            guard let name = participant.iCloudName,
+                  let rawID = participant.userIdentity.userRecordID?.recordName else { continue }
+            // "__defaultOwner__"는 "공유를 만든 사람"이다. 공유에서 "나"일 때만 내 계정 ID로 바꾼다
+            let userID: String?
+            if rawID == CKCurrentUserDefaultName {
+                guard participant == share.currentUserParticipant else { continue }
+                userID = ICloudAccount.currentUserRecordName
+            } else {
+                userID = rawID
+            }
+            guard let member = member(withUserID: userID), Member.isPlaceholderName(member.name) else { continue }
+            member.name = name
+            changed = true
+        }
+        if changed { try? context.save() }
+    }
+
     // 공유에 들어온 사람을 이 공연의 멤버로 (iCloud 계정 ID로 "나"를 찾을 수 있게). 이미 있으면 그대로
     // 저장하면 CloudSync가 iCloud에 올려서 다른 사람에게도 보인다
     // participant는 항상 공유의 "나"(currentUserParticipant)다
@@ -84,7 +126,7 @@ extension Production {
               !(members ?? []).contains(where: { $0.iCloudUserID == userID }) else { return }
 
         // 링크로 공유하면 iCloud가 이름을 안 알려 줄 때가 많다 → "이름 없음" 대신 맥 사용자 이름
-        let member = Member(name: participant.iCloudName ?? CurrentEditor.name, role: "")
+        let member = Member(name: participant.iCloudName ?? CurrentEditor.name, role: "")   // 아이패드는 기기 이름이 없어서 "이름 없음" → 나중에 fillMemberNames가 채움
         member.iCloudUserID = userID
         member.production = self
         context.insert(member)
@@ -126,8 +168,8 @@ extension CKShare {
     // 나 → 내 멤버 이름 · 없으면 맥 사용자 이름 / 다른 사람 → 그 사람 멤버 이름
     private func appName(isMe: Bool, userID: String?, in production: Production) -> String {
         if isMe { return CurrentEditor.name(in: production) }
-        if let name = production.member(withUserID: userID)?.name, !name.isEmpty, name != "이름 없음" { return name }
-        return "이름 없음"
+        if let name = production.member(withUserID: userID)?.name, !Member.isPlaceholderName(name) { return name }
+        return Member.unknownName
     }
 }
 
