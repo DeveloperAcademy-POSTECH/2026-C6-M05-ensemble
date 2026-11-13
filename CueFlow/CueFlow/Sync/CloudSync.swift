@@ -645,10 +645,12 @@ final class CloudSync {
     }
 
     // 다른 사람이 10분 안에 고친 레코드인지 (새 맥에서 처음 받을 때 예전 것까지 알림이 뜨지 않게)
-    // 내가 고친 건 "__defaultOwner__"(공연 주인일 때) 또는 내 계정 ID로 온다
+    // 내가 고친 건 "__defaultOwner__"(내 공연일 때) 또는 내 계정 ID로 온다
+    // "__defaultOwner__"는 "그 폴더(공연)를 만든 사람"이라는 뜻이다 → 내 공연일 때만 나.
+    // 공유받은 공연에서는 공연 만든 사람(다른 사람)이라, 전에는 주인이 고친 큐 알림이 팀원에게 안 갔다
     private func isRecentChangeByOther(_ record: CKRecord) -> Bool {
         guard let modifier = record.lastModifiedUserRecordID?.recordName,
-              modifier != CKCurrentUserDefaultName,
+              !(modifier == CKCurrentUserDefaultName && record.recordID.zoneID.isMine),
               modifier != ICloudAccount.currentUserRecordName,
               let modified = record.modificationDate else { return false }
         return Date.now.timeIntervalSince(modified) < 10 * 60
