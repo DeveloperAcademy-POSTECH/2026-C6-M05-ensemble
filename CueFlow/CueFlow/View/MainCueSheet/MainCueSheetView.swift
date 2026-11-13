@@ -27,10 +27,14 @@ struct MainCueSheetView: View {
         VStack(alignment: .leading, spacing: 0) {
             titleRow
             filterRow
-            CueGrid(production: production, selectedPart: selectedPart, remoteRevision: remoteRevision, onShowHistory: { historyCue = $0 }, onEscape: { isShowingUnread = false }, priorityScene: $priorityScene, focus: gridFocus)
-                .padding(.top, -12)   // 위 여유(12)만큼 올려서 표 위치는 피그마 그대로
-                .padding(.trailing, -35)   // 표는 바깥 여백(35)을 무시하고 창 오른쪽 끝까지
-                .overlay(alignment: .trailing) { sidebar.padding(.bottom, 20).padding(.trailing, -15) }   // 사이드바는 창 오른쪽 · 아래에서 20씩 (기준이 바깥 여백 35 안쪽이라 -15)
+            if isEmptyOnIPad {
+                emptyCueSheet
+            } else {
+                CueGrid(production: production, selectedPart: selectedPart, remoteRevision: remoteRevision, onShowHistory: { historyCue = $0 }, onEscape: { isShowingUnread = false }, priorityScene: $priorityScene, focus: gridFocus)
+                    .padding(.top, -12)   // 위 여유(12)만큼 올려서 표 위치는 피그마 그대로
+                    .padding(.trailing, -35)   // 표는 바깥 여백(35)을 무시하고 창 오른쪽 끝까지
+                    .overlay(alignment: .trailing) { sidebar.padding(.bottom, 20).padding(.trailing, -15) }   // 사이드바는 창 오른쪽 · 아래에서 20씩 (기준이 바깥 여백 35 안쪽이라 -15)
+            }
         }
         .padding(.horizontal, 35)
         .padding(.top, 16)
@@ -54,6 +58,32 @@ struct MainCueSheetView: View {
         .onChange(of: historyCue) { if $1 != nil { priorityScene = nil; isShowingUnread = false } }     // 사이드바는 하나만
         .onChange(of: priorityScene) { if $1 != nil { historyCue = nil; isShowingUnread = false } }
         .onChange(of: isShowingUnread) { if $1 { historyCue = nil; priorityScene = nil } }
+    }
+}
+
+// 아이패드 빈 큐시트 안내 (#167)
+// 아이패드는 파트 · 씬을 추가할 수 없어서, 빈 표만 덩그러니 있으면 고장 난 것처럼 보인다.
+// 맥은 그대로 빈 표 (+ 파트 추가 · + 씬 추가를 눌러야 해서)
+// TODO: 피그마에 없는 화면 → 디자인 나오면 맞추기
+
+extension MainCueSheetView {
+    private var isEmptyOnIPad: Bool {
+        !Platform.canEditCueSheet && (production.parts ?? []).isEmpty && (production.scenes ?? []).isEmpty
+    }
+
+    private var emptyCueSheet: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "tablecells")
+                .font(.app(size: 44))
+                .foregroundStyle(Color.brandPrimary)
+            Text("아직 큐시트가 비어 있어요")
+                .font(.app(size: 22, weight: .bold))
+                .foregroundStyle(Color.neutral900)
+            Text("Mac에서 파트와 씬을 추가하면 여기에 바로 나타나요.")
+                .font(.appTitle3)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -124,9 +154,6 @@ extension MainCueSheetView {
             Text(production.title)
                 .font(.appTitle)
                 .foregroundStyle(Color.neutral900)
-            if !Platform.canEditCueSheet {
-                readOnlyChip
-            }
             Spacer()
             // 피그마 1349:3639: 멤버 · 공유하기 · 내보내기 아이콘
             HStack(spacing: 20) {
@@ -254,17 +281,6 @@ extension MainCueSheetView {
                 onSpotlight()
             }
         }
-    }
-
-    // 아이패드 공연 제목 옆: 왜 편집이 안 되는지 알려 주는 칩
-    private var readOnlyChip: some View {
-        Label("보기 전용 · 수정은 Mac에서", systemImage: "eye")
-            .font(.appFootnote.weight(.medium))
-            .foregroundStyle(Color.neutral700)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(Color.neutral100, in: Capsule())
-            .padding(.leading, 8)
     }
 
     private func memberCircle(_ content: some View) -> some View {

@@ -33,6 +33,8 @@ struct CueGrid: View {
                 cueTable
             }
             .contentMargins(.vertical, 12, for: .scrollContent)
+            // 표가 화면보다 작으면(파트 하나만 고를 때 · 씬이 적을 때) 가운데가 아니라 왼쪽 위에 붙인다 (#167)
+            .defaultScrollAnchor(.topLeading, for: .alignment)
             .onChange(of: priorityScene) { moveToColumn($1, proxy: proxy) }
             .onChange(of: focus) { showFocusedCues($1, proxy: proxy) }
         }
