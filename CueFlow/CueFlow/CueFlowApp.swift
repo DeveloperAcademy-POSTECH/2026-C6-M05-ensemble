@@ -72,7 +72,9 @@ struct CueFlowApp: App {
         }
         .modelContainer(sharedModelContainer)
         .commands {
+            #if os(macOS)
             AppMenuCommands()   // 메뉴 막대 (AppMenuCommands.swift)
+            #endif
 #if DEBUG
             // 개발용 (TestFlight에는 안 보임)
             CommandMenu("개발용") {
