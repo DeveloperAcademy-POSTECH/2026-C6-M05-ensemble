@@ -49,9 +49,9 @@ extension AddScene {
         HStack(spacing: 4) {
             Text(kind.title)
             Image(systemName: "chevron.down")
-                .font(.caption2)
+                .font(.appCaption2)
         }
-        .font(.subheadline)
+        .font(.appSubheadline)
         .foregroundStyle(Color.noticeMetaText)
         .padding(.horizontal, 10)
         .frame(height: 22)
@@ -62,7 +62,7 @@ extension AddScene {
     private var titleSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("내용")
-                .font(.body.weight(.semibold))
+                .font(.appBody.weight(.semibold))
                 .foregroundStyle(Color.neutral800)
             titleField
         }

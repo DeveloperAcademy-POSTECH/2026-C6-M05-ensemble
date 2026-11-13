@@ -39,10 +39,10 @@ extension PerformPart {
     private var partSectionHeader: some View {
         HStack(spacing: 10) {
             Text("파트선택항목")
-                .font(.system(size: 17, weight: .semibold))
+                .font(.app(size: 17, weight: .semibold))
                 .foregroundStyle(Color.neutral800)
             Text("\(selectedParts.count)개 선택")
-                .font(.system(size: 10.5, weight: .medium))
+                .font(.app(size: 10.5, weight: .medium))
                 .foregroundStyle(Color.brandPrimaryText)
                 .padding(.horizontal, 8)
                 .frame(height: 26)
@@ -57,10 +57,10 @@ extension PerformPart {
         Button { isAddingPart = true } label: {
             HStack(spacing: 10) {
                 Image(systemName: "plus")
-                    .font(.system(size: 14))
+                    .font(.app(size: 14))
                     .foregroundStyle(Color.brandPrimaryPressed)
                 Text("추가하기")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.app(size: 13, weight: .semibold))
             }
             .foregroundStyle(Color.brandPrimaryText)
             .frame(width: 110, height: 38)
@@ -93,10 +93,10 @@ extension PerformPart {
         return Button { toggle(part.name) } label: {
             HStack(spacing: 8) {
                 Image(systemName: part.icon)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.app(size: 16, weight: .medium))
                     .foregroundStyle(isSelected ? Color.brandPrimaryText : Color.neutral700)
                 Text(part.name)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.app(size: 17, weight: .semibold))
                 Spacer(minLength: 0)
             }
             .foregroundStyle(isSelected ? Color.brandPrimaryText : Color.neutral900)

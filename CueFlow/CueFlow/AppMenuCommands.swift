@@ -11,7 +11,9 @@
 //
 
 import SwiftUI
+#if os(macOS)
 import AppKit   // 편집 메뉴: 입력 중인 글자에 잘라내기 · 복사 등을 보내려고 (NSApp · NSText)
+#endif
 
 // 앱 전체에서 메뉴가 할 수 있는 일 (ContentView가 넣어 줌). nil인 항목은 회색
 struct AppMenuActions {
@@ -50,6 +52,8 @@ extension FocusedValues {
     @Entry var partFilter: PartFilterActions?
 }
 
+// 메뉴 막대 · 편집 메뉴 보내기 · 한글 ⇧C는 맥만 (AppKit). 아이패드는 위 Actions만 같이 쓴다
+#if os(macOS)
 struct AppMenuCommands: Commands {
     @FocusedValue(\.appMenu) private var app   // ContentView가 넣어 줌
     @FocusedValue(\.cueGrid) private var cueGrid   // CueGrid가 넣어 줌 (큐시트 표가 보일 때)
@@ -325,3 +329,4 @@ final class TextEditingWatcher {
         }
     }
 }
+#endif

@@ -45,10 +45,10 @@ struct RehearsalCueList<SceneControls: View>: View {
             // "큐 목록  5개 큐"
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("큐 목록")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.app(size: 15, weight: .semibold))
                     .foregroundStyle(Color.neutral800)
                 Text("\(cueCount)개 큐")
-                    .font(.system(size: 15))
+                    .font(.app(size: 15))
                     .foregroundStyle(Color.neutral600)
             }
 
@@ -116,10 +116,10 @@ struct RehearsalCueList<SceneControls: View>: View {
         Button(action: onPrevious) {
             HStack(spacing: 4) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.app(size: 10, weight: .semibold))
                     .foregroundStyle(Color.noticeIconText)
                 Text("이전 큐")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.app(size: 12, weight: .medium))
                     .foregroundStyle(Color.neutral800)
             }
             .frame(width: 78, height: 36)
@@ -135,17 +135,17 @@ struct RehearsalCueList<SceneControls: View>: View {
         .opacity(canGoPrevious ? 1 : 0.4)
     }
 
-    // "다음 큐 >": 연보라 바탕 + 흰 글자. 스페이스바로도 누른다
+    // "다음 큐 >": 아주 연한 보라 바탕 + 보라 테두리 + 진한 글자. 스페이스바로도 누른다
     private var nextButton: some View {
         Button(action: onNext) {
             HStack(spacing: 4) {
                 Text("다음 큐")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.app(size: 12, weight: .medium))
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.app(size: 10, weight: .semibold))
             }
         }
-        .buttonStyle(.softPrimaryCompat)
+        .buttonStyle(.tertiaryFilled)
         .frame(width: 75, height: 36)
         .disabled(!canGoNext)
         .opacity(canGoNext ? 1 : 0.4)
@@ -167,7 +167,7 @@ struct RehearsalCueList<SceneControls: View>: View {
 
     private func columnTitle(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 15))
+            .font(.app(size: 15))
             .foregroundStyle(Color.neutral800)
     }
 
@@ -199,13 +199,13 @@ struct CueListRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
             Text(code)
-                .font(.system(size: 15, weight: isCurrent ? .semibold : .medium))
+                .font(.app(size: 15, weight: isCurrent ? .semibold : .medium))
                 .foregroundStyle(isCurrent ? Color.neutral900 : Color.neutral800)
                 .padding(.leading, 20)
                 .frame(width: CueListColumn.scene, height: CueListColumn.cueHeight, alignment: .leading)
 
             Text(cue.trigger?.text ?? "")
-                .font(.system(size: 15, weight: .medium))
+                .font(.app(size: 15, weight: .medium))
                 .foregroundStyle(Color.neutral900)
                 .lineLimit(1)
                 .padding(.leading, 20)
@@ -230,7 +230,7 @@ struct CueListRow: View {
     private func cueLine(_ cue: Cue) -> some View {
         HStack(spacing: 0) {
             Text(cue.title)
-                .font(.system(size: 15, weight: .medium))
+                .font(.app(size: 15, weight: .medium))
                 .foregroundStyle(Color.neutral800)
                 .lineLimit(1)
                 .padding(.leading, 22)
@@ -240,7 +240,7 @@ struct CueListRow: View {
                 .frame(width: CueListColumn.position)
 
             Text(cue.part?.name ?? "")
-                .font(.system(size: 15, weight: .semibold))
+                .font(.app(size: 15, weight: .semibold))
                 .foregroundStyle(Color.neutral900)
                 .frame(width: CueListColumn.part)
         }
@@ -281,7 +281,7 @@ struct CueListRow: View {
 
     private func tagLabel(_ text: String, color: PartColor) -> some View {
         Text(text)
-            .font(.system(size: 15, weight: .semibold))
+            .font(.app(size: 15, weight: .semibold))
             .foregroundStyle(color.number)
             .padding(.horizontal, 10)
             .frame(height: 22)
@@ -300,25 +300,6 @@ private struct CueTableLine: View {
             Divider()
         }
     }
-}
-
-// "다음 큐" 버튼: 연보라 배경 + 흰 글자
-// TODO: #41 머지 후 .buttonStyle(.softPrimary)로 교체하고 이건 지우기
-struct SoftPrimaryCompatButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .foregroundStyle(Color.softActionText)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(
-                configuration.isPressed ? Color.brandPrimary : Color.softAction,
-                in: RoundedRectangle(cornerRadius: 6)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 6))
-    }
-}
-
-extension ButtonStyle where Self == SoftPrimaryCompatButtonStyle {
-    static var softPrimaryCompat: SoftPrimaryCompatButtonStyle { SoftPrimaryCompatButtonStyle() }
 }
 
 #Preview {

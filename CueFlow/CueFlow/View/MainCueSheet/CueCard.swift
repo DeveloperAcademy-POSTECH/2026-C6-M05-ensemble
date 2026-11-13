@@ -37,7 +37,9 @@ struct CueCard: View {
         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(isSelected ? partColor.accent : partColor.background, lineWidth: isSelected ? 1.5 : 1))
         .contentShape(.rect)
         .onTapGesture(count: 2) { if canEdit { isEditingCue = true } }   // 더블클릭하면 수정 팝오버
+        #if os(macOS)   // 아이패드엔 Shift+클릭이 없다 (#156)
         .highPriorityGesture(TapGesture().modifiers(.shift).onEnded { onSelect(true) })   // Shift+클릭 = 선택에 추가
+        #endif
         .onTapGesture { onSelect(false) }                                                // 그냥 클릭 = 이 카드만 선택
         .appPopover(isPresented: $isEditingCue, edge: .trailing, onOutsideTap: { closeRequest += 1 }) { cueEditor }   // 바깥 클릭은 입력창이 정함
         .onRightClick { isShowingMenu = true }   // 우클릭하면 메뉴 팝오버
@@ -81,7 +83,7 @@ extension CueCard {
     // 번호 동그라미 생김새 (01, 02 …)
     private var cueNumberLabel: some View {
         Text(cueNumberText)
-            .font(.callout.weight(.medium))
+            .font(.appCallout.weight(.medium))
             .foregroundStyle(partColor.number)
             .frame(width: 23, height: 23)
             .background(partColor.background, in: .circle)
@@ -91,7 +93,7 @@ extension CueCard {
     // 언제 실행하는지 (예: 코우 - "너 나가!" 대사 종료 후)
     private var triggerText: some View {
         Text(cue.trigger?.text ?? "")
-            .font(.body)
+            .font(.appBody)
             .foregroundStyle(Color.cueTriggerText)
             .fixedSize(horizontal: false, vertical: true)   // 길면 다음 줄로
     }
@@ -99,7 +101,7 @@ extension CueCard {
     // 무엇을 하는지 (예: 정원 전화 받으며 퇴장)
     private var cueTitleText: some View {
         Text(cue.title)
-            .font(.body.weight(.semibold))
+            .font(.appBody.weight(.semibold))
             .foregroundStyle(Color.neutral900)
             .fixedSize(horizontal: false, vertical: true)   // 길면 다음 줄로
     }
@@ -117,7 +119,7 @@ extension CueCard {
     // 태그 생김새 (원래 positionTag에 있던 모양 그대로)
     private var positionTagLabel: some View {
         Text(cue.position.rawValue)
-            .font(.callout.weight(.medium))
+            .font(.appCallout.weight(.medium))
             .foregroundStyle(partColor.number)
             .padding(.horizontal, 5)
             .frame(height: 23)
@@ -137,7 +139,7 @@ extension CueCard {
         Button { isShowingComments = true } label: {
             HStack(spacing: 2) {
                 Image(systemName: "message")
-                    .font(.system(size: 8, weight: .semibold))
+                    .font(.app(size: 8, weight: .semibold))
                 Text("\(cue.comments?.count ?? 0)")
             }
             .countPill(background: Color.tagBackground)
@@ -161,7 +163,7 @@ extension CueCard {
 
     private var checkCircle: some View {
         Image(systemName: "checkmark")
-            .font(.system(size: 7, weight: .bold))
+            .font(.app(size: 7, weight: .bold))
             .frame(width: 13, height: 13)
             .foregroundStyle(Color.checkCircleMark)
             .background(Color.checkCircleBackground, in: .circle)
@@ -237,7 +239,7 @@ extension ModelContext {
 private extension View {
     func countPill(background: Color) -> some View {
         self
-            .font(.system(size: 12, weight: .medium))
+            .font(.app(size: 12, weight: .medium))
             .foregroundStyle(Color.neutral800)
             .padding(.horizontal, 7)
             .frame(minWidth: 40, minHeight: 23)

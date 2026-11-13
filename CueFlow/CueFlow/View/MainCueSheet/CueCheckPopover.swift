@@ -38,11 +38,11 @@ extension CueCheckPopover {
     private var header: some View {
         HStack {
             Text("확인 현황")
-                .font(.system(size: 17, weight: .bold))
+                .font(.app(size: 17, weight: .bold))
                 .foregroundStyle(Color.neutral900)
             Spacer()
             Text("\(checkedMembers.count)/\(allMembers.count)명")
-                .font(.system(size: 15, weight: .semibold))
+                .font(.app(size: 15, weight: .semibold))
                 .foregroundStyle(Color.noticeSecondaryText)
         }
     }
@@ -65,11 +65,11 @@ extension CueCheckPopover {
     private func memberSection(title: String, members: [Member], empty: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("\(title) \(members.count)")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.app(size: 13, weight: .semibold))
                 .foregroundStyle(Color.neutral900)
             if members.isEmpty {
                 Text(empty)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.app(size: 12, weight: .medium))
                     .foregroundStyle(Color.noticePlaceholder)
             }
             ForEach(members) { memberRow($0) }
@@ -80,10 +80,10 @@ extension CueCheckPopover {
         HStack(spacing: 10) {
             MemberAvatar(name: member.name, size: 28, background: isChecked(member) ? partColor(of: member) : .visitorAvatar, fontSize: 12)
             Text(isMe(member) ? "\(member.name) (나)" : member.name)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.app(size: 13, weight: .semibold))
                 .foregroundStyle(Color.noticeSecondaryText)
             Text(member.mainPart?.name ?? "")
-                .font(.system(size: 12, weight: .medium))
+                .font(.app(size: 12, weight: .medium))
                 .foregroundStyle(Color.noticePlaceholder)
         }
     }
@@ -91,7 +91,7 @@ extension CueCheckPopover {
     private var checkButton: some View {
         Button(action: toggleMyCheck) {
             Text(myCheck == nil ? "확인했어요" : "확인 취소")
-                .font(.body.weight(.semibold))
+                .font(.appBody.weight(.semibold))
                 .foregroundStyle(Color.noticeMetaText)
                 .frame(maxWidth: .infinity, minHeight: 32)
                 .background(Color.checkButtonBackground, in: .rect(cornerRadius: 6))

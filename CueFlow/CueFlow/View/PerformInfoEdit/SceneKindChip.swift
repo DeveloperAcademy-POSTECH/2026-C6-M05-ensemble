@@ -13,7 +13,7 @@ struct SceneKindChip: View {
     var isSelected = false
     var body: some View {
         Text(kind.title)
-            .font(.system(size: 13, weight: .semibold))
+            .font(.app(size: 13, weight: .semibold))
             .foregroundStyle(Color.neutral900)
             .frame(width: 62, height: 36)
             .background(kind.chipColor, in: .capsule)

@@ -115,11 +115,11 @@ private struct StageGridOption: View {
             .frame(width: 133, height: 82)
 
             Text(columns > 0 ? "\(columns)x\(columns)" : "기본")
-                .font(.system(size: 22, weight: .bold))
+                .font(.app(size: 22, weight: .bold))
                 .foregroundStyle(Color.brandPrimaryText)
                 .padding(.top, 32)
             Text(columns > 0 ? "\(columns * columns)개 영역" : "구분선 없이 보기")
-                .font(.system(size: 12))
+                .font(.app(size: 12))
                 .foregroundStyle(Color.neutral900)
                 .padding(.top, 5)
         }

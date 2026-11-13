@@ -28,7 +28,7 @@ struct InviteAcceptView: View {
     var body: some View {
         VStack(spacing: 60) {
             Text("프로젝트 초대를 수락하시겠습니까?")
-                .font(.system(size: 26, weight: .bold))   // 피그마 26pt (macOS 기본 스타일에 없어서 직접 지정)
+                .font(.app(size: 26, weight: .bold))   // 피그마 26pt (macOS 기본 스타일에 없어서 직접 지정)
                 .foregroundStyle(Color.neutral900)
 
             // 썸네일 + 공연 이름 + "초대받음"
@@ -39,10 +39,10 @@ struct InviteAcceptView: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(invite.productionTitle)
-                        .font(.system(size: 17, weight: .bold))
+                        .font(.app(size: 17, weight: .bold))
                         .foregroundStyle(Color.noticeMetaText)
                     Text("초대받음")
-                        .font(.system(size: 15))
+                        .font(.app(size: 15))
                         .foregroundStyle(Color.noticeSecondaryText)
                 }
             }
