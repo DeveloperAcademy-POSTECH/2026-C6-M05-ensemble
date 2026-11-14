@@ -82,6 +82,13 @@ final class ShareInvites {
 #if os(macOS)
 // 맥이 "초대 링크로 앱 열림"을 알려 주는 곳
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    // 창 탭 기능 끄기 → 보기 메뉴의 "탭 막대 보기 · 모든 탭 보기"가 빠진다 (창이 뜨기 전에 해야 함)
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        NSWindow.allowsAutomaticWindowTabbing = false
+        CommentShortcut.start()   // 보기 > 댓글 표시 ⇧C를 한글 입력 상태에서도 받기 (AppMenuCommands.swift)
+        TextEditingWatcher.shared.start()   // 편집 메뉴: 입력칸에 커서가 있는지 지켜보기 (AppMenuCommands.swift)
+    }
+
     // iCloud 알림(푸시)을 받겠다고 맥에 신청 → 다른 사람이 고치면 CKSyncEngine이 바로 받아 온다
     // (맥 앱은 이걸 직접 신청해야 알림이 온다)
     func applicationDidFinishLaunching(_ notification: Notification) {

@@ -12,7 +12,7 @@ import SwiftData
 
 struct CueCard: View {
     @Bindable var cue: Cue   // 카드 안에서 cue의 값을 바꿀 수 있게 (위치 선택용)
-    var onShowHistory: () -> Void = {}   // 우클릭 → History
+    var menuActions = CueCardMenuActions()   // 우클릭 메뉴가 할 일 (CueGrid가 넣어 줌)
     var isSelected = false                       // 선택된 카드인지 (테두리가 파트 accent 색)
     var onSelect: (Bool) -> Void = { _ in }      // 카드를 눌렀을 때 (true = shift 누른 채)
     @State private var isEditingCue = false      // 큐 수정 팝오버가 열려 있는지
@@ -24,7 +24,8 @@ struct CueCard: View {
     @Environment(\.myUserID) private var myUserID
     @Environment(\.canEditCues) private var canEdit   // 읽기 권한이면 false (#120)
     @Environment(\.modelContext) private var modelContext   // 큐를 지울 곳
-    
+    @AppStorage("showsCommentButton") private var showsComments = true   // 보기 > 댓글 표시
+
     var body: some View {
         VStack(alignment: .leading, spacing: 17) {
             cueHeader
@@ -47,19 +48,34 @@ struct CueCard: View {
     }
 }
 
-// 우클릭 메뉴: 큐 수정하기 · History / 복사하기 · 붙여넣기 / 삭제하기
+// 큐 카드 우클릭 메뉴가 할 일 (CueGrid가 넣어 줌 → CueCell → CueCard)
+struct CueCardMenuActions {
+    var cut: (Cue) -> Void = { _ in }
+    var copy: (Cue) -> Void = { _ in }
+    var paste: (Cue) -> Void = { _ in }          // 이 카드가 있는 칸에 붙이기
+    var delete: (Cue) -> Void = { _ in }
+    var showPriority: (Cue) -> Void = { _ in }   // 이 카드가 있는 씬 열의 우선순위 사이드바
+    var showHistory: (Cue) -> Void = { _ in }
+}
+
+// 우클릭 메뉴: 수정하기 · 잘라내기 · 복사하기 · 붙여넣기 · 삭제 / 우선순위 사이드바 · History
+// 읽기 권한이면 복사하기 · 우선순위 · History만
 
 extension CueCard {
     private var cueMenu: some View {
-        PopoverMenu {
+        PopoverMenu(width: 140) {
             if canEdit {
-                PopoverMenuItem("큐 수정하기") { isEditingCue = true }   // 더블클릭과 같은 수정 팝오버
+                PopoverMenuItem("큐 카드 수정") { isEditingCue = true }   // 더블클릭과 같은 수정 팝오버
+                PopoverMenuItem("잘라내기", shortcut: .command("X")) { menuActions.cut(cue) }
             }
-            PopoverMenuItem("History", action: onShowHistory)       // 오른쪽 History 사이드바 열기
+            PopoverMenuItem("복사하기", shortcut: .command("C")) { menuActions.copy(cue) }
             if canEdit {
-                PopoverMenuDivider()
-                PopoverMenuItem("삭제하기") { modelContext.deleteCue(cue) }
+                PopoverMenuItem("붙여넣기", shortcut: .command("V")) { menuActions.paste(cue) }
+                PopoverMenuItem("삭제", shortcut: .commandDelete) { menuActions.delete(cue) }
             }
+            PopoverMenuDivider()
+            PopoverMenuItem("우선순위 사이드바") { menuActions.showPriority(cue) }
+            PopoverMenuItem("큐 카드 History") { menuActions.showHistory(cue) }
         }
     }
 }
@@ -128,7 +144,7 @@ extension CueCard {
     // 💬 댓글 수 · ✓ 확인한 사람 수
     private var cueButtons: some View {
         HStack(spacing: 6) {
-            commentButton
+            if showsComments { commentButton }   // 보기 > 댓글 표시를 끄면 숨김
             checkButton
         }
         .frame(maxWidth: .infinity, alignment: .trailing)

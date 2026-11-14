@@ -19,7 +19,7 @@ struct CueGrid: View {
     @Environment(\.modelContext) private var modelContext   // 새 큐를 저장할 곳
     @Environment(\.canEditCues) private var canEdit   // 읽기 권한이면 false (#120)
 
-    @State private var hoveredSlotKey: String?    // 마우스가 올라가 있는 칸 (파트id-씬id)
+    @State private var hoveredCell: (part: Part, scene: ShowScene)?   // 마우스가 올라가 있는 칸 (빈 칸 보이기 · 붙여넣기)
     @State private var isAddingScene = false      // 씬 추가 팝오버가 열려 있는지
     @State private var isAddingPart = false       // 파트 추가 팝오버가 열려 있는지
     @State private var editingScene: ShowScene?   // 더블클릭해서 수정 중인 씬
@@ -55,6 +55,7 @@ extension CueGrid {
         .animation(.easeInOut(duration: 0.25), value: selectedScene)   // 선택 · 해제할 때 부드럽게
         .onTapGesture { clearSelection() }   // 표의 다른 곳을 누르면 선택 해제
         .background { escapeShortcut }          // Esc 키로 선택 해제
+        .focusedSceneValue(\.cueGrid, cueGridMenu)   // 편집 메뉴: 잘라내기 · 복사 · 붙여넣기 · 삭제 · 모두 선택 · 모두 선택 해제
     }
     
     private var headerRow: some View {
@@ -160,16 +161,15 @@ extension CueGrid {
     
     // 파트 × 씬 칸: 큐가 있으면 항상 보이고, 비어 있으면 마우스를 올렸을 때만 셀이 보임
     private func cueCellSlot(part: Part, scene: ShowScene) -> some View {
-        let key = "\(part.id)-\(scene.id)"                              // 이 칸의 이름표
         let slotCues = cues(of: part, in: scene)
-        let isCellVisible = !slotCues.isEmpty || hoveredSlotKey == key
+        let isCellVisible = !slotCues.isEmpty || isHovered(part: part, scene: scene)
         return CueCell(
             part: part,
             cues: slotCues,
             scene: scene,
-            isHovering: hoveredSlotKey == key,
+            isHovering: isHovered(part: part, scene: scene),
             onAddCue: { addCue(part: part, scene: scene, triggerText: $0, cueTitle: $1, position: $2) },
-            onShowHistory: onShowHistory,
+            menuActions: cueCardMenu,
             selectedCueIDs: selectedCueIDs,
             onSelectCue: { selectCue($0, isShiftPressed: $1) }
         )
@@ -180,7 +180,7 @@ extension CueGrid {
             .frame(maxHeight: .infinity, alignment: .top)
             .background(Color.gridCell)
             .contentShape(.rect)
-            .onHover { hoveredSlotKey = $0 ? key : nil }                // 들어오면 이 칸, 나가면 없음
+            .onHover { updateHover(part: part, scene: scene, isHovering: $0) }   // 들어오면 이 칸, 나가면 없음
             .gridCellBorder()
     }
     
@@ -296,6 +296,101 @@ extension CueGrid {
         .keyboardShortcut(.cancelAction)
         .opacity(0)
     }
+    
+    // 편집 메뉴에 넘길 값 (삭제 · 모두 선택 · 모두 선택 해제)
+    private var cueGridMenu: CueGridActions {
+        CueGridActions(
+            hasSelection: !selectedCueIDs.isEmpty,
+            selectAll: { selectAllCues() },
+            deselectAll: { selectedCueIDs = [] },
+            deleteSelected: { deleteSelectedCues() },
+            copy: { copySelectedCues() },
+            cut: { cutSelectedCues() },
+            paste: { pasteCues() },
+            export: { production.exportCueSheet(as: $0) }   // 내보내기 버튼과 같은 함수
+        )
+    }
+
+    // 지금 보이는 큐 전부 선택 (편집 > 모두 선택 ⌘A)
+    private func selectAllCues() {
+        selectedCueIDs = Set(visibleCues.map(\.id))
+    }
+
+    // 선택한 큐 카드 지우기 (편집 > 삭제). 읽기 권한이면 안 지움
+    // 트리거의 큐를 전부 지우면 트리거도 지움 (리허설 목록에 빈 트리거가 안 남게)
+    private func deleteSelectedCues() {
+        guard canEdit else { return }
+        for cue in visibleCues where selectedCueIDs.contains(cue.id) {
+            let others = (cue.trigger?.cues ?? []).filter { !selectedCueIDs.contains($0.id) }
+            if let trigger = cue.trigger, others.isEmpty {
+                modelContext.delete(trigger)
+            } else {
+                modelContext.delete(cue)
+            }
+        }
+        selectedCueIDs = []
+    }
+    
+    // 선택한 큐를 기억 (편집 > 복사하기 ⌘C)
+    private func copySelectedCues() {
+        CueClipboard.shared.cues = selectedCues.map {
+            CopiedCue(triggerText: $0.trigger?.text ?? "", title: $0.title, position: $0.position)
+        }
+    }
+
+    // 기억하고 지우기 (편집 > 잘라내기 ⌘X). 읽기 권한이면 지우기는 안 됨
+    private func cutSelectedCues() {
+        copySelectedCues()
+        deleteSelectedCues()
+    }
+
+    // 마우스가 올라간 칸에 기억한 큐를 새로 만들기 (편집 > 붙여넣기 ⌘V). 파트는 그 칸을 따라감
+    // 붙일 칸이나 기억한 큐가 없으면 false → 메뉴가 글자 붙여넣기로 넘김
+    private func pasteCues() -> Bool {
+        guard canEdit, let hoveredCell, !CueClipboard.shared.cues.isEmpty else { return false }
+        for copied in CueClipboard.shared.cues {
+            addCue(part: hoveredCell.part, scene: hoveredCell.scene, triggerText: copied.triggerText, cueTitle: copied.title, position: copied.position)
+        }
+        return true
+    }
+
+    // 마우스가 칸에 들어오면 이 칸, 나가면 비움 (이미 다른 칸에 들어갔으면 그대로)
+    private func updateHover(part: Part, scene: ShowScene, isHovering: Bool) {
+        if isHovering {
+            hoveredCell = (part, scene)
+        } else if isHovered(part: part, scene: scene) {
+            hoveredCell = nil
+        }
+    }
+
+    // 이 칸에 마우스가 올라가 있는지
+    private func isHovered(part: Part, scene: ShowScene) -> Bool {
+        hoveredCell?.part == part && hoveredCell?.scene == scene
+    }
+    
+    // 큐 카드 우클릭 메뉴 (CueCell → CueCard). 우클릭한 카드가 선택에 없으면 그 카드만 선택하고 한다
+    private var cueCardMenu: CueCardMenuActions {
+        CueCardMenuActions(
+            cut: { selectForMenu($0); cutSelectedCues() },
+            copy: { selectForMenu($0); copySelectedCues() },
+            paste: { pasteCues(beside: $0) },
+            delete: { selectForMenu($0); deleteSelectedCues() },
+            showPriority: { priorityScene = $0.trigger?.scene },
+            showHistory: onShowHistory
+        )
+    }
+
+    private func selectForMenu(_ cue: Cue) {
+        if !selectedCueIDs.contains(cue.id) { selectedCueIDs = [cue.id] }
+    }
+
+    // 우클릭한 카드가 있는 칸(같은 파트 · 같은 씬)에 기억한 큐 붙이기
+    private func pasteCues(beside cue: Cue) {
+        guard canEdit, let part = cue.part, let scene = cue.trigger?.scene else { return }
+        for copied in CueClipboard.shared.cues {
+            addCue(part: part, scene: scene, triggerText: copied.triggerText, cueTitle: copied.title, position: copied.position)
+        }
+    }
 }
 
 // 동작
@@ -379,6 +474,18 @@ extension CueGrid {
         return sortedParts.filter { $0 == selectedPart }
     }
     
+    // 지금 표에 보이는 큐 전부 (파트 필터가 걸려 있으면 그 파트만)
+    private var visibleCues: [Cue] {
+        visibleParts.flatMap { $0.cues ?? [] }
+    }
+    
+    // 선택한 큐들 (앞 씬 · 앞 트리거 순서로)
+    private var selectedCues: [Cue] {
+        visibleCues
+            .filter { selectedCueIDs.contains($0.id) }
+            .sorted { ($0.trigger?.order ?? 0) < ($1.trigger?.order ?? 0) }
+    }
+    
     // 이 파트의 큐 중에서, 이 씬에 속한 것만
     private func cues(of part: Part, in scene: ShowScene) -> [Cue] {
         (part.cues ?? []).filter { $0.trigger?.scene == scene }
@@ -417,6 +524,19 @@ private extension View {
         overlay(alignment: .trailing) { Color.neutral200.frame(width: 1) }
             .overlay(alignment: .bottom) { Color.neutral200.frame(height: 1) }
     }
+}
+
+// 복사한 큐 (앱 안에서만 씀. 다른 공연 큐시트에도 붙일 수 있게 앱 전체에 하나)
+struct CopiedCue {
+    let triggerText: String
+    let title: String
+    let position: CuePosition
+}
+
+@Observable
+final class CueClipboard {
+    static let shared = CueClipboard()
+    var cues: [CopiedCue] = []   // 바뀌면 편집 메뉴 "붙여넣기"가 바로 켜짐
 }
 
 

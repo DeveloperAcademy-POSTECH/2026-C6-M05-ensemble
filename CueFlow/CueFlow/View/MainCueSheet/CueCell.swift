@@ -15,7 +15,7 @@ struct CueCell: View {
     var scene: ShowScene?               // 이 칸이 속한 열 (자동완성 후보를 이 열 트리거에서만 찾음)
     var isHovering = false              // 마우스가 이 칸 위에 있는지 (CueGrid가 알려줌)
     var onAddCue: (String, String, CuePosition) -> Void = { _, _, _ in }   // 팝오버에서 입력을 마치면 할 일
-    var onShowHistory: (Cue) -> Void = { _ in }   // 카드 우클릭 → History
+    var menuActions = CueCardMenuActions()   // 카드 우클릭 메뉴가 할 일 (CueGrid → CueCard로 전달)
     var selectedCueIDs: Set<UUID> = []                   // 선택된 큐 카드들 (CueGrid가 알려줌)
     var onSelectCue: (Cue, Bool) -> Void = { _, _ in }   // 카드를 눌렀을 때 (true = shift)
     @Environment(\.canEditCues) private var canEdit   // 읽기 권한이면 false (#120)
@@ -45,7 +45,7 @@ extension CueCell {
     private func cueCard(_ cue: Cue) -> some View {
         CueCard(
             cue: cue,
-            onShowHistory: { onShowHistory(cue) },
+            menuActions: menuActions,
             isSelected: selectedCueIDs.contains(cue.id),
             onSelect: { onSelectCue(cue, $0) }
         )

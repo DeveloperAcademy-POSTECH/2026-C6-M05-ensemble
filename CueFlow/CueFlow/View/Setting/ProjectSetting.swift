@@ -135,10 +135,10 @@ extension ProjectSetting {
 extension ProjectSetting {
     @ViewBuilder
     private var exitButton: some View {
-        if isCreator {
-            dangerButton("프로젝트 삭제하기", action: onDelete)
-        } else {
+        if !isCreator {
             dangerButton("프로젝트 나가기") { isConfirmingLeave = true }
+        } else if Platform.canEditCueSheet {   // 아이패드는 보기 전용이라 삭제는 맥에서 (내 공연이면 버튼 없음)
+            dangerButton("프로젝트 삭제하기", action: onDelete)
         }
     }
 

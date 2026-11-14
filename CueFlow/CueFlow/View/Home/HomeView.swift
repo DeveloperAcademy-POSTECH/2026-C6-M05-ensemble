@@ -226,14 +226,13 @@ struct HomeView: View {
         }
     }
 
-    // 우클릭 메뉴: 프로젝트 설정은 모두, 삭제는 내가 만든 공연만
-    // 공유받은 공연은 삭제를 보이지 않는다 (지우면 만든 사람의 iCloud 폴더를 건드리게 된다)
+    // 우클릭 메뉴: 프로젝트 복제 · 프로젝트 설정 (삭제하기 · 나가기는 프로젝트 설정 안에)
     @ViewBuilder
     private func deleteMenu(for production: Production) -> some View {
-        Button("프로젝트 설정") { settingProduction = production }
-        if !production.isSharedWithMe, Platform.canEditCueSheet {   // 아이패드는 보기 전용이라 삭제도 맥에서
-            Button("삭제하기", role: .destructive) { deletingProduction = production }
+        if Platform.canEditCueSheet {   // 아이패드는 보기 전용이라 복제도 맥에서
+            Button("프로젝트 복제") { duplicateProduction(production) }
         }
+        Button("프로젝트 설정") { settingProduction = production }
     }
 
     // 지우고 저장하면 CloudSync가 iCloud 폴더째 지운다 → 함께 쓰는 사람에게서도 사라진다
@@ -242,6 +241,12 @@ struct HomeView: View {
         modelContext.delete(deletingProduction)
         try? modelContext.save()
         self.deletingProduction = nil
+    }
+    
+    // 큐시트 내용만 복사한 새 공연 (초대된 사람 · 공지 · 댓글은 빼고). 저장하면 CloudSync가 내 iCloud에 새로 올림
+    private func duplicateProduction(_ production: Production) {
+        production.duplicate(in: modelContext)
+        try? modelContext.save()
     }
 
     private var filterMenu: some View {

@@ -72,7 +72,10 @@ struct CueFlowApp: App {
         }
         .modelContainer(sharedModelContainer)
         .commands {
-            #if DEBUG
+            #if os(macOS)
+            AppMenuCommands()   // 메뉴 막대 (AppMenuCommands.swift)
+            #endif
+#if DEBUG
             // 개발용 (TestFlight에는 안 보임)
             CommandMenu("개발용") {
                 Button("이 맥 데이터만 지우기 (iCloud에서 다시 받기)") {

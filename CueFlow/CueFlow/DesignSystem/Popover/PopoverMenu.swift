@@ -56,22 +56,30 @@ struct PopoverCheckList<Item: Hashable>: View {
 
 // ② 메뉴 묶음
 struct PopoverMenu<Content: View>: View {
+    var width: CGFloat = 91   // 메뉴 폭 (글자가 길면 넓게)
     @ViewBuilder let content: Content
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) { content }
-            .frame(width: 91, alignment: .leading)
+            .frame(width: width, alignment: .leading)
     }
 }
 
-// 메뉴 한 줄. 누르면 팝오버 닫고 할 일
+// 메뉴 줄 오른쪽 단축키 모양
+enum MenuShortcut {
+    case command(String)   // ⌘ + 글자 (예: .command("C"))
+    case commandDelete     // ⌘ + ⌫
+}
+
 struct PopoverMenuItem: View {
     let title: String
+    let shortcut: MenuShortcut?   // 오른쪽 회색 단축키. 없으면 안 보임
     let action: () -> Void
     @Environment(\.closeAppPopover) private var closePopover
 
-    init(_ title: String, action: @escaping () -> Void) {
+    init(_ title: String, shortcut: MenuShortcut? = nil, action: @escaping () -> Void) {
         self.title = title
+        self.shortcut = shortcut
         self.action = action
     }
 
@@ -80,13 +88,32 @@ struct PopoverMenuItem: View {
             closePopover()
             action()
         } label: {
-            Text(title)
-                .font(.appBody.weight(.medium))
-                .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(.rect)
+            HStack(spacing: 0) {
+                Text(title)
+                    .font(.appBody.weight(.medium))
+                    .foregroundStyle(Color.neutral900)
+                Spacer(minLength: 8)
+                if let shortcut { shortcutLabel(shortcut) }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(.rect)
         }
         .buttonStyle(.plain)
+    }
+
+    // 피그마: ⌘ 심볼 10pt + 글자 12pt (삭제는 ⌘ + ⌫ 심볼 둘 다 10pt), neutral500
+    private func shortcutLabel(_ shortcut: MenuShortcut) -> some View {
+        HStack(spacing: 1) {
+            Image(systemName: "command")
+                .font(.app(size: 10))
+            switch shortcut {
+            case .command(let key):
+                Text(key).font(.app(size: 12))
+            case .commandDelete:
+                Image(systemName: "delete.backward").font(.app(size: 10))
+            }
+        }
+        .foregroundStyle(Color.neutral500)
     }
 }
 
