@@ -95,6 +95,7 @@ struct NoticeDetailView: View {
                 NoticeComposeView(draft: draft)
             }
         }
+        .noticeBackButton { dismiss() }   // 피그마 공지사항_03 (3021:3343): 창 왼쪽 위 ← → 공지 목록으로 (#182)
     }
 
     // 삭제 · 답장 · 전체 답장 · 전달 (피그마 951:7518). 마우스를 올리면 회색 동그라미
@@ -206,6 +207,31 @@ struct NoticeDetailView: View {
                 .font(.appBody)
         }
         .foregroundStyle(Color.neutral900)
+    }
+}
+
+// 공지 쓰기 · 받은 공지 상세의 창 왼쪽 위 ← (공지 목록으로)
+// 피그마 951:7451 · 951:7478: 시스템 뒤로 버튼 대신 ← (24 · neutral700)
+// 글자 자리 왼쪽 58 · 제목 막대 아래 37 (버튼 36×36 안에 가운데라 버튼은 왼쪽 54 · 위 34)
+extension View {
+    func noticeBackButton(action: @escaping () -> Void) -> some View {
+        self
+            .navigationBarBackButtonHidden(true)
+            // 내용 칸(가운데 1065)이 아니라 창 전체 기준으로 왼쪽 위에 붙이려고 먼저 창 크기로 넓힌다
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay(alignment: .topLeading) {
+                Button(action: action) {
+                    Image(systemName: "arrow.left")
+                        .font(.app(size: 24))
+                        .foregroundStyle(Color.noticeMetaText)
+                        .frame(width: 36, height: 36)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("공지 목록으로")
+                .padding(.leading, 54)
+                .padding(.top, 34)
+            }
     }
 }
 

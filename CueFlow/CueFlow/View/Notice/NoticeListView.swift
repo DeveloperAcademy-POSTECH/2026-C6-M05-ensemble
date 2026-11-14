@@ -68,7 +68,7 @@ struct NoticeListView: View {
 
                 ForEach(filteredNotices) { notice in
                     NoticeRow(
-                        title: notice.title,
+                        title: notice.listTitle,        // [공연 이름] 제목 (#182)
                         preview: notice.body,           // 공지 "내용" 칸
                         sentDate: notice.sentDateText,
                         sender: notice.senderName,            // Notice+List에서 만든 것

@@ -41,6 +41,12 @@ extension Notice {
         production?.title ?? ""
     }
 
+    // 목록 한 줄 제목 "[레미제라블] 오늘 리허설 콜타임 변경 안내" (피그마 공지사항_01, #182)
+    // 공연을 여러 개 하면 어느 공연 공지인지 바로 보이게. 공연이 없으면 제목만
+    var listTitle: String {
+        productionTitle.isEmpty ? title : "[\(productionTitle)] \(title)"
+    }
+
     // 상세·알림 카드의 대상 태그: "전체공지" / "조명 공지" / "조명 · 음향 공지" / "개인 공지" / "조명 외 공지"
     var targetTag: String {
         let parts = recipientParts
