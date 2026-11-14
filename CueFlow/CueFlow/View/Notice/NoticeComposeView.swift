@@ -124,6 +124,7 @@ struct NoticeComposeView: View {
         }
         }
         .background(Color.appBackground)
+        .noticeNavigationBackground()   // 다크 모드 아이패드 양옆 검은 띠 막기 (#173)
         // 피그마: 시스템 뒤로 버튼 대신 창 왼쪽 위 ← (24 · neutral700 · 왼쪽 44 · 제목 막대 아래 52 = 가운데 기준)
         .navigationBarBackButtonHidden(true)
         .overlay(alignment: .topLeading) {

@@ -268,6 +268,18 @@ struct ContentView: View {
             Tab(IPadTab.home.title, systemImage: "house", value: IPadTab.home) {
                 homeContent
                     .modifier(iCloudBannerInset)
+                    // 빈 홈은 [링크로 참여하기]가 iCloud 안내 카드보다 위 오른쪽 (피그마 iPad 홈_01, #185 · #186)
+                    // 안내 카드 다음에 붙여야 카드보다 위에 온다
+                    .safeAreaInset(edge: .top, spacing: 0) {
+                        if isShowingEmptyHome {
+                            JoinByLinkButton()
+                                .frame(width: 130, height: 29)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                                .padding(.trailing, 30)
+                        }
+                    }
+                    // 큐시트 · 공지 탭과 같은 배경. 안 정하면 다크 모드에서 시스템 기본 검정(#000)이라 홈만 더 까맣게 보였다 (#185)
+                    .background(Color.appBackground.ignoresSafeArea())
             }
             Tab(IPadTab.cueSheet.title, systemImage: "square.grid.2x2", value: IPadTab.cueSheet) {
                 cueSheetContent
@@ -311,6 +323,11 @@ struct ContentView: View {
         ICloudBannerInset(status: iCloudAccount.status, isClosed: $isICloudBannerClosed)
     }
 
+    // 공연이 하나도 없어서 빈 홈(HomeEmptyView)이 보이는 중인지
+    private var isShowingEmptyHome: Bool {
+        !isCreatingProduction && productions.isEmpty && !showsHomeWhenEmpty
+    }
+
     // 홈: 새 공연 만들기 / 빈 화면 / 홈
     @ViewBuilder
     private var homeContent: some View {
@@ -322,7 +339,7 @@ struct ContentView: View {
                     openCueSheet($0)
                 }
             )
-        } else if productions.isEmpty && !showsHomeWhenEmpty {
+        } else if isShowingEmptyHome {
             HomeEmptyView(
                 onGoHome: { showsHomeWhenEmpty = true },
                 onNewProject: { isCreatingProduction = true }
