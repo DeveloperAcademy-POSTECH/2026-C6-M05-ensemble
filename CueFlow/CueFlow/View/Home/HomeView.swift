@@ -126,7 +126,7 @@ struct HomeView: View {
                 // 카톡으로 받은 초대 링크 붙여 넣기 (아이패드는 이걸로 공연에 들어온다)
                 if !Platform.canEditCueSheet {
                     JoinByLinkButton()
-                        .frame(width: 140, height: 40)
+                        .frame(width: 130, height: 29)   // 피그마 iPad 홈_02 (#186)
                         .padding(.leading, 11)
                 }
 
