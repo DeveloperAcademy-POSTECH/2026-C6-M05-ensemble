@@ -86,6 +86,7 @@ struct NoticeListView: View {
             .padding(.top, 42)
             .padding(.bottom, 40)
         }
+        .noticeNavigationBackground()   // 다른 탭과 같은 배경 (다크 모드 아이패드에서 검정으로 보이지 않게, #173)
         // openedNotice에 공지가 들어오면 상세 화면으로 이동
         .navigationDestination(item: $openedNotice) { notice in
             NoticeDetailView(notice: notice, notices: filteredNotices)
@@ -183,4 +184,17 @@ struct NoticeListView: View {
         NoticeListView(notices: NoticePreviewData.samples, openedNotice: $openedNotice, isComposing: $isComposing)
     }
     .frame(width: 1290, height: 930)
+}
+
+extension View {
+    // 공지 목록 → 상세 · 쓰기 화면 뒤 배경 (아이패드만. 맥 NavigationStack엔 이 설정이 없다)
+    // 안 정하면 다크 모드 아이패드에서 화면 양옆에 검은 띠가 보인다 (#173)
+    @ViewBuilder
+    func noticeNavigationBackground() -> some View {
+        #if os(iOS)
+        containerBackground(Color.appBackground, for: .navigation)
+        #else
+        self
+        #endif
+    }
 }

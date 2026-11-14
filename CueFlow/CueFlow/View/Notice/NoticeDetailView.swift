@@ -78,8 +78,11 @@ struct NoticeDetailView: View {
                 }
                 .frame(maxWidth: 1065, alignment: .leading)
                 .padding(40)
+                .frame(maxWidth: .infinity)   // 가운데 두고, 스크롤 영역은 화면 끝까지
             }
-            .background(Color.appBackground)
+            .background(Color.appBackground.ignoresSafeArea())
+            // 목록 → 상세로 들어온 화면 뒤 배경. 안 정하면 다크 모드 아이패드에서 양옆에 검은 띠가 보인다 (#173)
+            .noticeNavigationBackground()
             // 다른 공지로 바뀌면 맨 위부터 보이게
             .onChange(of: notice) {
                 proxy.scrollTo("top", anchor: .top)
