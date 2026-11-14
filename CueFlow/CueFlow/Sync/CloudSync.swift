@@ -54,6 +54,8 @@ final class CloudSync {
     private var resendRehearsal: Set<UUID> = []
     // 공유 중인 공연 폴더를 직접 볼 때 "어디까지 받았는지" (앱을 켤 때마다 새로 시작)
     private var directTokens: [CKRecordZone.ID: CKServerChangeToken] = [:]
+    // 이번 실행에서 iCloud 참여자 이름으로 멤버 이름을 채워 본 공연 (공연마다 한 번만, #173)
+    private var namesRefreshedProductionIDs: Set<UUID> = []
 
     // iCloud에서 받은 걸 SwiftData에 넣는 중이면 true → 그건 다시 올리지 않는다
     private var isApplyingRemoteChanges = false
@@ -675,10 +677,12 @@ final class CloudSync {
     }
 
     // 다른 사람이 10분 안에 고친 레코드인지 (새 맥에서 처음 받을 때 예전 것까지 알림이 뜨지 않게)
-    // 내가 고친 건 "__defaultOwner__"(공연 주인일 때) 또는 내 계정 ID로 온다
+    // 내가 고친 건 "__defaultOwner__"(내 공연일 때) 또는 내 계정 ID로 온다
+    // "__defaultOwner__"는 "그 폴더(공연)를 만든 사람"이라는 뜻이다 → 내 공연일 때만 나.
+    // 공유받은 공연에서는 공연 만든 사람(다른 사람)이라, 전에는 주인이 고친 큐 알림이 팀원에게 안 갔다
     private func isRecentChangeByOther(_ record: CKRecord) -> Bool {
         guard let modifier = record.lastModifiedUserRecordID?.recordName,
-              modifier != CKCurrentUserDefaultName,
+              !(modifier == CKCurrentUserDefaultName && record.recordID.zoneID.isMine),
               modifier != ICloudAccount.currentUserRecordName,
               let modified = record.modificationDate else { return false }
         return Date.now.timeIntervalSince(modified) < 10 * 60
@@ -856,13 +860,24 @@ final class CloudSync {
 
         let allProductions = (try? context.fetch(FetchDescriptor<Production>())) ?? []
 
-        // 예전에 iCloud가 이름을 안 알려 줘서 "이름 없음"으로 들어간 내 이름 → 맥 사용자 이름으로 고친다
-        for production in allProductions {
-            if let me = production.member(withUserID: myID), me.name == "이름 없음" {
-                me.name = CurrentEditor.name
+        // 예전에 iCloud가 이름을 안 알려 줘서 "이름 없음" · "Mobile User"로 들어간 내 이름 → 맥 사용자 이름으로 고친다
+        // (아이패드는 기기 사용자 이름이 없어서 그대로 두고, 아래에서 iCloud 참여자 이름으로 채운다)
+        if let deviceName = CurrentEditor.deviceName {
+            for production in allProductions {
+                if let me = production.member(withUserID: myID), Member.isPlaceholderName(me.name) {
+                    me.name = deviceName
+                }
             }
+            try? context.save()
         }
-        try? context.save()
+
+        // 공유 중인 공연은 iCloud가 알려 주는 참여자 이름으로 빈 멤버 이름을 채운다 (실행마다 공연당 한 번)
+        // 링크로 들어온 사람은 자기 기기에서 자기 이름을 못 받는 경우가 많아서, 다른 사람 기기가 채워서 올려 준다
+        for production in allProductions where (production.members ?? []).count > 1 || production.isSharedWithMe {
+            guard !namesRefreshedProductionIDs.contains(production.id) else { continue }
+            namesRefreshedProductionIDs.insert(production.id)
+            try? await CloudShare.refreshMemberNames(in: production)
+        }
 
         let productions = allProductions.filter {
             $0.isSharedWithMe && !($0.members ?? []).contains { $0.iCloudUserID == myID }

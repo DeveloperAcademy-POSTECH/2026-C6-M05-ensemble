@@ -20,13 +20,11 @@ struct HomeEmptyView: View {
     }
 
     // 아이패드: 공연은 맥에서 만든다는 안내 (#156). 같은 iCloud 계정이면 맥에서 만든 공연이 자동으로 들어온다
+    // 피그마 iPad 홈_01 (3032:24835, #185): 아이콘 없이 제목 · 설명 · [홈으로 가기] 하나
+    // [링크로 참여하기]는 iCloud 안내 카드보다 위 오른쪽이라 ContentView가 붙인다 (iPadEmptyHomeJoinButton, #186)
     private var iPadBody: some View {
-        VStack(spacing: 30) {
-            Image(systemName: "macbook.and.ipad")
-                .font(.app(size: 56))
-                .foregroundStyle(Color.brandPrimary)
-
-            VStack(spacing: 14) {
+        VStack(spacing: 47) {
+            VStack(spacing: 6) {
                 Text("큐시트는 Mac에서 만들어요")
                     .font(.app(size: 28, weight: .bold))
                     .foregroundStyle(.primary)
@@ -37,15 +35,9 @@ struct HomeEmptyView: View {
                     .multilineTextAlignment(.center)
             }
 
-            HStack(spacing: 15) {
-                Button("홈으로 가기", action: onGoHome)
-                    .buttonStyle(.secondary)
-                    .frame(width: 200, height: 40)
-
-                // 카톡으로 받은 초대 링크 붙여 넣기
-                JoinByLinkButton()
-                    .frame(width: 200, height: 40)
-            }
+            Button("홈으로 가기", action: onGoHome)
+                .buttonStyle(.secondary)
+                .frame(width: 175, height: 45)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

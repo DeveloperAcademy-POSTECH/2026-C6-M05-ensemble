@@ -124,6 +124,7 @@ struct NoticeComposeView: View {
         }
         }
         .background(Color.appBackground)
+        .noticeNavigationBackground()   // 다크 모드 아이패드 양옆 검은 띠 막기 (#173)
         .noticeBackButton { dismiss() }   // 창 왼쪽 위 ← (받은 공지 상세와 같음)
     }
 
