@@ -22,6 +22,7 @@ struct CueFlowApp: App {
 
     // iCloud 주고받기 (#67)
     @State private var cloudSync = CloudSync()
+    @State private var isLoading = true
 
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
@@ -53,14 +54,23 @@ struct CueFlowApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            Group {
+                if isLoading {
+                    SplashView()   // iCloud 상태를 확인하는 동안만 (#189)
+                } else {
+                    ContentView()
+                }
+            }
                 #if os(macOS)
                 .frame(minWidth: 1200)   // 이보다 좁으면 리허설 미니맵 이름이 겹친다 (#153). 아이패드는 화면(1180)보다 넓어져서 맥만
                 #endif
                 .font(.appBody)   // 글자 크기를 따로 안 정한 글자도 맥 본문 크기로 (아이패드 기본 17 대신, #157)
                 .environment(iCloudAccount)
                 .task {
-                    await iCloudAccount.refresh()
+                    let launchedAt = ContinuousClock.now
+                    await iCloudAccount.refresh()   // 로그인 상태를 알아야 동기화 · 안내 카드를 정할 수 있음
+                    try? await Task.sleep(until: launchedAt + .seconds(2), clock: .continuous)   // 스플래시는 최소 2초 (이미 2초 지났으면 바로)
+                    withAnimation(.easeOut(duration: 0.3)) { isLoading = false }   // 끝나면 메인 화면으로
                 }
                 // 앱을 켤 때 로그인돼 있거나, 켜 둔 채로 시스템 설정에서 로그인하면 시작
                 // (로그아웃은 CKSyncEngine이 알려 줘서 CloudSync가 직접 멈춘다)
