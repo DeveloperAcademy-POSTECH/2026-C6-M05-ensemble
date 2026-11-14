@@ -44,7 +44,7 @@ struct CueGridActions {
 // 파트 필터 바에서 메뉴가 할 수 있는 일 (MainCueSheetView가 넣어 줌)
 struct PartFilterActions {
     var parts: [Part]                 // 파트 필터 바와 같은 순서
-    var selectedPart: Part?           // nil = 전체
+    var selectedParts: Set<Part>      // 비어 있으면 전체
     var select: (Part?) -> Void
 }
 
@@ -273,10 +273,18 @@ extension AppMenuCommands {
     // 선택된 파트면 체크. 누르면 그 파트로 (이미 선택된 걸 눌러도 그대로)
     private func partToggle(_ part: Part?) -> Binding<Bool> {
         Binding(
-            get: { partFilter?.selectedPart == part },
+            get: { isCheckedPart(part) },
             set: { _ in partFilter?.select(part) }
         )
-    }}
+    }
+
+    // 전체: 아무 파트도 안 골랐을 때 체크 / 파트: 고른 파트에 들어 있으면 체크
+    private func isCheckedPart(_ part: Part?) -> Bool {
+        guard let partFilter else { return false }
+        guard let part else { return partFilter.selectedParts.isEmpty }
+        return partFilter.selectedParts.contains(part)
+    }
+}
 
 // 도움말
 

@@ -29,11 +29,11 @@ struct RehearsalCueList<SceneControls: View>: View {
     let onNext: () -> Void
     let sceneControls: SceneControls   // < > 장면 이동 · 장면 선택 (이전 큐 왼쪽)
 
-    @State private var selectedPart: Part?   // nil = 전체
+    @State private var selectedParts: Set<Part> = []   // 비어 있으면 전체
 
     // 고른 파트의 큐만
     private func cues(in step: [Cue]) -> [Cue] {
-        step.filter { selectedPart == nil || $0.part == selectedPart }
+        step.filter { cue in selectedParts.isEmpty || cue.part.map { selectedParts.contains($0) } == true }
     }
 
     private var cueCount: Int {
@@ -54,7 +54,7 @@ struct RehearsalCueList<SceneControls: View>: View {
 
             // 파트 필터 | 장면 이동 · 이전 큐 · 다음 큐
             HStack(spacing: 8) {
-                PartFilterTabBar(parts: parts, selectedPart: $selectedPart, isCompact: true)
+                PartFilterTabBar(parts: parts, selectedParts: $selectedParts, isCompact: true)
                 Spacer()
                 sceneControls
                 previousButton
