@@ -35,19 +35,21 @@ struct ICloudStatusBanner: View {
 
                 Spacer(minLength: 12)
 
+                // ⚙️ → 설정 열기 (피그마 iPad 다크 홈_01: ✕ 왼쪽 아이콘, #194)
                 if status == .noAccount {
                     Button {
                         if let url = Self.settingsURL {
                             openURL(url)
                         }
                     } label: {
-                        Text(Self.settingsButtonTitle)
-                            .font(.appCallout.weight(.medium))
-                            .padding(.horizontal, 14)
+                        Image(systemName: "gearshape")
+                            .font(.app(size: 15, weight: .medium))
+                            .foregroundStyle(Color.neutral700)
+                            .frame(width: 28, height: 28)   // 아이패드 손가락으로도 누르기 쉽게 (✕와 같은 크기)
+                            .contentShape(Rectangle())
                     }
-                    .buttonStyle(.tertiaryFilled)   // 연보라 바탕 + 보라 테두리 (리허설 "다음 큐"와 같은 모양)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .frame(height: 30)
+                    .buttonStyle(.plain)
+                    .help(Self.settingsButtonTitle)
                 }
 
                 if let onClose {

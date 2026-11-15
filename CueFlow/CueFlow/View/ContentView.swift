@@ -280,18 +280,23 @@ struct ContentView: View {
                     }
                     // 큐시트 · 공지 탭과 같은 배경. 안 정하면 다크 모드에서 시스템 기본 검정(#000)이라 홈만 더 까맣게 보였다 (#185)
                     .background(Color.appBackground.ignoresSafeArea())
+                    .tint(.accentColor)   // 탭 안 화면은 원래 강조색 그대로 (탭바 색만 바꾸려고, #194)
             }
             Tab(IPadTab.cueSheet.title, systemImage: "square.grid.2x2", value: IPadTab.cueSheet) {
                 cueSheetContent
                     .modifier(iCloudBannerInset)
+                    .tint(.accentColor)
             }
             Tab(IPadTab.notice.title, systemImage: "envelope", value: IPadTab.notice) {
                 noticeContent
                     .modifier(iCloudBannerInset)
+                    .tint(.accentColor)
             }
             .badge(unreadNoticeCount)
         }
         .tabViewStyle(.tabBarOnly)   // 사이드바로 바꾸는 버튼 없이 위쪽 탭만
+        // 탭바에서 고른 탭 글자: 라이트는 시스템 파랑, 다크는 흰색 (피그마 iPad 다크 탭바 3134:11812, #194)
+        .tint(Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? .white : .systemBlue }))
         // 알림으로 공지를 열거나(→ 공지사항) 처음 화면으로 돌아가면(→ 홈) 탭도 같이
         .onChange(of: selectedMenu) { _, menu in
             if menu == .notice {

@@ -20,19 +20,25 @@ struct HomeEmptyView: View {
     }
 
     // 아이패드: 공연은 맥에서 만든다는 안내 (#156). 같은 iCloud 계정이면 맥에서 만든 공연이 자동으로 들어온다
-    // 피그마 iPad 홈_01 (3032:24835, #185): 아이콘 없이 제목 · 설명 · [홈으로 가기] 하나
-    // [링크로 참여하기]는 iCloud 안내 카드보다 위 오른쪽이라 ContentView가 붙인다 (iPadEmptyHomeJoinButton, #186)
+    // 피그마 iPad 다크 홈_01 (3032:33452, #194): 맥+아이패드 아이콘 · 제목 · 설명 · [홈으로 가기] 하나
+    // [링크로 참여하기]는 iCloud 안내 카드보다 위 오른쪽이라 ContentView가 붙인다 (#186)
     private var iPadBody: some View {
         VStack(spacing: 47) {
-            VStack(spacing: 6) {
-                Text("큐시트는 Mac에서 만들어요")
-                    .font(.app(size: 28, weight: .bold))
-                    .foregroundStyle(.primary)
+            VStack(spacing: 30) {
+                Image(systemName: "macbook.and.ipad")
+                    .font(.app(size: 56))
+                    .foregroundStyle(Color.brandPrimary)
 
-                Text("Mac의 Cuedit에서 공연을 만들면 같은 iCloud 계정의 iPad에 자동으로 나타나요.\n팀원에게 초대받은 공연도 여기에서 볼 수 있어요.")
-                    .font(.appTitle3)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+                VStack(spacing: 6) {
+                    Text("큐시트는 Mac에서 만들어요")
+                        .font(.app(size: 28, weight: .bold))
+                        .foregroundStyle(.primary)
+
+                    Text("Mac의 Cuedit에서 공연을 만들면 같은 iCloud 계정의 iPad에 자동으로 나타나요.\n팀원에게 초대받은 공연도 여기에서 볼 수 있어요.")
+                        .font(.appTitle3)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
             }
 
             Button("홈으로 가기", action: onGoHome)

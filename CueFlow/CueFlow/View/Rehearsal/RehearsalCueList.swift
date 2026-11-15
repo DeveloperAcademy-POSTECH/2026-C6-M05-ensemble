@@ -11,10 +11,18 @@ import SwiftUI
 
 // 표 열 너비 (피그마 리허설모드_ver1 기준). 큐 열은 남는 만큼.
 private enum CueListColumn {
+    #if os(macOS)
     static let scene: CGFloat = 110
     static let trigger: CGFloat = 240
     static let position: CGFloat = 100
     static let part: CGFloat = 117
+    #else
+    // 아이패드: 피그마 iPad 리허설 큐 목록 열 폭 (3032:25689, #195) — 맥 폭이면 큐 칸이 좁아져 글자가 세로선에 겹침
+    static let scene: CGFloat = 88
+    static let trigger: CGFloat = 194
+    static let position: CGFloat = 80
+    static let part: CGFloat = 95
+    #endif
     static let cueHeight: CGFloat = 42   // 큐 한 줄 높이
 }
 
