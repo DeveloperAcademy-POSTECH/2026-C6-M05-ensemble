@@ -518,31 +518,36 @@ final class CloudSync {
 
         var recordIDs = Set<CKRecord.ID>()
         for production in productions {
-            let scenes = production.scenes ?? []
-            let triggers = scenes.flatMap { $0.triggers ?? [] }
-            let parts = production.parts ?? []
-            // 큐는 트리거 쪽과 파트 쪽 둘 다에서 모은다 (한쪽만 붙은 큐도 빠지지 않게)
-            let cues = triggers.flatMap { $0.cues ?? [] } + parts.flatMap { $0.cues ?? [] }
-
-            var items: [any CloudRecordConvertible] = [production]
-            items += scenes
-            items += triggers
-            items += parts
-            items += cues
-            items += production.members ?? []
-            items += scenes.flatMap { $0.scriptLines ?? [] }
-            items += scenes.flatMap { $0.placements ?? [] }
-            items += production.initialPlacements ?? []
-            items += cues.flatMap { $0.histories ?? [] }
-            items += cues.flatMap { $0.comments ?? [] }   // 답글도 큐에 붙어 있어서 여기 같이 들어온다
-            items += cues.flatMap { $0.checks ?? [] }
-            items += production.notices ?? []
-            items += (production.notices ?? []).flatMap { $0.reads ?? [] }
-            recordIDs.formUnion(items.compactMap(\.cloudRecordID))
+            recordIDs.formUnion(allRecordIDs(of: production))
         }
 
         enqueue(productions.map { .saveZone(CKRecordZone(zoneID: $0.cloudZoneID)) }, recordIDs.map { .saveRecord($0) })
         logger.info("처음 올리기: 공연 \(productions.count)개, 레코드 \(recordIDs.count)개")
+    }
+
+    // 공연 하나에 들어 있는 레코드 전부 (처음 올리기 · iCloud 폴더가 없어져 다시 올릴 때)
+    private func allRecordIDs(of production: Production) -> Set<CKRecord.ID> {
+        let scenes = production.scenes ?? []
+        let triggers = scenes.flatMap { $0.triggers ?? [] }
+        let parts = production.parts ?? []
+        // 큐는 트리거 쪽과 파트 쪽 둘 다에서 모은다 (한쪽만 붙은 큐도 빠지지 않게)
+        let cues = triggers.flatMap { $0.cues ?? [] } + parts.flatMap { $0.cues ?? [] }
+
+        var items: [any CloudRecordConvertible] = [production]
+        items += scenes
+        items += triggers
+        items += parts
+        items += cues
+        items += production.members ?? []
+        items += scenes.flatMap { $0.scriptLines ?? [] }
+        items += scenes.flatMap { $0.placements ?? [] }
+        items += production.initialPlacements ?? []
+        items += cues.flatMap { $0.histories ?? [] }
+        items += cues.flatMap { $0.comments ?? [] }   // 답글도 큐에 붙어 있어서 여기 같이 들어온다
+        items += cues.flatMap { $0.checks ?? [] }
+        items += production.notices ?? []
+        items += (production.notices ?? []).flatMap { $0.reads ?? [] }
+        return Set(items.compactMap(\.cloudRecordID))
     }
 
     // MARK: - 올릴 때 레코드 만들기
@@ -954,6 +959,12 @@ final class CloudSync {
                 applyFetched(records: fetched.modifications.map(\.record), deletedIDs: fetched.deletions.map(\.recordID))
             }
 
+        // 폴더 하나 받기가 끝남. iCloud에 그 폴더가 없으면(Zone Not Found) 정리 — 안 하면 앱으로 돌아올 때마다 같은 실패 반복 (#181)
+        case .didFetchRecordZoneChanges(let event):
+            if let error = event.error, error.code == .zoneNotFound {
+                handleMissingZone(event.zoneID, engine: engine)
+            }
+
         case .didFetchChanges:
             // 다 받았는데도 부모를 못 찾은 게 있으면 기록만 (부모가 지워졌거나 아직 2차 대상인 경우)
             if !unlinkedRecords.isEmpty {
@@ -969,6 +980,31 @@ final class CloudSync {
 
         default:
             break
+        }
+    }
+
+    // iCloud에 공연 폴더가 없을 때 (#181)
+    // - 내 공연이 이 기기에 아직 있으면: 폴더를 다시 만들고 공연을 통째로 다시 올린다 (데이터를 잃지 않게)
+    // - 이 기기에도 없거나 공유받은 공연이면: 그 폴더를 잊고 정리한다 (공유받은 공연 = 방장이 지웠거나 공유를 끊음)
+    private func handleMissingZone(_ zoneID: CKRecordZone.ID, engine: CKSyncEngine) {
+        let idText = zoneID.zoneName.replacingOccurrences(of: "Production-", with: "")
+        let production = UUID(uuidString: idText).flatMap { findModel($0) } as? Production
+
+        if zoneID.isMine, let production {
+            logger.info("iCloud에 폴더가 없음 → 이 기기 공연으로 다시 올리기: \(production.title)")
+            store.removeRecords(in: zoneID)   // 예전 꼬리표는 버린다 (없는 폴더의 버전이라)
+            engine.state.add(pendingDatabaseChanges: [.saveZone(CKRecordZone(zoneID: zoneID))])
+            engine.state.add(pendingRecordZoneChanges: allRecordIDs(of: production).map { .saveRecord($0) })
+            return
+        }
+
+        logger.info("iCloud에서 없어진 폴더 → 이 기기에서도 정리: \(zoneID.zoneName)")
+        applyRemoteChanges { deleteProduction(in: zoneID) }
+        store.removeRecords(in: zoneID)
+        unlinkedRecords = unlinkedRecords.filter { $0.value.recordID.zoneID != zoneID }   // 이 폴더에서 온 "부모 못 찾은" 것도 버림
+        // 내 폴더면 지우기 요청을 넣어 엔진이 이 폴더를 더는 받으려 하지 않게 (이미 없으니 실제로 지워질 건 없음)
+        if zoneID.isMine {
+            engine.state.add(pendingDatabaseChanges: [.deleteZone(zoneID)])
         }
     }
 
