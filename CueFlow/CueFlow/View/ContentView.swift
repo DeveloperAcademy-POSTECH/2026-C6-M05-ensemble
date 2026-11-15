@@ -69,7 +69,7 @@ struct ContentView: View {
     @State private var isShowingShortcuts = false   // 도움말 > 키보드 단축키 안내창
     @State private var isShowingAppSetting = false  // Cuedit > 설정… 앱 설정 화면
     @State private var settingProduction: Production?    // 파일 > 프로젝트 설정…에 띄울 공연 (큐시트에서)
-    @State private var deletingProduction: Production?   // 프로젝트 설정 > 삭제하기 확인 창
+    @State private var confirmRequest: ConfirmRequest?   // 화면 가운데 확인 창 (장면 · 파트 · 프로젝트 삭제, 나가기)
 
     init(pendingInvite: PendingInvite? = nil) {
         _pendingInvite = State(initialValue: pendingInvite)
@@ -126,17 +126,7 @@ struct ContentView: View {
         .overlay { appSettingOverlay }   // Cuedit > 설정… ⌘,
         .overlay { projectSettingOverlay }   // 파일 > 프로젝트 설정… (큐시트에서)
         .overlay { shortcutsOverlay }   // 도움말 > 키보드 단축키 ⌘/
-        .alert(
-            "\(deletingProduction?.title ?? "")을(를) 삭제할까요?",
-            isPresented: Binding(get: { deletingProduction != nil }, set: { if !$0 { deletingProduction = nil } })
-        ) {
-            Button("취소", role: .cancel) {}
-            Button("삭제", role: .destructive) {
-                if let deletingProduction { removeProduction(deletingProduction) }
-            }
-        } message: {
-            Text("큐시트 · 대본 · 공지가 모두 지워지고, 함께 쓰는 사람들에게서도 사라져요. 되돌릴 수 없어요.")
-        }
+        .confirmHost($confirmRequest)   // 삭제… 확인 창: 화면 가운데, 뒤 어둡게 (PopoverConfirm.swift)
         // 다른 사람이 보낸 새 공지 · 내 파트 큐 수정이 iCloud로 오면 맥 시스템 알림 (#103)
         .onReceive(NotificationCenter.default.publisher(for: CloudSync.didReceiveNoticesNotification)) { notification in
             notifyNotices(notification.object as? [UUID] ?? [])
@@ -608,9 +598,9 @@ extension ContentView {
             ProjectSetting(
                 production: settingProduction,
                 onClose: { self.settingProduction = nil },
-                onDelete: {
+                onDelete: {   // 확인 창에서 "삭제"를 누른 뒤
                     self.settingProduction = nil
-                    deletingProduction = settingProduction   // 삭제 확인 창
+                    removeProduction(settingProduction)
                 },
                 onLeave: {
                     self.settingProduction = nil

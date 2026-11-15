@@ -14,15 +14,15 @@ import SwiftUI
 struct ProjectSetting: View {
     let production: Production
     var onClose: () -> Void = {}
-    var onDelete: () -> Void = {}   // 만든 사람: 홈의 삭제 확인 창을 띄운다
-    var onLeave: () -> Void = {}    // 초대받은 사람: 나가기 확인 후 부름
+    var onDelete: () -> Void = {}   // 만든 사람: 확인 창에서 "삭제"를 누르면 부름
+    var onLeave: () -> Void = {}    // 초대받은 사람: 확인 창에서 "나가기"를 누르면 부름
 
     @Environment(ICloudAccount.self) private var iCloudAccount
+    @Environment(\.showConfirm) private var showConfirm   // 나가기 · 삭제 확인 창 (화면 가운데)
     @AppStorage("profileEmail") private var myEmail = ""   // 앱 설정에서 입력한 내 이메일
 
     @State private var isEditing = false
     @State private var draft = ProductionDraft()
-    @State private var isConfirmingLeave = false
     
     // 공연을 만든 사람이면 삭제하기, 초대받은 사람이면 나가기
     private var isCreator: Bool { !production.isSharedWithMe }
@@ -34,20 +34,14 @@ struct ProjectSetting: View {
             card
         }
         .onAppear { draft = ProductionDraft(production) }
-        .alert("\(production.title)에서 나갈까요?", isPresented: $isConfirmingLeave) {
-            Button("취소", role: .cancel) {}
-            Button("나가기", role: .destructive) { onLeave() }
-        } message: {
-            Text("나가면 목록에서 사라지고, 다시 초대받아야 볼 수 있어요.")
-        }
     }
-
+    
     private var card: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("프로젝트 설정")
                 .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(Color.neutral900)
-
+            
             ScrollView {
                 content
             }
@@ -62,7 +56,7 @@ struct ProjectSetting: View {
         .appPopoverHost()   // 공연일 달력 팝오버가 그려지는 곳
         .background { closeShortcut }
     }
-
+    
     private var content: some View {
         VStack(alignment: .leading, spacing: 0) {
             if production.canEdit(userID: iCloudAccount.userRecordName) {
@@ -70,16 +64,16 @@ struct ProjectSetting: View {
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .padding(.top, 34)
             }
-
+            
             ProductionForm(draft: $draft)
                 .allowsHitTesting(isEditing)   // 보기 상태에선 값만 보이고 안 눌림
-
+            
             exitButton
                 .padding(.top, 60)
         }
         .padding(.bottom, 61)
     }
-
+    
     // Esc로 닫기 (보이지 않는 버튼)
     private var closeShortcut: some View {
         Button("닫기", action: onClose)
@@ -108,7 +102,7 @@ extension ProjectSetting {
         }
         .buttonStyle(.plain)
     }
-
+    
     // 고친 값을 공연에 넣고 저장 → CloudSync가 함께 쓰는 사람에게도 보낸다
     private func saveInfo() {
         guard !draft.title.trimmingCharacters(in: .whitespaces).isEmpty else { return }   // 공연명은 필수
@@ -124,7 +118,7 @@ extension ProjectSetting {
         save()
         isEditing = false
     }
-
+    
     private func save() {
         try? production.modelContext?.save()
     }
@@ -136,12 +130,25 @@ extension ProjectSetting {
     @ViewBuilder
     private var exitButton: some View {
         if !isCreator {
-            dangerButton("프로젝트 나가기") { isConfirmingLeave = true }
+            dangerButton("프로젝트 나가기") { confirmLeave() }
         } else if Platform.canEditCueSheet {   // 아이패드는 보기 전용이라 삭제는 맥에서 (내 공연이면 버튼 없음)
-            dangerButton("프로젝트 삭제하기", action: onDelete)
+            dangerButton("프로젝트 삭제하기") { confirmDelete() }
         }
     }
-
+    
+    // 나가기 · 삭제하기 → 화면 가운데 확인 창 (ContentView의 confirmHost). 확인을 누르면 onLeave · onDelete
+    private func confirmLeave() {
+        showConfirm(ConfirmRequest(title: "\(production.title)에서 나갈까요?",
+                                   message: "나가면 목록에서 사라지고, 다시 초대받아야 볼 수 있어요.",
+                                   confirmTitle: "나가기", onConfirm: onLeave))
+    }
+    
+    private func confirmDelete() {
+        showConfirm(ConfirmRequest(title: "\(production.title)\(production.title.objectParticle) 삭제하시겠습니까?",
+                                   message: "큐시트 · 대본 · 공지가 모두 지워지고, 함께 쓰는 사람들에게서도 사라져요. 되돌릴 수 없어요.",
+                                   onConfirm: onDelete))
+    }
+    
     private func dangerButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)

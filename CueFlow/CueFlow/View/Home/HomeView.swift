@@ -25,7 +25,6 @@ struct HomeView: View {
     var hasUnreadNotification = false
 
     @State private var filter: ProjectFilter = .recent
-    @State private var deletingProduction: Production?   // 삭제 확인 창에 띄울 공연
     @State private var settingProduction: Production?    // 프로젝트 설정 카드에 띄울 공연
     @Environment(\.modelContext) private var modelContext
 
@@ -60,15 +59,6 @@ struct HomeView: View {
             .padding(.bottom, 40)
         }
         .overlay { settingOverlay }
-        .alert(
-            "\(deletingProduction?.title ?? "")을(를) 삭제할까요?",
-            isPresented: Binding(get: { deletingProduction != nil }, set: { if !$0 { deletingProduction = nil } })
-        ) {
-            Button("취소", role: .cancel) {}
-            Button("삭제", role: .destructive) { deleteProduction() }
-        } message: {
-            Text("큐시트 · 대본 · 공지가 모두 지워지고, 함께 쓰는 사람들에게서도 사라져요. 되돌릴 수 없어요.")
-        }
     }
     
     // 우클릭 → "프로젝트 설정" 카드 (화면 가운데)
@@ -78,9 +68,9 @@ struct HomeView: View {
             ProjectSetting(
                 production: settingProduction,
                 onClose: { self.settingProduction = nil },
-                onDelete: {
+                onDelete: {   // 확인 창에서 "삭제"를 누른 뒤
                     self.settingProduction = nil
-                    deletingProduction = settingProduction   // 기존 삭제 확인 창 그대로 씀
+                    deleteProduction(settingProduction)
                 },
                 onLeave: {
                     self.settingProduction = nil
@@ -236,11 +226,9 @@ struct HomeView: View {
     }
 
     // 지우고 저장하면 CloudSync가 iCloud 폴더째 지운다 → 함께 쓰는 사람에게서도 사라진다
-    private func deleteProduction() {
-        guard let deletingProduction else { return }
-        modelContext.delete(deletingProduction)
+    private func deleteProduction(_ production: Production) {
+        modelContext.delete(production)
         try? modelContext.save()
-        self.deletingProduction = nil
     }
     
     // 큐시트 내용만 복사한 새 공연 (초대된 사람 · 공지 · 댓글은 빼고). 저장하면 CloudSync가 내 iCloud에 새로 올림
