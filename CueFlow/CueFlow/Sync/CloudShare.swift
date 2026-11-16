@@ -52,7 +52,8 @@ enum CloudShare {
     // 받은 초대 수락 → 이제 나도 이 공연의 참여자. 공연 데이터는 CloudSync가 받아 온다
     static func accept(_ metadata: CKShare.Metadata) async throws {
         _ = try await container.accept(metadata)
-        NotificationCenter.default.post(name: didAcceptNotification, object: nil)
+        // 어느 공연 폴더인지 같이 보낸다 → CloudSync가 그 폴더를 통째로 바로 받는다 (#205)
+        NotificationCenter.default.post(name: didAcceptNotification, object: metadata.share.recordID.zoneID)
     }
 
     // 공유받은 공연에서 "나" (이름·iCloud 계정). 공유가 없으면 nil
