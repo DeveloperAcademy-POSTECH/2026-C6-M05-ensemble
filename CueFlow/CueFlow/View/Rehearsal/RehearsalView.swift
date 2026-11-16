@@ -83,11 +83,11 @@ struct RehearsalView: View {
         VStack(spacing: 20) {
             header
 
-            HStack(alignment: .top, spacing: RehearsalLayout.columnSpacing) {
+            HStack(alignment: .top, spacing: layout.columnSpacing) {
                 RehearsalScriptPanel(lines: currentScriptLines, highlightedLineID: highlightedLineID) {
                     isEditingScript = true
                 }
-                .frame(width: RehearsalLayout.scriptWidth)
+                .frame(width: layout.scriptWidth)
 
                 VStack(spacing: 40) {
                     RehearsalStageMap(
@@ -97,7 +97,7 @@ struct RehearsalView: View {
                         currentStep: triggerIndex,
                         onToggleExpand: { isMinimapExpanded = true }
                     )
-                        .frame(height: RehearsalLayout.mapHeight)
+                        .frame(height: layout.mapHeight)
 
                     RehearsalCueList(
                             sceneCode: currentScene?.code(in: scenes) ?? "",
@@ -148,8 +148,8 @@ struct RehearsalView: View {
             if let step = notification.object as? RehearsalSync.FakeStep { moveFakeLeader(step) }
         }
         #endif
-        .padding(.leading, RehearsalLayout.leading)
-        .padding(.trailing, RehearsalLayout.trailing)
+        .padding(.leading, layout.leading)
+        .padding(.trailing, layout.trailing)
         .padding(.top, 46)
         .padding(.bottom, 45)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -158,9 +158,15 @@ struct RehearsalView: View {
             if isMinimapExpanded { expandedMinimap }
         }
         .environment(\.canEditCues, production.canEdit(userID: iCloudAccount.userRecordName))
+        .environment(\.isRehearsalCompact, layout.isCompact)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { windowWidth = $0 }
     }
 
     @State private var isMinimapExpanded = false   // 무대 미니맵 크게 보기
+
+    // 창 폭에 따라 칸 크기 (#213). 처음엔 맥 기본 창 폭 기준
+    @State private var windowWidth: CGFloat = 1512
+    private var layout: RehearsalLayout { .forWidth(windowWidth) }
 
     // 미니맵 크게 보기 (피그마 1361:9612): 같은 카드를 1.375배로 창 가운데에. 창이 작으면 들어가는 만큼만.
     // 큐는 그대로 넘길 수 있다 (스페이스 · 따라가기) — 아래 큐 목록이 가려져 있을 뿐
@@ -522,20 +528,33 @@ struct RehearsalCard<Content: View>: View {
         .frame(width: 1512, height: 932)
 }
 
-// 리허설 화면 칸 크기. 아이패드는 화면(1194)이 맥(1512)보다 좁아서 피그마 iPad 숫자로 (3032:25689, #195)
-// 맥 숫자 그대로 쓰면 오른쪽 칸이 690밖에 안 돼서 파트 칩 · < > · 이전/다음 큐가 겹쳤다
-enum RehearsalLayout {
-    #if os(macOS)
-    static let leading: CGFloat = 51
-    static let trailing: CGFloat = 61
-    static let scriptWidth: CGFloat = 372
-    static let columnSpacing: CGFloat = 20
-    static let mapHeight: CGFloat = 378
-    #else
-    static let leading: CGFloat = 33
-    static let trailing: CGFloat = 33
-    static let scriptWidth: CGFloat = 300
-    static let columnSpacing: CGFloat = 16
-    static let mapHeight: CGFloat = 308
-    #endif
+// 리허설 화면 칸 크기. 좁은 화면은 피그마 iPad 숫자로 (3032:25689, #195)
+// 넓은 숫자 그대로면 오른쪽 칸이 690밖에 안 돼서 파트 칩 · < > · 이전/다음 큐 · 표 글자가 겹쳤다
+// 아이패드는 늘 좁게, 맥은 창을 줄였을 때 좁게 (#213)
+struct RehearsalLayout {
+    let leading: CGFloat
+    let trailing: CGFloat
+    let scriptWidth: CGFloat
+    let columnSpacing: CGFloat
+    let mapHeight: CGFloat
+    let isCompact: Bool
+
+    static let regular = RehearsalLayout(leading: 51, trailing: 61, scriptWidth: 372, columnSpacing: 20, mapHeight: 378, isCompact: false)
+    static let compact = RehearsalLayout(leading: 33, trailing: 33, scriptWidth: 300, columnSpacing: 16, mapHeight: 308, isCompact: true)
+
+    // 맥 창이 이보다 좁으면 좁은 크기 (피그마 맥 화면 1512 · 최소 창 1200 사이)
+    static let compactBelowWidth: CGFloat = 1440
+
+    static func forWidth(_ width: CGFloat) -> RehearsalLayout {
+        #if os(macOS)
+        width < compactBelowWidth ? .compact : .regular
+        #else
+        .compact
+        #endif
+    }
+}
+
+// 리허설 화면이 좁은 크기인지 (큐 목록 표 열 폭에 씀)
+extension EnvironmentValues {
+    @Entry var isRehearsalCompact = false
 }
