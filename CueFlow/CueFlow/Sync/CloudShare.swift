@@ -10,7 +10,36 @@
 //
 
 import CloudKit
+import Observation
 import SwiftData
+
+// 공연마다 "지금 공유에 남아 있는 사람" 기억 → 나간 사람을 화면에서 숨긴다 (#201 · #209)
+// 화면(@State)에 두면 창이 다시 그려질 때마다 비워져서 나간 사람이 보였다 사라졌다 했다 → 여기 한 곳에 둔다
+@MainActor
+@Observable
+final class ShareRoster {
+    static let shared = ShareRoster()
+
+    // 공연 id → 공유에 있는 사람들의 iCloud 계정 ID. 아직 모르거나 공유가 없으면 없음 → 전부 보여 준다
+    private var userIDs: [UUID: Set<String>] = [:]
+
+    // iCloud에 다시 물어본다. 실패하면(오프라인 등) 전에 알던 걸 그대로 둔다
+    func refresh(_ production: Production) async {
+        guard !(production.members ?? []).isEmpty else { return }   // 공유 안 한 공연은 물어볼 필요 없음
+        guard let ids = try? await CloudShare.memberUserIDs(in: production) else { return }
+        userIDs[production.id] = ids
+    }
+
+    // 공유에서 나간 사람이면 false. Member 기록은 남겨서 그 사람이 쓴 댓글 작성자 이름은 그대로
+    func isStillShared(_ member: Member, in production: Production) -> Bool {
+        guard let ids = userIDs[production.id], let userID = member.iCloudUserID else { return true }
+        return ids.contains(userID)
+    }
+
+    func members(of production: Production) -> [Member] {
+        (production.members ?? []).filter { isStillShared($0, in: production) }
+    }
+}
 
 enum CloudShare {
     // 초대를 수락하면 보낸다 → CloudSync가 공유받은 공연을 바로 받아 온다
