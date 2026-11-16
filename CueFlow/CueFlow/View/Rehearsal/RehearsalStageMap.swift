@@ -30,7 +30,9 @@ struct RehearsalStageMap: View {
             }
         }
     }
-    @Environment(\.canEditCues) private var canEdit   // 읽기 권한이면 false (#120)
+    @Environment(\.canEditCues) private var canEditCues   // 읽기 권한이면 false (#120)
+    // 무대 배치는 맥에서만 고친다. 아이패드는 보기 전용 (#156 · #219)
+    private var canEdit: Bool { canEditCues && Platform.canEditCueSheet }
     @State private var editing: Editing?
 
     // 장면 배치 + 지금 큐까지 옮긴 것
