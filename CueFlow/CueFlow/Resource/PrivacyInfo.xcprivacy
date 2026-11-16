@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  개인정보 신고 파일 (#221). 아이패드 앱은 이게 없으면 업로드 후 거절 메일(ITMS-91053)이 온다.
+  - 추적 안 함 · 수집하는 개인정보 없음 (공연 데이터는 사용자 iCloud에만 저장)
+  - UserDefaults(@AppStorage): 댓글 버튼 보이기 등 앱 안 설정을 이 기기에 저장 → 이유 CA92.1 (앱 안에서만 씀)
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
