@@ -78,7 +78,9 @@ struct StageMinimap: View {
                 zone(.sangsu)
                     .frame(width: 172 * scale)
             }
-            .frame(height: 255)
+            // 리허설 화면은 카드 높이에 맞춰 줄어든다 (아이패드 · 줄인 맥 창은 카드 308이라 255면 넘쳤다, #219)
+            // 배치 창은 그대로 255. 점은 구역 안 비율 자리라 높이가 줄어도 같은 곳에 놓인다
+            .frame(minHeight: style == .rehearsal ? 150 : 255, maxHeight: 255)
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
 
             HStack(spacing: 0) {
@@ -211,9 +213,13 @@ struct StageMinimap: View {
         }
         .font(.app(size: 10))
         .foregroundStyle(Color.legendText)
-        .padding(.horizontal, 13)
-        .frame(height: 23)
+        .lineLimit(1)
+        // 글자가 알약 테두리에 붙어 보여서 위아래 · 양옆 여백을 조금 더 (#219)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 6)
+        .frame(minHeight: 25)
         .background(Color.legendBackground, in: Capsule())
+        .fixedSize()   // 칸이 좁아도 알약이 눌려 줄어들지 않게
     }
 }
 

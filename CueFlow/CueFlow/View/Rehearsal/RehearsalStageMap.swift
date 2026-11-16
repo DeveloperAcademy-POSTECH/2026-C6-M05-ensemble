@@ -30,7 +30,9 @@ struct RehearsalStageMap: View {
             }
         }
     }
-    @Environment(\.canEditCues) private var canEdit   // 읽기 권한이면 false (#120)
+    @Environment(\.canEditCues) private var canEditCues   // 읽기 권한이면 false (#120)
+    // 무대 배치는 맥에서만 고친다. 아이패드는 보기 전용 (#156 · #219)
+    private var canEdit: Bool { canEditCues && Platform.canEditCueSheet }
     @State private var editing: Editing?
 
     // 장면 배치 + 지금 큐까지 옮긴 것
@@ -129,6 +131,8 @@ struct RehearsalStageMap: View {
                 .padding(.leading, 31)
                 .padding(.trailing, 28)
                 .padding(.top, 18)   // 카드 높이 378 안에 범례까지 들어가게 (피그마 18)
+                // 범례 알약이 카드 아래 테두리에 붙지 않게 (피그마 iPad 약 12, #219). 무대가 남는 높이를 채우므로 꼭 필요
+                .padding(.bottom, 12)
         }
     }
 
