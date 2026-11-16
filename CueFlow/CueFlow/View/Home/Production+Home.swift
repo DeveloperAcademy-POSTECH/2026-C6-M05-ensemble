@@ -9,9 +9,9 @@
 import Foundation
 
 extension Production {
-    // "뮤지컬_레미제라블"
+    // 홈 목록 이름: 장르 없이 제목만 ("레미제라블")
     var listName: String {
-        genre.isEmpty ? title : "\(genre)_\(title)"
+        title
     }
 
     // "오늘 16:32 수정" / "9월 28일 수정" (피그마 951:11299)
