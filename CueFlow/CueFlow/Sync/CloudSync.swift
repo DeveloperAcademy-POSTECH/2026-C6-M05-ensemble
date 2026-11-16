@@ -621,7 +621,7 @@ final class CloudSync {
                 newNoticeIDs.append(id)
             }
             if record.recordType == Cue.recordType, isRecentChangeByOther(record),
-               let id = UUID(uuidString: record.recordID.recordName) {
+               let id = UUID(uuidString: record.recordID.recordName), isCueContentChanged(record, id: id) {
                 changedCueIDs.append(id)
             }
             if let item = upsert(record) {
@@ -680,6 +680,22 @@ final class CloudSync {
     // 내가 고친 건 "__defaultOwner__"(내 공연일 때) 또는 내 계정 ID로 온다
     // "__defaultOwner__"는 "그 폴더(공연)를 만든 사람"이라는 뜻이다 → 내 공연일 때만 나.
     // 공유받은 공연에서는 공연 만든 사람(다른 사람)이라, 전에는 주인이 고친 큐 알림이 팀원에게 안 갔다
+    // 받은 큐가 이 기기의 큐와 내용이 다른지 (받아서 넣기 전에 비교). 처음 받는 큐면 바뀐 것으로 본다
+    // 댓글 · 확인을 큐에 이으면 SwiftData가 큐도 "바뀜"으로 표시해서 내용이 같은 큐가 다시 올라온다
+    // → 그건 큐 수정이 아니라서 알림을 안 보낸다
+    private func isCueContentChanged(_ record: CKRecord, id: UUID) -> Bool {
+        guard let cue = findModel(id) as? Cue else { return true }
+        let current = CKRecord(recordType: Cue.recordType, recordID: record.recordID)
+        cue.fill(current)
+        return Cue.contentKeys.contains { key in
+            switch (current[key] as? NSObject, record[key] as? NSObject) {
+            case (nil, nil): false
+            case let (mine?, theirs?): !mine.isEqual(theirs)
+            default: true
+            }
+        }
+    }
+
     private func isRecentChangeByOther(_ record: CKRecord) -> Bool {
         guard let modifier = record.lastModifiedUserRecordID?.recordName,
               !(modifier == CKCurrentUserDefaultName && record.recordID.zoneID.isMine),

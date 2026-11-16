@@ -233,6 +233,9 @@ extension Part: CloudRecordConvertible {
 extension Cue: CloudRecordConvertible {
     static let recordType = "Cue"
 
+    // 바뀌면 "큐 수정" 알림을 보내는 값들 (fill에서 채우는 것 중 만든 때 빼고). fill에 항목을 더하면 여기에도
+    static let contentKeys = [CloudKey.title, CloudKey.position, CloudKey.order, CloudKey.stageCell, CloudKey.triggerID, CloudKey.partID]
+
     // 큐는 트리거(씬) 쪽으로 공연을 찾고, 없으면 파트 쪽으로
     var cloudProduction: Production? { trigger?.scene?.production ?? part?.production }
 
