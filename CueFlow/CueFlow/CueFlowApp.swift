@@ -71,10 +71,11 @@ struct CueFlowApp: App {
                 }
         }
         .modelContainer(sharedModelContainer)
+        // 메뉴 막대는 맥에서만 (#221). 아이패드에서 .commands를 붙이면 빈 메뉴(EmptyView)가 iPadOS 27에만 있는 부품이 돼서
+        // iPadOS 26에서는 앱이 켜지자마자 죽는다 (#215 .task와 같은 종류)
+        #if os(macOS)
         .commands {
-            #if os(macOS)
             AppMenuCommands()   // 메뉴 막대 (AppMenuCommands.swift)
-            #endif
 #if DEBUG
             // 개발용 (TestFlight에는 안 보임)
             CommandMenu("개발용") {
@@ -129,5 +130,6 @@ struct CueFlowApp: App {
             }
             #endif
         }
+        #endif
     }
 }
