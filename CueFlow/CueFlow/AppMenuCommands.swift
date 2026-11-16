@@ -292,8 +292,7 @@ extension AppMenuCommands {
     // 검색창은 시스템이 넣는다
     private var helpMenu: some Commands {
         CommandGroup(replacing: .help) {
-            Button("Cuedit 도움말") {}
-                .disabled(true)
+            Link("Cuedit 도움말", destination: URL(string: "https://festive-engine-0a6.notion.site/Cuedit-4192e378887d8011a215e650a2932634")!)   // 노션 도움말 페이지를 브라우저로
             Button("키보드 단축키") { app?.showShortcuts() }
                 .keyboardShortcut("/")
                 .disabled(app == nil)
