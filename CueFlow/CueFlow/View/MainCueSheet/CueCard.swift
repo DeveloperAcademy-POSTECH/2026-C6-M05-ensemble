@@ -176,13 +176,13 @@ extension CueCard {
         }
     }
 
-    // 피그마 새 댓글 알림 점: 5×5, #E20000, 댓글 버튼 오른쪽 위 모서리
+    // 피그마 새 댓글 알림 점: 7×7, #E20000, 댓글 버튼 오른쪽 위 모서리
     @ViewBuilder
     private var newCommentDot: some View {
         if hasNewComment {
             Circle()
                 .fill(Color(red: 226 / 255, green: 0, blue: 0))
-                .frame(width: 5, height: 5)
+                .frame(width: 7, height: 7)
         }
     }
 
