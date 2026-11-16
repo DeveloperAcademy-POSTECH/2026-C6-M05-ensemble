@@ -49,7 +49,7 @@ struct MainCueSheetView: View {
             remoteRevision += 1
         }
         // 큐시트를 보고 있는 동안 1분마다 "나 지금 보고 있음"을 남긴다 → 다른 사람 참여자 현황에 보인다
-        .task(id: production.id) {
+        .appTask(id: production.id) {
             while !Task.isCancelled {
                 production.markSeen(byUserID: iCloudAccount.userRecordName)
                 await ShareRoster.shared.refresh(production)   // 그사이 나간 사람을 멤버 동그라미 · 참여자 창에서 빼려고 (#209)

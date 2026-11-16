@@ -48,7 +48,7 @@ struct SharePopover: View {
         // 팀 팝오버가 사방 20 · 폭 420 · 바탕을 넣어 준다 → 피그마 여백(좌우 22 · 위아래 30)에서 20을 뺀 만큼만
         .padding(.horizontal, 2)
         .padding(.vertical, 10)
-        .task { await loadShare() }
+        .appTask { await loadShare() }
     }
 }
 

@@ -59,7 +59,7 @@ struct CueFlowApp: App {
                 #endif
                 .font(.appBody)   // 글자 크기를 따로 안 정한 글자도 맥 본문 크기로 (아이패드 기본 17 대신, #157)
                 .environment(iCloudAccount)
-                .task {
+                .appTask {
                     await iCloudAccount.refresh()
                 }
                 // 앱을 켤 때 로그인돼 있거나, 켜 둔 채로 시스템 설정에서 로그인하면 시작
