@@ -117,7 +117,7 @@ struct ContentView: View {
                     .onChange(of: iCloudAccount.status) {
                         isICloudBannerClosed = false
                     }
-                    .task {
+                    .appTask {
                         UserTest.insertSampleIfNeeded(into: modelContext, isEmpty: productions.isEmpty)
                     }
             }

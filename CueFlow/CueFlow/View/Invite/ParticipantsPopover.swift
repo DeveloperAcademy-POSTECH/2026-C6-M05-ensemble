@@ -98,7 +98,7 @@ struct ParticipantsPopover: View {
         .padding(.horizontal, 18)
         .padding(.top, 9)
         .padding(.bottom, 5)
-        .task {
+        .appTask {
             guard checksShare else { return }
             await roster.refresh(production)
         }
