@@ -10,20 +10,21 @@
 import SwiftUI
 
 // 표 열 너비 (피그마 리허설모드_ver1 기준). 큐 열은 남는 만큼.
-private enum CueListColumn {
-    #if os(macOS)
-    static let scene: CGFloat = 110
-    static let trigger: CGFloat = 240
-    static let position: CGFloat = 100
-    static let part: CGFloat = 117
-    #else
-    // 아이패드: 피그마 iPad 리허설 큐 목록 열 폭 (3032:25689, #195) — 맥 폭이면 큐 칸이 좁아져 글자가 세로선에 겹침
-    static let scene: CGFloat = 88
-    static let trigger: CGFloat = 194
-    static let position: CGFloat = 80
-    static let part: CGFloat = 95
-    #endif
+// 좁은 화면(아이패드 · 줄인 맥 창)은 피그마 iPad 리허설 큐 목록 열 폭 (3032:25689, #195 · #213)
+// — 넓은 폭 그대로면 큐 칸이 좁아져 글자가 세로선에 겹침
+private struct CueListColumn {
+    let scene: CGFloat
+    let trigger: CGFloat
+    let position: CGFloat
+    let part: CGFloat
     static let cueHeight: CGFloat = 42   // 큐 한 줄 높이
+
+    init(isCompact: Bool) {
+        scene = isCompact ? 88 : 110
+        trigger = isCompact ? 194 : 240
+        position = isCompact ? 80 : 100
+        part = isCompact ? 95 : 117
+    }
 }
 
 struct RehearsalCueList<SceneControls: View>: View {
@@ -38,6 +39,8 @@ struct RehearsalCueList<SceneControls: View>: View {
     let sceneControls: SceneControls   // < > 장면 이동 · 장면 선택 (이전 큐 왼쪽)
 
     @State private var selectedParts: Set<Part> = []   // 비어 있으면 전체
+    @Environment(\.isRehearsalCompact) private var isCompact   // 좁은 화면이면 표 열도 좁게 (#213)
+    private var columns: CueListColumn { CueListColumn(isCompact: isCompact) }
 
     // 고른 파트의 큐만
     private func cues(in step: [Cue]) -> [Cue] {
@@ -163,11 +166,11 @@ struct RehearsalCueList<SceneControls: View>: View {
     // 열 제목: 씬 & 큐 | 트리거 | 큐 | 위치 | 파트
     private var columnTitles: some View {
         HStack(spacing: 0) {
-            columnTitle("씬 & 큐").frame(width: CueListColumn.scene)
-            columnTitle("트리거").frame(width: CueListColumn.trigger)
+            columnTitle("씬 & 큐").frame(width: columns.scene)
+            columnTitle("트리거").frame(width: columns.trigger)
             columnTitle("큐").frame(maxWidth: .infinity)
-            columnTitle("위치").frame(width: CueListColumn.position)
-            columnTitle("파트").frame(width: CueListColumn.part)
+            columnTitle("위치").frame(width: columns.position)
+            columnTitle("파트").frame(width: columns.part)
         }
         .frame(height: 36)
         .overlay { columnLines }
@@ -182,15 +185,15 @@ struct RehearsalCueList<SceneControls: View>: View {
     // 열 사이 세로선
     private var columnLines: some View {
         HStack(spacing: 0) {
-            Spacer().frame(width: CueListColumn.scene)
+            Spacer().frame(width: columns.scene)
             CueTableLine()
-            Spacer().frame(width: CueListColumn.trigger - 1)
+            Spacer().frame(width: columns.trigger - 1)
             CueTableLine()
             Spacer()
             CueTableLine()
-            Spacer().frame(width: CueListColumn.position - 1)
+            Spacer().frame(width: columns.position - 1)
             CueTableLine()
-            Spacer().frame(width: CueListColumn.part - 1)
+            Spacer().frame(width: columns.part - 1)
         }
         .allowsHitTesting(false)
     }
@@ -203,6 +206,8 @@ struct CueListRow: View {
     let cue: Cue
     let isCurrent: Bool
     var isPast = false     // 이미 지나간 큐 → 흐리게
+    @Environment(\.isRehearsalCompact) private var isCompact
+    private var columns: CueListColumn { CueListColumn(isCompact: isCompact) }
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
@@ -210,14 +215,14 @@ struct CueListRow: View {
                 .font(.app(size: 15, weight: isCurrent ? .semibold : .medium))
                 .foregroundStyle(isCurrent ? Color.neutral900 : Color.neutral800)
                 .padding(.leading, 20)
-                .frame(width: CueListColumn.scene, height: CueListColumn.cueHeight, alignment: .leading)
+                .frame(width: columns.scene, height: CueListColumn.cueHeight, alignment: .leading)
 
             Text(cue.trigger?.text ?? "")
                 .font(.app(size: 15, weight: .medium))
                 .foregroundStyle(Color.neutral900)
                 .lineLimit(1)
                 .padding(.leading, 20)
-                .frame(width: CueListColumn.trigger, height: CueListColumn.cueHeight, alignment: .leading)
+                .frame(width: columns.trigger, height: CueListColumn.cueHeight, alignment: .leading)
 
             cueLine(cue)
         }
@@ -245,12 +250,12 @@ struct CueListRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             positionTag(cue)
-                .frame(width: CueListColumn.position)
+                .frame(width: columns.position)
 
             Text(cue.part?.name ?? "")
                 .font(.app(size: 15, weight: .semibold))
                 .foregroundStyle(Color.neutral900)
-                .frame(width: CueListColumn.part)
+                .frame(width: columns.part)
         }
         .frame(height: CueListColumn.cueHeight)
     }
