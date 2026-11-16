@@ -390,6 +390,10 @@ final class CloudSync {
 
         for model in context.changedModelsArray {
             if let item = model as? any CloudRecordConvertible, let recordID = item.cloudRecordID {
+                // 올릴 내용이 마지막으로 주고받은 것과 같으면 안 올린다 (#217)
+                // 공연을 열기만 하거나(lastOpenedAt) 댓글 · 확인을 이으면 "바뀜"이 되는데, 그때 옛 값을 통째로 올리면
+                // 다른 사람이 그사이 고친 값(무대 칸 등)을 덮어써서 되돌아갔다
+                guard contentFingerprint(of: item, recordID: recordID) != store.fingerprint(named: recordID.recordName) else { continue }
                 recordChanges.append(.saveRecord(recordID))
             }
         }
@@ -587,6 +591,13 @@ final class CloudSync {
         return Set(items.compactMap(\.cloudRecordID))
     }
 
+    // 이 모델을 지금 올린다면 들어갈 내용의 지문 (#217)
+    private func contentFingerprint(of item: any CloudRecordConvertible, recordID: CKRecord.ID) -> String {
+        let record = CKRecord(recordType: type(of: item).recordType, recordID: recordID)
+        item.fill(record)
+        return record.contentFingerprint
+    }
+
     // MARK: - 올릴 때 레코드 만들기
 
     // CKSyncEngine이 "이거 올릴게, 내용 줘" 할 때
@@ -689,6 +700,11 @@ final class CloudSync {
             if link(item, from: record) {
                 unlinkedRecords[name] = nil
             }
+        }
+
+        // 받아서 넣은 내용을 "마지막으로 주고받은 내용"으로 기억 (#217). 아직 못 이은 건 빼고 (부모 칸이 비어 지문이 틀어짐)
+        for (item, record) in received where unlinkedRecords[record.recordID.recordName] == nil {
+            store.setFingerprint(contentFingerprint(of: item, recordID: record.recordID), named: record.recordID.recordName)
         }
 
         // 4) 지운 것
@@ -975,6 +991,7 @@ final class CloudSync {
         case .sentRecordZoneChanges(let sent):
             for record in sent.savedRecords {
                 store.cache(record)
+                store.setFingerprint(record.contentFingerprint, named: record.recordID.recordName)   // 올라간 내용 기억 (#217)
             }
             for recordID in sent.deletedRecordIDs {
                 store.removeRecord(recordID)
@@ -1023,8 +1040,16 @@ final class CloudSync {
             }
 
         case .fetchedRecordZoneChanges(let fetched):
+            // 아직 못 올린 내 수정이 있는 레코드는 받은 값으로 덮지 않는다 (10초마다 직접 받기와 같게, #217)
+            // 버전 꼬리표만 새로 받아 둬서, 곧 올라갈 내 수정이 충돌 없이 이긴다
+            let pending = engine.state.pendingRecordZoneChanges
+            let records = fetched.modifications.map(\.record).filter { record in
+                guard pending.contains(.saveRecord(record.recordID)) else { return true }
+                store.cache(record)
+                return false
+            }
             applyRemoteChanges {
-                applyFetched(records: fetched.modifications.map(\.record), deletedIDs: fetched.deletions.map(\.recordID))
+                applyFetched(records: records, deletedIDs: fetched.deletions.map(\.recordID))
             }
 
         // 폴더 하나 받기가 끝남. iCloud에 그 폴더가 없으면(Zone Not Found) 정리 — 안 하면 앱으로 돌아올 때마다 같은 실패 반복 (#181)
