@@ -171,7 +171,7 @@ extension CKShare {
                 let userID = participant.userIdentity.userRecordID?.recordName
                 return ShareMember(
                     id: participant.participantID,
-                    name: participant.iCloudName ?? appName(isMe: isMe, userID: userID, in: production),
+                    name: displayName(of: participant, isMe: isMe, userID: userID, in: production),
                     isMe: isMe,
                     isOwner: participant.role == .owner,
                     userID: userID
@@ -179,12 +179,13 @@ extension CKShare {
             }
     }
 
-    // iCloud가 이름을 안 알려 주면 앱에 저장된 이름 (참여자 현황 창과 같은 이름)
-    // 나 → 내 멤버 이름 · 없으면 맥 사용자 이름 / 다른 사람 → 그 사람 멤버 이름
-    private func appName(isMe: Bool, userID: String?, in production: Production) -> String {
-        if isMe { return CurrentEditor.name(in: production) }
-        if let name = production.member(withUserID: userID)?.name, !Member.isPlaceholderName(name) { return name }
-        return Member.unknownName
+    // 앱에 저장된 멤버 이름(초대 수락 때 직접 입력한 이름) 먼저 → 참여자 현황 창 · 댓글과 같은 이름 (#204)
+    // 없으면 iCloud 이름 · 이메일 → 그것도 없으면 나: 맥 사용자 이름 / 다른 사람: "이름 없음"
+    private func displayName(of participant: CKShare.Participant, isMe: Bool, userID: String?, in production: Production) -> String {
+        let memberID = isMe ? ICloudAccount.currentUserRecordName : userID
+        if let name = production.member(withUserID: memberID)?.name, !Member.isPlaceholderName(name) { return name }
+        if let name = participant.iCloudName { return name }
+        return isMe ? CurrentEditor.name(in: production) : Member.unknownName
     }
 }
 
