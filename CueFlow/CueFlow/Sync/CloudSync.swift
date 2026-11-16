@@ -369,7 +369,10 @@ final class CloudSync {
         // 공유받은 공연이면 "나가기"라서, 안의 씬 · 큐를 하나씩 지우는 요청은 보내지 않는다
         // (보내면 만든 사람의 공연에서 진짜로 지워진다, #132)
         let deletedZoneIDs = Set(context.deletedModelsArray.compactMap { ($0 as? Production)?.cloudZoneID })
-        zoneChanges += deletedZoneIDs.map { .deleteZone($0) }
+        zoneChanges += deletedZoneIDs.filter(\.isMine).map { .deleteZone($0) }
+        // 공유받은 공연 = 나가기: 폴더는 방장 것이라 지울 수 없다 ("Zone delete not allowed")
+        // → 공유 기록(CKShare)만 지운다 = 내 참여만 빠지고 방장 공연은 그대로 (#180)
+        recordChanges += deletedZoneIDs.filter { !$0.isMine }.map { .deleteRecord(Self.shareRecordID(in: $0)) }
 
         for model in context.deletedModelsArray where !(model is Production) {
             guard let item = model as? any CloudRecordConvertible else { continue }
@@ -406,6 +409,11 @@ final class CloudSync {
                 engine.state.add(pendingRecordZoneChanges: records)
             }
         }
+    }
+
+    // 폴더 공유의 공유 기록 이름은 정해져 있다 (CloudShare와 같음). 참여자는 이걸 지우면 공유에서 나간다
+    static func shareRecordID(in zoneID: CKRecordZone.ID) -> CKRecord.ID {
+        CKRecord.ID(recordName: CKRecordNameZoneWideShare, zoneID: zoneID)
     }
 
     // 폴더 주인에 따라 어느 엔진인지
@@ -903,6 +911,13 @@ final class CloudSync {
             for zoneID in sent.deletedZoneIDs {
                 store.removeRecords(in: zoneID)
             }
+            // 예전 방식(공유받은 폴더 지우기)으로 남아 있던 나가기 → 공유 기록 지우기로 바꿔서 다시 (#180)
+            for (zoneID, error) in sent.failedZoneDeletes {
+                logger.error("폴더 지우기 실패 \(zoneID.zoneName): \(error)")
+                guard !zoneID.isMine else { continue }
+                engine.state.remove(pendingDatabaseChanges: [.deleteZone(zoneID)])
+                engine.state.add(pendingRecordZoneChanges: [.deleteRecord(Self.shareRecordID(in: zoneID))])
+            }
             for failure in sent.failedZoneSaves {
                 logger.error("폴더 만들기 실패 \(failure.zone.zoneID.zoneName): \(failure.error)")
             }
@@ -913,6 +928,14 @@ final class CloudSync {
             }
             for recordID in sent.deletedRecordIDs {
                 store.removeRecord(recordID)
+                // 공유받은 공연에서 나가기 성공 → 그 공연 기억도 정리 (#180)
+                if recordID.recordName == CKRecordNameZoneWideShare, !recordID.zoneID.isMine {
+                    store.removeRecords(in: recordID.zoneID)
+                    logger.info("공유받은 공연에서 나감: \(recordID.zoneID.zoneName)")
+                }
+            }
+            for (recordID, error) in sent.failedRecordDeletes {
+                logger.error("지우기 실패 \(recordID.recordName): \(error)")
             }
             handleFailedSaves(sent.failedRecordSaves, engine: engine)
             if !sent.savedRecords.isEmpty || !sent.deletedRecordIDs.isEmpty {
