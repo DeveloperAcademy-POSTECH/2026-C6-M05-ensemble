@@ -52,6 +52,7 @@ struct MainCueSheetView: View {
         .task(id: production.id) {
             while !Task.isCancelled {
                 production.markSeen(byUserID: iCloudAccount.userRecordName)
+                await ShareRoster.shared.refresh(production)   // 그사이 나간 사람을 멤버 동그라미 · 참여자 창에서 빼려고 (#209)
                 try? await Task.sleep(for: .seconds(60))
             }
         }
@@ -250,7 +251,8 @@ extension MainCueSheetView {
         Button { isShowingParticipants = true } label: {
             HStack(spacing: 4) {
                 HStack(spacing: -6) {
-                    let initials = (production.members ?? []).prefix(2).map { String($0.name.prefix(1)).uppercased() }
+                    // 공유에서 나간 사람은 빼고 (#209)
+                    let initials = ShareRoster.shared.members(of: production).prefix(2).map { String($0.name.prefix(1)).uppercased() }
                     if initials.isEmpty {
                         memberCircle(Image(systemName: "person.fill"))
                     } else {
