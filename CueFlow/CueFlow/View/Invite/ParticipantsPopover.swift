@@ -15,6 +15,10 @@ struct ParticipantsPopover: View {
     let myUserID: String?          // 내 iCloud 계정 ID (Member.iCloudUserID와 비교해서 "나"를 찾는다)
     var now: Date = .now           // 미리보기에서 시간을 고정할 때
     var onSpotlight: () -> Void = {}   // Spotlight me: 리허설을 열고 내가 진행 → 다른 사람 화면이 따라온다
+    var checksShare = true         // iCloud에 지금 공유 참여자를 물어볼지 (미리보기에선 끔)
+
+    // 지금 공유에 들어와 있는 사람들의 iCloud 계정 ID. 아직 모르면(받는 중 · 오프라인 · 공유 없음) nil → 전부 보여 준다 (#201)
+    @State private var shareUserIDs: Set<String>?
 
     // 이 시간 안에 기록이 있으면 "현재 보고 있는 사람" (1분마다 기록 + iCloud로 오는 데 걸리는 시간)
     private static let viewingWindow: TimeInterval = 3 * 60
@@ -32,6 +36,13 @@ struct ParticipantsPopover: View {
 
     private var others: [Member] {
         (production.members ?? []).filter { $0.iCloudUserID == nil || $0.iCloudUserID != myUserID }
+            .filter(isStillShared)
+    }
+
+    // 공유에서 나간 사람은 숨긴다. Member 기록은 남겨서 그 사람이 쓴 댓글 작성자 이름은 그대로 (#201)
+    private func isStillShared(_ member: Member) -> Bool {
+        guard let shareUserIDs, let userID = member.iCloudUserID else { return true }
+        return shareUserIDs.contains(userID)
     }
 
     private func isViewing(_ member: Member) -> Bool {
@@ -93,6 +104,10 @@ struct ParticipantsPopover: View {
         .padding(.horizontal, 18)
         .padding(.top, 9)
         .padding(.bottom, 5)
+        .task {
+            guard checksShare else { return }
+            shareUserIDs = try? await CloudShare.memberUserIDs(in: production)
+        }
     }
 }
 
@@ -227,7 +242,7 @@ extension Production {
         member.production = production
         container.mainContext.insert(member)
     }
-    return ParticipantsPopover(production: production, myUserID: "me")
+    return ParticipantsPopover(production: production, myUserID: "me", checksShare: false)
         .popoverStyle(width: 426)
         .padding(40)
         .modelContainer(container)
