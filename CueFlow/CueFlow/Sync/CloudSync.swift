@@ -186,14 +186,43 @@ final class CloudSync {
     private func observeAccepts() {
         acceptObserver = NotificationCenter.default.addObserver(
             forName: CloudShare.didAcceptNotification, object: nil, queue: nil
-        ) { [weak self] _ in
+        ) { [weak self] notification in
+            let zoneID = notification.object as? CKRecordZone.ID
             Task { @MainActor in
+                if let zoneID { await self?.fetchWholeSharedZone(zoneID) }
                 do {
                     try await self?.sharedEngine?.fetchChanges()
                 } catch {
                     self?.logger.error("공유받은 공연 받기 실패: \(error)")
                 }
             }
+        }
+    }
+
+    // 방금 수락한 공연 폴더를 처음부터 통째로 직접 받는다 (#205)
+    // - 엔진은 "어디까지 받았는지" 기록 이후만 받는다 → 나갔다가 다시 들어오면 씬 · 큐가 안 와서 공연이 비어 보였다
+    // - 수락 직후엔 iCloud의 "바뀐 공유 폴더" 목록이 1~2분 늦다 (10/28) → 폴더를 직접 보면 바로 온다
+    // 이미 있는 건 덮어쓰기만 해서 엔진이 나중에 같은 걸 또 받아도 괜찮다
+    private func fetchWholeSharedZone(_ zoneID: CKRecordZone.ID) async {
+        let database = CKContainer(identifier: ICloudAccount.containerID).sharedCloudDatabase
+        var token: CKServerChangeToken?
+        var count = 0
+        do {
+            repeat {
+                let changes = try await database.recordZoneChanges(inZoneWith: zoneID, since: token)
+                let records = changes.modificationResultsByID.values.compactMap { try? $0.get().record }
+                applyRemoteChanges {
+                    applyFetched(records: records, deletedIDs: [])
+                }
+                count += records.count
+                token = changes.changeToken
+                guard changes.moreComing else { break }
+            } while true
+            directTokens[zoneID] = token   // 10초마다 직접 받기도 여기서부터 이어서
+            logger.info("수락한 공연 통째로 받음: \(count)개")
+            await addMeToSharedProductions()
+        } catch {
+            logger.error("수락한 공연 통째로 받기 실패: \(error)")
         }
     }
 
