@@ -68,6 +68,21 @@ enum CloudShare {
         production.fillMemberNames(from: share)
     }
 
+    // 지금 공유에 들어와 있는 사람들의 iCloud 계정 ID (주인 + 수락한 사람). 공유가 없으면 nil (#201)
+    // 나간 사람은 여기서 빠진다 → 참여자 창에서 숨기는 데 쓴다 (Member 기록은 댓글 작성자 때문에 남긴다)
+    static func memberUserIDs(in production: Production) async throws -> Set<String>? {
+        guard let share = try await fetchShare(in: production.cloudZoneID, from: database(for: production)) else { return nil }
+        production.fillMemberNames(from: share)
+        let ids = share.participants
+            .filter { $0.role == .owner || $0.acceptanceStatus == .accepted }
+            .compactMap { participant -> String? in
+                guard let rawID = participant.userIdentity.userRecordID?.recordName else { return nil }
+                // "__defaultOwner__" = 공유를 만든 사람이 "나"일 때 → 내 진짜 계정 ID로
+                return rawID == CKCurrentUserDefaultName ? ICloudAccount.currentUserRecordName : rawID
+            }
+        return Set(ids)
+    }
+
     // 폴더 공유는 이름이 정해져 있다 (CKRecordNameZoneWideShare). 없으면 nil
     private static func fetchShare(in zoneID: CKRecordZone.ID, from database: CKDatabase) async throws -> CKShare? {
         let shareID = CKRecord.ID(recordName: CKRecordNameZoneWideShare, zoneID: zoneID)
