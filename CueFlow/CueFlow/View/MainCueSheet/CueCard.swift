@@ -168,12 +168,20 @@ extension CueCard {
         Button { isShowingChecks = true } label: {
             HStack(spacing: 3) {
                 checkCircle
-                Text("\(cue.checks?.count ?? 0)")
+                Text("\(activeCheckCount)")
             }
             .countPill(background: cue.check(byUserID: myUserID) == nil ? Color.tagBackground : partColor.check)
         }
         .buttonStyle(.plain)
         .appPopover(isPresented: $isShowingChecks, width: 280) { CueCheckPopover(cue: cue) }
+    }
+    
+    // 확인한 사람 수 (공유에서 나간 사람이 눌렀던 확인은 빼고, #209)
+    private var activeCheckCount: Int {
+        guard let production = cue.part?.production else { return cue.checks?.count ?? 0 }
+        return (cue.checks ?? []).filter { check in
+            check.member.map { ShareRoster.shared.isStillShared($0, in: production) } ?? false
+        }.count
     }
 
     private var checkCircle: some View {
