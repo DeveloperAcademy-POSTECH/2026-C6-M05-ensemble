@@ -151,16 +151,39 @@ extension CueCard {
     }
 
     private var commentButton: some View {
-        Button { isShowingComments = true } label: {
+        Button {
+            CommentSeen.markSeen(cue.id)   // 열면 새 댓글 점이 사라짐
+            isShowingComments = true
+        } label: {
             HStack(spacing: 2) {
                 Image(systemName: "message")
                     .font(.app(size: 8, weight: .semibold))
                 Text("\(cue.comments?.count ?? 0)")
             }
             .countPill(background: Color.tagBackground)
+            .overlay(alignment: .topTrailing) { newCommentDot }
         }
         .buttonStyle(.plain)
         .appPopover(isPresented: $isShowingComments, width: 260) { CueCommentPopover(cue: cue) }
+        .onChange(of: isShowingComments) { if !$1 { CommentSeen.markSeen(cue.id) } }   // 열어 둔 사이 온 댓글도 읽은 것으로
+    }
+    
+    // 마지막으로 댓글 창을 연 뒤에 다른 사람이 단 댓글이 있는지
+    private var hasNewComment: Bool {
+        let seen = CommentSeen.lastSeen(cue.id)
+        return (cue.comments ?? []).contains { comment in
+            comment.createdAt > seen && comment.author?.iCloudUserID != myUserID
+        }
+    }
+
+    // 피그마 새 댓글 알림 점: 8×8, #E20000, 댓글 버튼 오른쪽 위 모서리
+    @ViewBuilder
+    private var newCommentDot: some View {
+        if hasNewComment {
+            Circle()
+                .fill(Color(red: 226 / 255, green: 0, blue: 0))
+                .frame(width: 7, height: 7)
+        }
     }
 
     // 내가 확인했으면 파트색, 아니면 회색
@@ -268,6 +291,27 @@ private extension View {
             .frame(minWidth: 40, minHeight: 23)
             .background(background, in: .capsule)
             .contentShape(.capsule)
+    }
+}
+
+// 새 댓글 알림 (댓글 버튼 빨간 점): 이 큐의 댓글 창을 마지막으로 연 때를 이 맥에 기억
+// 처음 쓰는 맥은 그때부터 온 댓글만 새 댓글로 본다 (예전 댓글로 점이 한꺼번에 뜨지 않게)
+enum CommentSeen {
+    private static let baselineKey = "commentSeenBaseline"
+
+    private static func key(_ cueID: UUID) -> String { "commentSeen.\(cueID.uuidString)" }
+
+    static func lastSeen(_ cueID: UUID) -> Date {
+        let defaults = UserDefaults.standard
+        if let date = defaults.object(forKey: key(cueID)) as? Date { return date }
+        if let baseline = defaults.object(forKey: baselineKey) as? Date { return baseline }
+        let now = Date.now
+        defaults.set(now, forKey: baselineKey)
+        return now
+    }
+
+    static func markSeen(_ cueID: UUID) {
+        UserDefaults.standard.set(Date.now, forKey: key(cueID))
     }
 }
 
