@@ -41,6 +41,12 @@ extension Notice {
         production?.title ?? ""
     }
 
+    // 목록 한 줄 제목 "[레미제라블] 오늘 리허설 콜타임 변경 안내" (피그마 공지사항_01, #182)
+    // 공연을 여러 개 하면 어느 공연 공지인지 바로 보이게. 공연이 없으면 제목만
+    var listTitle: String {
+        productionTitle.isEmpty ? title : "[\(productionTitle)] \(title)"
+    }
+
     // 상세·알림 카드의 대상 태그: "전체공지" / "조명 공지" / "조명 · 음향 공지" / "개인 공지" / "조명 외 공지"
     var targetTag: String {
         let parts = recipientParts
@@ -107,6 +113,8 @@ extension Notice {
     }
 
     // 나한테 온 공지인지: 전체 공지 · 내 파트가 들어간 공지 · 나를 고른 공지
+    // 맡은 파트가 없는 사람(감독 · 총연출처럼 역할을 안 고른 사람)은 전부 담당 → 파트 공지도 다 받는다
+    // (큐 수정 알림과 같은 규칙, ContentView.notifyCueChanges · #179)
     func isForMe(userID: String?) -> Bool {
         let parts = recipientParts
         let members = recipientMembers
@@ -114,7 +122,8 @@ extension Notice {
         guard let userID else { return false }
         if members.contains(where: { $0.iCloudUserID == userID }) { return true }
         guard let me = production?.member(withUserID: userID) else { return false }
-        return (me.parts ?? []).contains { parts.contains($0) }
+        let myParts = me.parts ?? []
+        return myParts.isEmpty ? !parts.isEmpty : myParts.contains { parts.contains($0) }
     }
 
     // 안 읽은 공지 (내가 보낸 건 읽은 것으로 친다)

@@ -14,7 +14,7 @@ struct MainCueSheetView: View {
     var onRehearsal: () -> Void = {}           // "리허설 모드" 버튼
     var onSpotlight: () -> Void = {}           // 참여자 현황 "Spotlight me" → 리허설을 열고 내가 진행
     var isSidebarHidden = false                // 왼쪽 사이드바가 가려졌는지 (메뉴 "사이드바 가리기")
-    @State private var selectedPart: Part?     // 파트 칩에서 고른 파트 (nil = 전체)
+    @State private var selectedParts: Set<Part> = []   // 파트 칩에서 고른 파트들 (비어 있으면 전체)
     @State private var historyCue: Cue?        // History 사이드바에 보여줄 큐 (nil = 닫힘)
     @State private var priorityScene: ShowScene?  // 우선순위 사이드바에 보여줄 씬 (nil = 닫힘)
     @State private var isShowingParticipants = false   // 멤버 버튼 → 참여자 현황
@@ -31,7 +31,7 @@ struct MainCueSheetView: View {
             if isEmptyOnIPad {
                 emptyCueSheet
             } else {
-                CueGrid(production: production, selectedPart: selectedPart, remoteRevision: remoteRevision, onShowHistory: { historyCue = $0 }, onEscape: { isShowingUnread = false }, priorityScene: $priorityScene, focus: gridFocus)
+                CueGrid(production: production, selectedParts: selectedParts, remoteRevision: remoteRevision, onShowHistory: { historyCue = $0 }, onEscape: { isShowingUnread = false }, priorityScene: $priorityScene, focus: gridFocus)
                     .padding(.top, -12)   // 위 여유(12)만큼 올려서 표 위치는 피그마 그대로
                     .padding(.trailing, -35)   // 표는 바깥 여백(35)을 무시하고 창 오른쪽 끝까지
                     .overlay(alignment: .trailing) { sidebar.padding(.bottom, 20).padding(.trailing, -15) }   // 사이드바는 창 오른쪽 · 아래에서 20씩 (기준이 바깥 여백 35 안쪽이라 -15)
@@ -52,6 +52,7 @@ struct MainCueSheetView: View {
         .task(id: production.id) {
             while !Task.isCancelled {
                 production.markSeen(byUserID: iCloudAccount.userRecordName)
+                await ShareRoster.shared.refresh(production)   // 그사이 나간 사람을 멤버 동그라미 · 참여자 창에서 빼려고 (#209)
                 try? await Task.sleep(for: .seconds(60))
             }
         }
@@ -122,9 +123,10 @@ extension MainCueSheetView {
     // 큐 수정 알림을 눌러서 왔을 때: 다른 파트만 보고 있었으면 "전체"로 풀고, 표에 그 큐들을 넘긴다
     private func showFocusedCues(_ focus: SystemNotifications.CueFocus?) {
         guard let focus, focus.productionID == production.id else { return }
-        if let selectedPart, !(selectedPart.cues ?? []).contains(where: { focus.cueIDs.contains($0.id) }) {
-            self.selectedPart = nil
+        let showsFocusedCue = selectedParts.contains { part in
+            (part.cues ?? []).contains { focus.cueIDs.contains($0.id) }
         }
+        if !selectedParts.isEmpty, !showsFocusedCue { selectedParts = [] }   // 고른 파트에 그 큐가 없으면 "전체"로
         gridFocus = focus
         cueFocus.wrappedValue = nil   // 한 번 썼으면 비운다 (다시 열 때 또 움직이지 않게)
     }
@@ -160,7 +162,7 @@ extension MainCueSheetView {
     // 파트 칩 + 오른쪽 미확인 · 리허설 모드 버튼
     private var filterRow: some View {
         HStack {
-            PartFilterTabBar(parts: production.parts ?? [], selectedPart: $selectedPart)
+            PartFilterTabBar(parts: production.parts ?? [], selectedParts: $selectedParts)
             Spacer()
             HStack(spacing: 10) {   // 피그마: 미확인 · 리허설 모드 간격 10
                 unreadButton
@@ -249,7 +251,8 @@ extension MainCueSheetView {
         Button { isShowingParticipants = true } label: {
             HStack(spacing: 4) {
                 HStack(spacing: -6) {
-                    let initials = (production.members ?? []).prefix(2).map { String($0.name.prefix(1)).uppercased() }
+                    // 공유에서 나간 사람은 빼고 (#209)
+                    let initials = ShareRoster.shared.members(of: production).prefix(2).map { String($0.name.prefix(1)).uppercased() }
                     if initials.isEmpty {
                         memberCircle(Image(systemName: "person.fill"))
                     } else {
@@ -290,8 +293,8 @@ extension MainCueSheetView {
     private var partFilterMenu: PartFilterActions {
         PartFilterActions(
             parts: (production.parts ?? []).sorted { $0.order < $1.order },
-            selectedPart: selectedPart,
-            select: { selectedPart = $0 }
+            selectedParts: selectedParts,
+            select: { selectedParts.selectPartFilter($0, totalCount: production.parts?.count ?? 0) }
         )
     }
 }

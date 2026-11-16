@@ -5,7 +5,7 @@
 //  [링크로 참여] — 카톡 등으로 받은 초대 링크를 붙여 넣어 공연에 참여한다.
 //  카톡 안 브라우저에서 링크를 누르면 앱이 아니라 iCloud 웹페이지로 가서 만듦.
 //  붙여 넣으면 ShareInvites가 초대를 받아 오고 → ContentView가 초대 수락 화면을 띄운다 (링크로 열렸을 때와 같은 흐름).
-//  TODO: 피그마에 아직 없는 버튼 → 디자인 나오면 모양 맞추기
+//  피그마 iPad 홈_01 · 홈_02 오른쪽 위 130×29 (#186)
 //
 
 import SwiftUI
@@ -24,7 +24,7 @@ struct JoinByLinkButton: View {
             if isChecking {
                 ProgressView()
             } else {
-                Label("링크로 참여", systemImage: "link")
+                Label("링크로 참여하기", systemImage: "link")   // 피그마 iPad 홈 (3065:3574 · 홈_02, #186)
             }
         }
         .buttonStyle(.secondary)

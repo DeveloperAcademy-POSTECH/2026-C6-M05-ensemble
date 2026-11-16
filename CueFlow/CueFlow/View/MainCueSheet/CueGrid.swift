@@ -10,7 +10,7 @@ import SwiftData
 
 struct CueGrid: View {
     let production: Production                    // 어느 공연의 표인지
-    var selectedPart: Part? = nil                 // 파트 탭바에서 고른 파트 (nil = 전체)
+    var selectedParts: Set<Part> = []             // 파트 탭바에서 고른 파트들 (비어 있으면 전체)
     var remoteRevision = 0                        // iCloud에서 받을 때마다 +1 → 표를 다시 그린다
     var onShowHistory: (Cue) -> Void = { _ in }   // 큐 카드 우클릭 → History
     var onEscape: () -> Void = {}                 // Esc → 미확인 사이드바 닫기
@@ -53,7 +53,7 @@ extension CueGrid {
         Grid(horizontalSpacing: 0, verticalSpacing: 0) {
             headerRow
             ForEach(visibleParts) { partRow($0) }
-            if selectedPart == nil { addPartRow }   // "전체"일 때만 + 파트 추가 줄
+            if selectedParts.isEmpty { addPartRow }   // "전체"일 때만 + 파트 추가 줄
         }
         .overlay(alignment: .topLeading) { selectedColumnEffect }
         .animation(.easeInOut(duration: 0.25), value: selectedScene)   // 선택 · 해제할 때 부드럽게
@@ -559,8 +559,8 @@ extension CueGrid {
     
     // 파트 탭바에서 고른 파트만 (안 골랐으면 전체)
     private var visibleParts: [Part] {
-        guard let selectedPart else { return sortedParts }
-        return sortedParts.filter { $0 == selectedPart }
+        guard !selectedParts.isEmpty else { return sortedParts }
+        return sortedParts.filter { selectedParts.contains($0) }
     }
     
     // 지금 표에 보이는 큐 전부 (파트 필터가 걸려 있으면 그 파트만)

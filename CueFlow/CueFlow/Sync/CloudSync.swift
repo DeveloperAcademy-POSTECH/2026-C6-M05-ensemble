@@ -186,14 +186,43 @@ final class CloudSync {
     private func observeAccepts() {
         acceptObserver = NotificationCenter.default.addObserver(
             forName: CloudShare.didAcceptNotification, object: nil, queue: nil
-        ) { [weak self] _ in
+        ) { [weak self] notification in
+            let zoneID = notification.object as? CKRecordZone.ID
             Task { @MainActor in
+                if let zoneID { await self?.fetchWholeSharedZone(zoneID) }
                 do {
                     try await self?.sharedEngine?.fetchChanges()
                 } catch {
                     self?.logger.error("공유받은 공연 받기 실패: \(error)")
                 }
             }
+        }
+    }
+
+    // 방금 수락한 공연 폴더를 처음부터 통째로 직접 받는다 (#205)
+    // - 엔진은 "어디까지 받았는지" 기록 이후만 받는다 → 나갔다가 다시 들어오면 씬 · 큐가 안 와서 공연이 비어 보였다
+    // - 수락 직후엔 iCloud의 "바뀐 공유 폴더" 목록이 1~2분 늦다 (10/28) → 폴더를 직접 보면 바로 온다
+    // 이미 있는 건 덮어쓰기만 해서 엔진이 나중에 같은 걸 또 받아도 괜찮다
+    private func fetchWholeSharedZone(_ zoneID: CKRecordZone.ID) async {
+        let database = CKContainer(identifier: ICloudAccount.containerID).sharedCloudDatabase
+        var token: CKServerChangeToken?
+        var count = 0
+        do {
+            repeat {
+                let changes = try await database.recordZoneChanges(inZoneWith: zoneID, since: token)
+                let records = changes.modificationResultsByID.values.compactMap { try? $0.get().record }
+                applyRemoteChanges {
+                    applyFetched(records: records, deletedIDs: [])
+                }
+                count += records.count
+                token = changes.changeToken
+                guard changes.moreComing else { break }
+            } while true
+            directTokens[zoneID] = token   // 10초마다 직접 받기도 여기서부터 이어서
+            logger.info("수락한 공연 통째로 받음: \(count)개")
+            await addMeToSharedProductions()
+        } catch {
+            logger.error("수락한 공연 통째로 받기 실패: \(error)")
         }
     }
 
@@ -369,7 +398,10 @@ final class CloudSync {
         // 공유받은 공연이면 "나가기"라서, 안의 씬 · 큐를 하나씩 지우는 요청은 보내지 않는다
         // (보내면 만든 사람의 공연에서 진짜로 지워진다, #132)
         let deletedZoneIDs = Set(context.deletedModelsArray.compactMap { ($0 as? Production)?.cloudZoneID })
-        zoneChanges += deletedZoneIDs.map { .deleteZone($0) }
+        zoneChanges += deletedZoneIDs.filter(\.isMine).map { .deleteZone($0) }
+        // 공유받은 공연 = 나가기: 폴더는 방장 것이라 지울 수 없다 ("Zone delete not allowed")
+        // → 공유 기록(CKShare)만 지운다 = 내 참여만 빠지고 방장 공연은 그대로 (#180)
+        recordChanges += deletedZoneIDs.filter { !$0.isMine }.map { .deleteRecord(Self.shareRecordID(in: $0)) }
 
         for model in context.deletedModelsArray where !(model is Production) {
             guard let item = model as? any CloudRecordConvertible else { continue }
@@ -406,6 +438,11 @@ final class CloudSync {
                 engine.state.add(pendingRecordZoneChanges: records)
             }
         }
+    }
+
+    // 폴더 공유의 공유 기록 이름은 정해져 있다 (CloudShare와 같음). 참여자는 이걸 지우면 공유에서 나간다
+    static func shareRecordID(in zoneID: CKRecordZone.ID) -> CKRecord.ID {
+        CKRecord.ID(recordName: CKRecordNameZoneWideShare, zoneID: zoneID)
     }
 
     // 폴더 주인에 따라 어느 엔진인지
@@ -518,31 +555,36 @@ final class CloudSync {
 
         var recordIDs = Set<CKRecord.ID>()
         for production in productions {
-            let scenes = production.scenes ?? []
-            let triggers = scenes.flatMap { $0.triggers ?? [] }
-            let parts = production.parts ?? []
-            // 큐는 트리거 쪽과 파트 쪽 둘 다에서 모은다 (한쪽만 붙은 큐도 빠지지 않게)
-            let cues = triggers.flatMap { $0.cues ?? [] } + parts.flatMap { $0.cues ?? [] }
-
-            var items: [any CloudRecordConvertible] = [production]
-            items += scenes
-            items += triggers
-            items += parts
-            items += cues
-            items += production.members ?? []
-            items += scenes.flatMap { $0.scriptLines ?? [] }
-            items += scenes.flatMap { $0.placements ?? [] }
-            items += production.initialPlacements ?? []
-            items += cues.flatMap { $0.histories ?? [] }
-            items += cues.flatMap { $0.comments ?? [] }   // 답글도 큐에 붙어 있어서 여기 같이 들어온다
-            items += cues.flatMap { $0.checks ?? [] }
-            items += production.notices ?? []
-            items += (production.notices ?? []).flatMap { $0.reads ?? [] }
-            recordIDs.formUnion(items.compactMap(\.cloudRecordID))
+            recordIDs.formUnion(allRecordIDs(of: production))
         }
 
         enqueue(productions.map { .saveZone(CKRecordZone(zoneID: $0.cloudZoneID)) }, recordIDs.map { .saveRecord($0) })
         logger.info("처음 올리기: 공연 \(productions.count)개, 레코드 \(recordIDs.count)개")
+    }
+
+    // 공연 하나에 들어 있는 레코드 전부 (처음 올리기 · iCloud 폴더가 없어져 다시 올릴 때)
+    private func allRecordIDs(of production: Production) -> Set<CKRecord.ID> {
+        let scenes = production.scenes ?? []
+        let triggers = scenes.flatMap { $0.triggers ?? [] }
+        let parts = production.parts ?? []
+        // 큐는 트리거 쪽과 파트 쪽 둘 다에서 모은다 (한쪽만 붙은 큐도 빠지지 않게)
+        let cues = triggers.flatMap { $0.cues ?? [] } + parts.flatMap { $0.cues ?? [] }
+
+        var items: [any CloudRecordConvertible] = [production]
+        items += scenes
+        items += triggers
+        items += parts
+        items += cues
+        items += production.members ?? []
+        items += scenes.flatMap { $0.scriptLines ?? [] }
+        items += scenes.flatMap { $0.placements ?? [] }
+        items += production.initialPlacements ?? []
+        items += cues.flatMap { $0.histories ?? [] }
+        items += cues.flatMap { $0.comments ?? [] }   // 답글도 큐에 붙어 있어서 여기 같이 들어온다
+        items += cues.flatMap { $0.checks ?? [] }
+        items += production.notices ?? []
+        items += (production.notices ?? []).flatMap { $0.reads ?? [] }
+        return Set(items.compactMap(\.cloudRecordID))
     }
 
     // MARK: - 올릴 때 레코드 만들기
@@ -621,7 +663,7 @@ final class CloudSync {
                 newNoticeIDs.append(id)
             }
             if record.recordType == Cue.recordType, isRecentChangeByOther(record),
-               let id = UUID(uuidString: record.recordID.recordName) {
+               let id = UUID(uuidString: record.recordID.recordName), isCueContentChanged(record, id: id) {
                 changedCueIDs.append(id)
             }
             if let item = upsert(record) {
@@ -680,6 +722,22 @@ final class CloudSync {
     // 내가 고친 건 "__defaultOwner__"(내 공연일 때) 또는 내 계정 ID로 온다
     // "__defaultOwner__"는 "그 폴더(공연)를 만든 사람"이라는 뜻이다 → 내 공연일 때만 나.
     // 공유받은 공연에서는 공연 만든 사람(다른 사람)이라, 전에는 주인이 고친 큐 알림이 팀원에게 안 갔다
+    // 받은 큐가 이 기기의 큐와 내용이 다른지 (받아서 넣기 전에 비교). 처음 받는 큐면 바뀐 것으로 본다
+    // 댓글 · 확인을 큐에 이으면 SwiftData가 큐도 "바뀜"으로 표시해서 내용이 같은 큐가 다시 올라온다
+    // → 그건 큐 수정이 아니라서 알림을 안 보낸다
+    private func isCueContentChanged(_ record: CKRecord, id: UUID) -> Bool {
+        guard let cue = findModel(id) as? Cue else { return true }
+        let current = CKRecord(recordType: Cue.recordType, recordID: record.recordID)
+        cue.fill(current)
+        return Cue.contentKeys.contains { key in
+            switch (current[key] as? NSObject, record[key] as? NSObject) {
+            case (nil, nil): false
+            case let (mine?, theirs?): !mine.isEqual(theirs)
+            default: true
+            }
+        }
+    }
+
     private func isRecentChangeByOther(_ record: CKRecord) -> Bool {
         guard let modifier = record.lastModifiedUserRecordID?.recordName,
               !(modifier == CKCurrentUserDefaultName && record.recordID.zoneID.isMine),
@@ -903,6 +961,13 @@ final class CloudSync {
             for zoneID in sent.deletedZoneIDs {
                 store.removeRecords(in: zoneID)
             }
+            // 예전 방식(공유받은 폴더 지우기)으로 남아 있던 나가기 → 공유 기록 지우기로 바꿔서 다시 (#180)
+            for (zoneID, error) in sent.failedZoneDeletes {
+                logger.error("폴더 지우기 실패 \(zoneID.zoneName): \(error)")
+                guard !zoneID.isMine else { continue }
+                engine.state.remove(pendingDatabaseChanges: [.deleteZone(zoneID)])
+                engine.state.add(pendingRecordZoneChanges: [.deleteRecord(Self.shareRecordID(in: zoneID))])
+            }
             for failure in sent.failedZoneSaves {
                 logger.error("폴더 만들기 실패 \(failure.zone.zoneID.zoneName): \(failure.error)")
             }
@@ -913,6 +978,14 @@ final class CloudSync {
             }
             for recordID in sent.deletedRecordIDs {
                 store.removeRecord(recordID)
+                // 공유받은 공연에서 나가기 성공 → 그 공연 기억도 정리 (#180)
+                if recordID.recordName == CKRecordNameZoneWideShare, !recordID.zoneID.isMine {
+                    store.removeRecords(in: recordID.zoneID)
+                    logger.info("공유받은 공연에서 나감: \(recordID.zoneID.zoneName)")
+                }
+            }
+            for (recordID, error) in sent.failedRecordDeletes {
+                logger.error("지우기 실패 \(recordID.recordName): \(error)")
             }
             handleFailedSaves(sent.failedRecordSaves, engine: engine)
             if !sent.savedRecords.isEmpty || !sent.deletedRecordIDs.isEmpty {
@@ -954,6 +1027,12 @@ final class CloudSync {
                 applyFetched(records: fetched.modifications.map(\.record), deletedIDs: fetched.deletions.map(\.recordID))
             }
 
+        // 폴더 하나 받기가 끝남. iCloud에 그 폴더가 없으면(Zone Not Found) 정리 — 안 하면 앱으로 돌아올 때마다 같은 실패 반복 (#181)
+        case .didFetchRecordZoneChanges(let event):
+            if let error = event.error, error.code == .zoneNotFound {
+                handleMissingZone(event.zoneID, engine: engine)
+            }
+
         case .didFetchChanges:
             // 다 받았는데도 부모를 못 찾은 게 있으면 기록만 (부모가 지워졌거나 아직 2차 대상인 경우)
             if !unlinkedRecords.isEmpty {
@@ -969,6 +1048,31 @@ final class CloudSync {
 
         default:
             break
+        }
+    }
+
+    // iCloud에 공연 폴더가 없을 때 (#181)
+    // - 내 공연이 이 기기에 아직 있으면: 폴더를 다시 만들고 공연을 통째로 다시 올린다 (데이터를 잃지 않게)
+    // - 이 기기에도 없거나 공유받은 공연이면: 그 폴더를 잊고 정리한다 (공유받은 공연 = 방장이 지웠거나 공유를 끊음)
+    private func handleMissingZone(_ zoneID: CKRecordZone.ID, engine: CKSyncEngine) {
+        let idText = zoneID.zoneName.replacingOccurrences(of: "Production-", with: "")
+        let production = UUID(uuidString: idText).flatMap { findModel($0) } as? Production
+
+        if zoneID.isMine, let production {
+            logger.info("iCloud에 폴더가 없음 → 이 기기 공연으로 다시 올리기: \(production.title)")
+            store.removeRecords(in: zoneID)   // 예전 꼬리표는 버린다 (없는 폴더의 버전이라)
+            engine.state.add(pendingDatabaseChanges: [.saveZone(CKRecordZone(zoneID: zoneID))])
+            engine.state.add(pendingRecordZoneChanges: allRecordIDs(of: production).map { .saveRecord($0) })
+            return
+        }
+
+        logger.info("iCloud에서 없어진 폴더 → 이 기기에서도 정리: \(zoneID.zoneName)")
+        applyRemoteChanges { deleteProduction(in: zoneID) }
+        store.removeRecords(in: zoneID)
+        unlinkedRecords = unlinkedRecords.filter { $0.value.recordID.zoneID != zoneID }   // 이 폴더에서 온 "부모 못 찾은" 것도 버림
+        // 내 폴더면 지우기 요청을 넣어 엔진이 이 폴더를 더는 받으려 하지 않게 (이미 없으니 실제로 지워질 건 없음)
+        if zoneID.isMine {
+            engine.state.add(pendingDatabaseChanges: [.deleteZone(zoneID)])
         }
     }
 

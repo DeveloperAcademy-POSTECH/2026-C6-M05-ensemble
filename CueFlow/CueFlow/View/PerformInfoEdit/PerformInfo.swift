@@ -193,9 +193,9 @@ extension ProductionForm {
     }()
 }
 
-// 입력칸 공통 모양: 흰 배경 + 연한 테두리
+// 입력칸 공통 모양: 흰 배경 + 연한 테두리 (초대 수락 후 이름 칸도 같이 씀, #179)
 
-private extension View {
+extension View {
     func formBox(padding: CGFloat = 14) -> some View {
         self
             .font(.app(size: 13))

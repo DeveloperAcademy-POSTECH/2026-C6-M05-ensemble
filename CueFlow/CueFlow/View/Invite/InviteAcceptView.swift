@@ -65,6 +65,8 @@ struct InviteAcceptView: View {
                 .strokeBorder(Color.neutral100, lineWidth: 1)   // 피그마 Backgrounds/Secondary #F2F2F7에 가장 가까운 색
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)   // 창 가운데에 카드
+        // 카드 뒤 화면 배경. 안 정하면 다크 모드 아이패드에서 검정(#000) (피그마 iPad 다크 초대수락 = #1E1E1E, #185)
+        .background(Color.appBackground)
     }
 }
 

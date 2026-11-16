@@ -10,7 +10,36 @@
 //
 
 import CloudKit
+import Observation
 import SwiftData
+
+// 공연마다 "지금 공유에 남아 있는 사람" 기억 → 나간 사람을 화면에서 숨긴다 (#201 · #209)
+// 화면(@State)에 두면 창이 다시 그려질 때마다 비워져서 나간 사람이 보였다 사라졌다 했다 → 여기 한 곳에 둔다
+@MainActor
+@Observable
+final class ShareRoster {
+    static let shared = ShareRoster()
+
+    // 공연 id → 공유에 있는 사람들의 iCloud 계정 ID. 아직 모르거나 공유가 없으면 없음 → 전부 보여 준다
+    private var userIDs: [UUID: Set<String>] = [:]
+
+    // iCloud에 다시 물어본다. 실패하면(오프라인 등) 전에 알던 걸 그대로 둔다
+    func refresh(_ production: Production) async {
+        guard !(production.members ?? []).isEmpty else { return }   // 공유 안 한 공연은 물어볼 필요 없음
+        guard let ids = try? await CloudShare.memberUserIDs(in: production) else { return }
+        userIDs[production.id] = ids
+    }
+
+    // 공유에서 나간 사람이면 false. Member 기록은 남겨서 그 사람이 쓴 댓글 작성자 이름은 그대로
+    func isStillShared(_ member: Member, in production: Production) -> Bool {
+        guard let ids = userIDs[production.id], let userID = member.iCloudUserID else { return true }
+        return ids.contains(userID)
+    }
+
+    func members(of production: Production) -> [Member] {
+        (production.members ?? []).filter { isStillShared($0, in: production) }
+    }
+}
 
 enum CloudShare {
     // 초대를 수락하면 보낸다 → CloudSync가 공유받은 공연을 바로 받아 온다
@@ -52,7 +81,8 @@ enum CloudShare {
     // 받은 초대 수락 → 이제 나도 이 공연의 참여자. 공연 데이터는 CloudSync가 받아 온다
     static func accept(_ metadata: CKShare.Metadata) async throws {
         _ = try await container.accept(metadata)
-        NotificationCenter.default.post(name: didAcceptNotification, object: nil)
+        // 어느 공연 폴더인지 같이 보낸다 → CloudSync가 그 폴더를 통째로 바로 받는다 (#205)
+        NotificationCenter.default.post(name: didAcceptNotification, object: metadata.share.recordID.zoneID)
     }
 
     // 공유받은 공연에서 "나" (이름·iCloud 계정). 공유가 없으면 nil
@@ -66,6 +96,21 @@ enum CloudShare {
     static func refreshMemberNames(in production: Production) async throws {
         guard let share = try await fetchShare(in: production.cloudZoneID, from: database(for: production)) else { return }
         production.fillMemberNames(from: share)
+    }
+
+    // 지금 공유에 들어와 있는 사람들의 iCloud 계정 ID (주인 + 수락한 사람). 공유가 없으면 nil (#201)
+    // 나간 사람은 여기서 빠진다 → 참여자 창에서 숨기는 데 쓴다 (Member 기록은 댓글 작성자 때문에 남긴다)
+    static func memberUserIDs(in production: Production) async throws -> Set<String>? {
+        guard let share = try await fetchShare(in: production.cloudZoneID, from: database(for: production)) else { return nil }
+        production.fillMemberNames(from: share)
+        let ids = share.participants
+            .filter { $0.role == .owner || $0.acceptanceStatus == .accepted }
+            .compactMap { participant -> String? in
+                guard let rawID = participant.userIdentity.userRecordID?.recordName else { return nil }
+                // "__defaultOwner__" = 공유를 만든 사람이 "나"일 때 → 내 진짜 계정 ID로
+                return rawID == CKCurrentUserDefaultName ? ICloudAccount.currentUserRecordName : rawID
+            }
+        return Set(ids)
     }
 
     // 폴더 공유는 이름이 정해져 있다 (CKRecordNameZoneWideShare). 없으면 nil
@@ -156,7 +201,7 @@ extension CKShare {
                 let userID = participant.userIdentity.userRecordID?.recordName
                 return ShareMember(
                     id: participant.participantID,
-                    name: participant.iCloudName ?? appName(isMe: isMe, userID: userID, in: production),
+                    name: displayName(of: participant, isMe: isMe, userID: userID, in: production),
                     isMe: isMe,
                     isOwner: participant.role == .owner,
                     userID: userID
@@ -164,12 +209,13 @@ extension CKShare {
             }
     }
 
-    // iCloud가 이름을 안 알려 주면 앱에 저장된 이름 (참여자 현황 창과 같은 이름)
-    // 나 → 내 멤버 이름 · 없으면 맥 사용자 이름 / 다른 사람 → 그 사람 멤버 이름
-    private func appName(isMe: Bool, userID: String?, in production: Production) -> String {
-        if isMe { return CurrentEditor.name(in: production) }
-        if let name = production.member(withUserID: userID)?.name, !Member.isPlaceholderName(name) { return name }
-        return Member.unknownName
+    // 앱에 저장된 멤버 이름(초대 수락 때 직접 입력한 이름) 먼저 → 참여자 현황 창 · 댓글과 같은 이름 (#204)
+    // 없으면 iCloud 이름 · 이메일 → 그것도 없으면 나: 맥 사용자 이름 / 다른 사람: "이름 없음"
+    private func displayName(of participant: CKShare.Participant, isMe: Bool, userID: String?, in production: Production) -> String {
+        let memberID = isMe ? ICloudAccount.currentUserRecordName : userID
+        if let name = production.member(withUserID: memberID)?.name, !Member.isPlaceholderName(name) { return name }
+        if let name = participant.iCloudName { return name }
+        return isMe ? CurrentEditor.name(in: production) : Member.unknownName
     }
 }
 
