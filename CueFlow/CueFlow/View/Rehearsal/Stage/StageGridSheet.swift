@@ -15,7 +15,7 @@ struct StageGridSheet: View {
     let onApply: () -> Void   // "적용 완료" → 무대 배치로
 
     @State private var selected: Int
-    @State private var isConfirmingReset = false
+    @State private var confirmRequest: ConfirmRequest?   // 칸 수를 바꿀 때 확인 창
 
     // 고를 수 있는 칸: 3 · 4 · 5 = n×n, 0 = 기본(구분선 없음)
     private static let options = [3, 4, 5, 0]
@@ -60,16 +60,7 @@ struct StageGridSheet: View {
         .padding(.bottom, 50)
         .frame(width: 1049, height: 800)
         .background(Color.surfaceWhite)
-        .alert("무대 칸을 바꿀까요?", isPresented: $isConfirmingReset) {
-            Button("취소", role: .cancel) { }
-            Button("바꾸기", role: .destructive) {
-                cuesWithCell.forEach { $0.stageCell = nil }
-                production.stageGridColumns = selected
-                onApply()
-            }
-        } message: {
-            Text("무대 큐 \(cuesWithCell.count)개의 칸 위치가 지워져요. 리허설 큐 목록에서 다시 골라주세요.")
-        }
+        .confirmHost($confirmRequest)   // 시트는 따로 뜬 창이라 확인 창 자리를 여기에 따로 둠
     }
 
     // 무대 칸을 이미 고른 큐 (칸 수가 바뀌면 다시 골라야 함)
@@ -82,13 +73,24 @@ struct StageGridSheet: View {
 
     private func apply() {
         if selected != production.stageGridColumns, !cuesWithCell.isEmpty {
-            isConfirmingReset = true
+            confirmRequest = ConfirmRequest(
+                title: "무대 칸을 바꿀까요?",
+                message: "무대 큐 \(cuesWithCell.count)개의 칸 위치가 지워져요. 리허설 큐 목록에서 다시 골라주세요.",
+                confirmTitle: "바꾸기",
+                onConfirm: { resetCellsAndApply() }
+            )
             return
         }
         production.stageGridColumns = selected
         onApply()
     }
-}
+
+    // 고른 칸 위치를 비우고 새 칸 수로 적용
+    private func resetCellsAndApply() {
+        cuesWithCell.forEach { $0.stageCell = nil }
+        production.stageGridColumns = selected
+        onApply()
+    }}
 
 // 칸 하나: 무대 미리보기 + "3x3" + "9개 영역". 고르면 보라 테두리 + 연보라 바탕
 private struct StageGridOption: View {

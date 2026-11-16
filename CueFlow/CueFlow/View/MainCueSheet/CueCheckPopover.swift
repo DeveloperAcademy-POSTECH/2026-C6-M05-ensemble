@@ -106,11 +106,12 @@ extension CueCheckPopover {
 // 데이터
 
 extension CueCheckPopover {
-    // 공연 멤버 전부 (파트 순서대로)
+    // 지금 공유에 남아 있는 멤버 (파트 순서대로). 나간 사람은 확인함 · 미확인 모두에서 뺀다 (#209)
     private var allMembers: [Member] {
-        (cue.part?.production?.members ?? []).sorted { ($0.mainPart?.order ?? .max) < ($1.mainPart?.order ?? .max) }
+        guard let production = cue.part?.production else { return [] }
+        return ShareRoster.shared.members(of: production)
+            .sorted { ($0.mainPart?.order ?? .max) < ($1.mainPart?.order ?? .max) }
     }
-
     private var checkedMembers: [Member] { allMembers.filter(isChecked) }
     private var uncheckedMembers: [Member] { allMembers.filter { !isChecked($0) } }
 

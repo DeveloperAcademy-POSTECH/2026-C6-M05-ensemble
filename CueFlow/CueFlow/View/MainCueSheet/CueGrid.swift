@@ -18,7 +18,7 @@ struct CueGrid: View {
     var focus: SystemNotifications.CueFocus? = nil   // 큐 수정 알림을 눌렀을 때 → 그 큐로 스크롤 + 선택
     @Environment(\.modelContext) private var modelContext   // 새 큐를 저장할 곳
     @Environment(\.canEditCues) private var canEdit   // 읽기 권한이면 false (#120)
-
+    @Environment(\.showConfirm) private var showConfirm   // 삭제… 확인 창 (ContentView가 화면 가운데에 띄움)
     @State private var hoveredCell: (part: Part, scene: ShowScene)?   // 마우스가 올라가 있는 칸 (빈 칸 보이기 · 붙여넣기)
     @State private var isAddingScene = false      // 씬 추가 팝오버가 열려 있는지
     @State private var isAddingPart = false       // 파트 추가 팝오버가 열려 있는지
@@ -26,6 +26,10 @@ struct CueGrid: View {
     @State private var editingPart: Part?         // 더블클릭해서 수정 중인 파트
     @State private var selectedScene: ShowScene?  // 머리칸을 눌러 고른 씬 열 (nil = 선택 안 함)
     @State private var selectedCueIDs: Set<UUID> = []   // 선택된 큐 카드들 (shift로 여러 개)
+    @State private var menuScene: ShowScene?        // 우클릭 메뉴를 연 장면
+    @State private var menuPart: Part?              // 우클릭 메뉴를 연 파트
+    @State private var insertingBeside: ShowScene?  // 앞 · 뒤에 장면 추가 팝오버를 연 장면
+    @State private var insertsBefore = true         // true = 앞에, false = 뒤에 추가
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -120,8 +124,10 @@ extension CueGrid {
         .appPopover(isPresented: isEditing(scene)) {
             AddScene(title: scene.title, kind: scene.kind) { scene.title = $0; scene.kind = $1 }
         }
-        .contextMenu {   // 우클릭 메뉴
-            if canEdit { Button("삭제", role: .destructive) { deleteScene(scene) } }
+        .onRightClick { openSceneMenu(scene) }   // 우클릭: 이 열을 선택하고 장면 메뉴
+        .appPopover(isPresented: isShowingMenu(scene), width: nil) { sceneMenu(scene) }
+        .appPopover(isPresented: isInserting(scene)) {   // 앞에 · 뒤에 장면 추가
+            AddScene { insertScene(title: $0, kind: $1, beside: scene) }
         }
     }
     
@@ -154,9 +160,8 @@ extension CueGrid {
             .appPopover(isPresented: isEditing(part), edge: .trailing) {
                 AddPart(name: part.name) { part.name = $0 }
             }
-            .contextMenu {   // 우클릭 메뉴
-                if canEdit { Button("삭제", role: .destructive) { deletePart(part) } }
-            }
+            .onRightClick { if canEdit { menuPart = part } }   // 우클릭: 파트 메뉴 (읽기 권한이면 없음)
+            .appPopover(isPresented: isShowingMenu(part), edge: .trailing, width: nil) { partMenu(part) }
     }
     
     // 파트 × 씬 칸: 큐가 있으면 항상 보이고, 비어 있으면 마우스를 올렸을 때만 셀이 보임
@@ -452,6 +457,90 @@ extension CueGrid {
     
     private func renumberParts() {
         for (index, part) in sortedParts.enumerated() { part.order = index }
+    }
+}
+
+// 장면 · 파트 우클릭 메뉴
+
+extension CueGrid {
+    // 장면: 앞에 · 뒤에 장면 추가 / 수정 · 삭제 / 큐 실행 순서 설정 (읽기 권한이면 큐 실행 순서만)
+    private func sceneMenu(_ scene: ShowScene) -> some View {
+        PopoverMenu(width: 140) {
+            if canEdit {
+                PopoverMenuItem("앞에 장면 추가하기") { openInsert(beside: scene, before: true) }
+                PopoverMenuItem("뒤에 장면 추가하기") { openInsert(beside: scene, before: false) }
+                PopoverMenuDivider()
+                PopoverMenuItem("장면 수정하기") { editingScene = scene }   // 더블클릭과 같은 수정 팝오버
+                PopoverMenuItem("장면 삭제…") { confirmDelete(scene) }
+                PopoverMenuDivider()
+            }
+            PopoverMenuItem("큐 실행 순서 설정") { priorityScene = scene }   // 우선순위 사이드바
+        }
+    }
+
+    // 파트: 수정 · 삭제 (읽기 권한이면 메뉴 자체를 안 띄움)
+    private func partMenu(_ part: Part) -> some View {
+        PopoverMenu(width: 140) {
+            PopoverMenuItem("파트 수정하기") { editingPart = part }   // 더블클릭과 같은 수정 팝오버
+            PopoverMenuItem("파트 삭제…") { confirmDelete(part) }
+        }
+    }
+
+    // 장면 우클릭: 그 열을 선택(하이라이트)하고 메뉴 열기
+    private func openSceneMenu(_ scene: ShowScene) {
+        selectColumn(scene)
+        menuScene = scene
+    }
+
+    private func openInsert(beside scene: ShowScene, before: Bool) {
+        insertsBefore = before
+        insertingBeside = scene
+    }
+
+    // 고른 장면 앞(또는 뒤)에 새 장면 끼워 넣기. 뒤쪽 장면은 순서를 한 칸씩 밀고, S#번호는 자동
+    private func insertScene(title: String, kind: SceneKind, beside scene: ShowScene) {
+        let index = scene.order + (insertsBefore ? 0 : 1)
+        for other in sortedScenes where other.order >= index { other.order += 1 }
+        let newScene = ShowScene(title: title, kind: kind, order: index)
+        production.scenes = (production.scenes ?? []) + [newScene]
+        selectColumn(newScene)
+    }
+
+    // 확인 창 제목에 쓸 장면 이름 (예: "S#1 프롤로그")
+    private func sceneName(_ scene: ShowScene) -> String {
+        scene.title.isEmpty ? sceneLabel(for: scene) : "\(sceneLabel(for: scene)) \(scene.title)"
+    }
+
+    // 팝오버를 열고 닫는 스위치들
+    private func isShowingMenu(_ scene: ShowScene) -> Binding<Bool> {
+        Binding(get: { menuScene == scene }, set: { if !$0 { menuScene = nil } })
+    }
+
+    private func isShowingMenu(_ part: Part) -> Binding<Bool> {
+        Binding(get: { menuPart == part }, set: { if !$0 { menuPart = nil } })
+    }
+
+    private func isInserting(_ scene: ShowScene) -> Binding<Bool> {
+        Binding(get: { insertingBeside == scene }, set: { if !$0 { insertingBeside = nil } })
+    }
+    
+    // 장면 삭제… → 화면 가운데 확인 창
+    private func confirmDelete(_ scene: ShowScene) {
+        showConfirm(ConfirmRequest(title: deleteTitle(sceneName(scene)),
+                                   message: "이 장면의 트리거와 큐도 함께 지워져요. 되돌릴 수 없어요.",
+                                   onConfirm: { deleteScene(scene) }))
+    }
+
+    // 파트 삭제… → 화면 가운데 확인 창
+    private func confirmDelete(_ part: Part) {
+        showConfirm(ConfirmRequest(title: deleteTitle(part.name),
+                                   message: "이 파트의 큐도 함께 지워져요. 되돌릴 수 없어요.",
+                                   onConfirm: { deletePart(part) }))
+    }
+
+    // "무대를 삭제하시겠습니까?" (받침에 따라 을 · 를)
+    private func deleteTitle(_ name: String) -> String {
+        "\(name)\(name.objectParticle) 삭제하시겠습니까?"
     }
 }
 
