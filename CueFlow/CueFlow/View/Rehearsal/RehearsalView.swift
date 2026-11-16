@@ -83,11 +83,11 @@ struct RehearsalView: View {
         VStack(spacing: 20) {
             header
 
-            HStack(alignment: .top, spacing: 20) {
+            HStack(alignment: .top, spacing: RehearsalLayout.columnSpacing) {
                 RehearsalScriptPanel(lines: currentScriptLines, highlightedLineID: highlightedLineID) {
                     isEditingScript = true
                 }
-                .frame(width: 372)
+                .frame(width: RehearsalLayout.scriptWidth)
 
                 VStack(spacing: 40) {
                     RehearsalStageMap(
@@ -97,7 +97,7 @@ struct RehearsalView: View {
                         currentStep: triggerIndex,
                         onToggleExpand: { isMinimapExpanded = true }
                     )
-                        .frame(height: 378)
+                        .frame(height: RehearsalLayout.mapHeight)
 
                     RehearsalCueList(
                             sceneCode: currentScene?.code(in: scenes) ?? "",
@@ -148,8 +148,8 @@ struct RehearsalView: View {
             if let step = notification.object as? RehearsalSync.FakeStep { moveFakeLeader(step) }
         }
         #endif
-        .padding(.leading, 51)
-        .padding(.trailing, 61)
+        .padding(.leading, RehearsalLayout.leading)
+        .padding(.trailing, RehearsalLayout.trailing)
         .padding(.top, 46)
         .padding(.bottom, 45)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -520,4 +520,22 @@ struct RehearsalCard<Content: View>: View {
     return RehearsalView(production: production) { }
         .environment(ICloudAccount())
         .frame(width: 1512, height: 932)
+}
+
+// 리허설 화면 칸 크기. 아이패드는 화면(1194)이 맥(1512)보다 좁아서 피그마 iPad 숫자로 (3032:25689, #195)
+// 맥 숫자 그대로 쓰면 오른쪽 칸이 690밖에 안 돼서 파트 칩 · < > · 이전/다음 큐가 겹쳤다
+enum RehearsalLayout {
+    #if os(macOS)
+    static let leading: CGFloat = 51
+    static let trailing: CGFloat = 61
+    static let scriptWidth: CGFloat = 372
+    static let columnSpacing: CGFloat = 20
+    static let mapHeight: CGFloat = 378
+    #else
+    static let leading: CGFloat = 33
+    static let trailing: CGFloat = 33
+    static let scriptWidth: CGFloat = 300
+    static let columnSpacing: CGFloat = 16
+    static let mapHeight: CGFloat = 308
+    #endif
 }
