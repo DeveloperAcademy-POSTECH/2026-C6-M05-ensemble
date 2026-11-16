@@ -182,7 +182,7 @@ extension CueCard {
         if hasNewComment {
             Circle()
                 .fill(Color(red: 226 / 255, green: 0, blue: 0))
-                .frame(width: 8, height: 8)
+                .frame(width: 7, height: 7)
         }
     }
 
