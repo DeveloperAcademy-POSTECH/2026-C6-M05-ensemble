@@ -58,13 +58,13 @@ struct RehearsalView: View {
     }
 
     // 지금 큐에 해당하는 대본 줄 (지금 큐의 트리거 글로 찾음)
+    // 한 번호에 트리거가 여러 개면 대본에서 찾은 첫 트리거의 줄 (#227)
     private var highlightedLineID: UUID? {
-        guard currentSteps.indices.contains(triggerIndex),
-              let trigger = currentSteps[triggerIndex].first?.trigger else { return nil }
+        guard currentSteps.indices.contains(triggerIndex) else { return nil }
         let matches = ScriptCueMatcher.match(
             triggers: currentTriggers, lines: currentScriptLines, castNames: production.castNames
         )
-        return matches[trigger.id]
+        return currentSteps[triggerIndex].lazy.compactMap { $0.trigger.flatMap { matches[$0.id] } }.first
     }
 
     // 지금 장면의 대본 (순서대로)
