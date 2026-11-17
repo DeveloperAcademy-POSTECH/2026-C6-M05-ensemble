@@ -31,7 +31,7 @@ struct MainCueSheetView: View {
             if isEmptyOnIPad {
                 emptyCueSheet
             } else {
-                CueGrid(production: production, selectedParts: selectedParts, remoteRevision: remoteRevision, onShowHistory: { historyCue = $0 }, onEscape: { isShowingUnread = false }, priorityScene: $priorityScene, focus: gridFocus)
+                CueGrid(production: production, selectedParts: selectedParts, remoteRevision: remoteRevision, onShowHistory: { historyCue = $0 }, onEscape: { isShowingUnread = false }, onShowUnread: { isShowingUnread = true }, priorityScene: $priorityScene, focus: gridFocus)
                     .padding(.top, -12)   // 위 여유(12)만큼 올려서 표 위치는 피그마 그대로
                     .padding(.trailing, -35)   // 표는 바깥 여백(35)을 무시하고 창 오른쪽 끝까지
                     .overlay(alignment: .trailing) { sidebar.padding(.bottom, 20).padding(.trailing, -15) }   // 사이드바는 창 오른쪽 · 아래에서 20씩 (기준이 바깥 여백 35 안쪽이라 -15)
