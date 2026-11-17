@@ -127,8 +127,7 @@ extension CueHistorySidebar {
 
     // "#4 Scene · 소품"
     private var sceneText: String {
-        let sceneNumber = (cue.trigger?.scene?.order ?? 0) + 1
-        return "#\(sceneNumber) Scene · \(cue.part?.name ?? "")"
+        return "\(cue.trigger?.scene?.shortCode ?? "") · \(cue.part?.name ?? "")"   // "S#2 · 소품"
     }
 }
 

@@ -191,6 +191,6 @@ extension UnreadCueCard {
             .background(partColor.sidebarChip, in: .capsule)
     }
 
-    private var sceneCode: String { "#\((cue.trigger?.scene?.order ?? 0) + 1) Scene" }
+    private var sceneCode: String { cue.trigger?.scene?.shortCode ?? "" }   // 통합 큐시트 머리칸과 같은 "S#2"
     private var partColor: PartColor { cue.part?.color ?? PartColor.at(0) }
 }

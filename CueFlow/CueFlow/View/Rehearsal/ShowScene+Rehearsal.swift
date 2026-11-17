@@ -31,4 +31,8 @@ extension ShowScene {
         let number = (sameKind.firstIndex(of: self) ?? 0) + 1
         return kind == .blackout ? kind.title : "\(kind.codePrefix)#\(number)"   // 암전은 번호 없이 "암전"
     }
+    // 공연 전체 장면 기준 "S#2" · "N#1" · "암전" (장면 목록을 따로 안 가진 사이드바 · 카드에서)
+    var shortCode: String {
+        code(in: (production?.scenes ?? []).sorted { $0.order < $1.order })
+    }
 }
