@@ -94,7 +94,10 @@ struct StageSetupSheet: View {
 }
 
 extension Production {
-    // 소품 이름 가나다순 (리허설 화면에 보여줄 때, #229). 숫자는 크기대로 ("소품2" < "소품10")
+    // 배역 · 소품 이름 가나다순 (리허설 화면에 보여줄 때, #229). 숫자는 크기대로 ("별2" < "별10")
+    var sortedCastNames: [String] {
+        castNames.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+    }
     var sortedPropNames: [String] {
         propNames.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
     }
@@ -145,7 +148,7 @@ private struct StagePlacementEditor: View {
             VStack(alignment: .trailing, spacing: 40) {
                 VStack(alignment: .leading, spacing: 36) {
                     HStack(alignment: .top, spacing: 50) {
-                        cardColumn(title: "배역", systemImage: "person", names: production.castNames, kind: .cast)
+                        cardColumn(title: "배역", systemImage: "person", names: production.sortedCastNames, kind: .cast)
                         cardColumn(title: "소품", systemImage: "gift", names: production.sortedPropNames, kind: .prop)
                     }
 
