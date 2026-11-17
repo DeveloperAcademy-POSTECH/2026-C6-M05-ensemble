@@ -10,6 +10,7 @@ import SwiftData
 
 // 씬 열의 ⓝ → 오른쪽 우선순위 사이드바 (피그마 순서박스지정사이드바, 폭 313)
 // 번호 칸(1, 2, 3 …)에 큐 카드를 끌어다 놓으면 그 칸 번호가 큐 번호가 된다. 같은 칸 = 같은 번호
+// 트리거 글이 같은 큐(같은 순간)는 항상 같은 칸에 함께 들어간다
 struct CuePrioritySidebar: View {
     @Environment(\.canEditCues) private var canEdit   // 읽기 권한이면 false (#120)
     let scene: ShowScene
@@ -148,29 +149,31 @@ extension CuePrioritySidebar {
         sceneCues.filter { slotNumber(of: $0) == number }.sorted { $0.createdAt < $1.createdAt }
     }
 
-    // 처음 열 때: 번호가 없는(00) 큐에 번호를 붙이고, 칸 수를 맞춤 (최소 5칸)
-    // 같은 트리거의 큐는 같은 번호. 트리거 순서대로 다음 번호를 준다 (트리거에 이미 번호 있는 큐가 있으면 그 번호)
+    // 처음 열 때: 같은 순간(트리거 글이 같은) 큐는 같은 번호로 맞추고, 번호가 없는(00) 큐에 번호를 붙임 (최소 5칸)
+    // 묶음 안에 이미 번호가 있으면 그중 가장 앞 번호, 없으면 트리거 순서대로 다음 번호
     private func numberNewCues() {
         closeGaps()   // 처음 열 때도 빈 번호부터 정리 → 열마다 1번부터
         var next = (sceneCues.map(\.order).max() ?? 0) + 1
-        for trigger in (scene.triggers ?? []).sorted(by: { $0.order < $1.order }) {
-            let newCues = (trigger.cues ?? []).filter { $0.order == 0 }
-            guard !newCues.isEmpty else { continue }
-            let number = (trigger.cues ?? []).first { $0.order > 0 }?.order ?? next
-            for cue in newCues { cue.order = number }
+        for group in timingGroups {
+            let number = group.map(\.order).filter { $0 > 0 }.min() ?? next
+            for cue in group where cue.order != number { cue.order = number }
             if number == next { next += 1 }
         }
-        slotCount = max(5, next - 1)
+        closeGaps()   // 묶느라 빈 번호가 생겼으면 다시 당김
+        slotCount = max(5, sceneCues.map(\.order).max() ?? 0)
     }
 
-    // 끌어다 놓은 카드를 이 칸으로. 칸은 빈칸이 생겨도 그대로, 큐카드 번호는 빈칸 없이 당겨서 저장
+    // 끌어다 놓은 카드를 같은 순간의 큐들과 함께 이 칸으로. 칸은 빈칸이 생겨도 그대로, 큐카드 번호는 빈칸 없이 당겨서 저장
     private func moveCue(id: String?, to number: Int) {
         guard canEdit, let cue = sceneCues.first(where: { $0.id.uuidString == id }), slotNumber(of: cue) != number else { return }   // 없는 큐거나 같은 칸이면 그대로
         for sceneCue in sceneCues where slots[sceneCue.id] == nil { slots[sceneCue.id] = sceneCue.order }   // 지금 칸 기억 (번호가 당겨져도 칸은 그대로)
-        let oldOrder = cue.order
-        slots[cue.id] = number
+        let group = sameTimingCues(as: cue)
+        let oldOrders = Dictionary(uniqueKeysWithValues: group.map { ($0.id, $0.order) })
+        for groupCue in group { slots[groupCue.id] = number }
         closeGaps()
-        cue.addHistory("순서 변경", detail: "\(cue.editorName)님이 \(oldOrder)번 → \(cue.order)번으로 변경")
+        for groupCue in group {
+            groupCue.addHistory("순서 변경", detail: "\(groupCue.editorName)님이 \(oldOrders[groupCue.id] ?? 0)번 → \(groupCue.order)번으로 변경")
+        }
     }
 
     // 칸 번호(빈칸 포함) → 큐카드 번호: 빈칸은 건너뛰고 1번부터 (예: 칸 1, 3 → 번호 1, 2)
@@ -181,6 +184,32 @@ extension CuePrioritySidebar {
             let order = (usedSlots.firstIndex(of: slotNumber(of: cue)) ?? -1) + 1
             if cue.order != order { cue.order = order }
         }
+    }
+    
+    // 같은 순간 큐 묶음들 (트리거 순서대로). 파트마다 따로 써도 트리거 글이 같으면 같은 순서로 실행된다
+    private var timingGroups: [[Cue]] {
+        var groups: [String: [Cue]] = [:]
+        var keys: [String] = []
+        for trigger in (scene.triggers ?? []).sorted(by: { $0.order < $1.order }) {
+            for cue in trigger.cues ?? [] {
+                let key = timingKey(of: cue)
+                if groups[key] == nil { keys.append(key) }
+                groups[key, default: []].append(cue)
+            }
+        }
+        return keys.compactMap { groups[$0] }
+    }
+
+    // 이 큐와 같은 순간의 큐들 (자기 자신 포함)
+    private func sameTimingCues(as cue: Cue) -> [Cue] {
+        let key = timingKey(of: cue)
+        return sceneCues.filter { timingKey(of: $0) == key }
+    }
+
+    // 트리거 글 (앞뒤 공백 무시). 트리거가 비어 있으면 묶지 않게 트리거마다 다른 값
+    private func timingKey(of cue: Cue) -> String {
+        let text = (cue.trigger?.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.isEmpty ? (cue.trigger?.id ?? cue.id).uuidString : text
     }
 }
 
