@@ -39,6 +39,9 @@ struct CueGridActions {
     var cut: () -> Void               // 기억하고 지우기
     var paste: () -> Bool             // 마우스가 올라간 칸에 붙이기. 붙일 곳이 없으면 false
     var export: (CueSheetExportFormat) -> Void   // 파일 > 다음으로 내보내기 (저장 창)
+    var showUnread: () -> Void        // 보기 > 미확인 사이드바 (미확인 N건 버튼과 같음)
+    var showHistory: (() -> Void)?    // 보기 > History. 큐 카드 하나를 골랐을 때만
+    var showCueOrder: (() -> Void)?   // 보기 > 큐 실행 순서 설정. 큐 카드나 장면 열을 골랐을 때만
 }
 
 // 파트 필터 바에서 메뉴가 할 수 있는 일 (MainCueSheetView가 넣어 줌)
@@ -242,12 +245,12 @@ extension AppMenuCommands {
             Button("리허설모드 보기") { app?.showRehearsal?() }
                 .disabled(app?.showRehearsal == nil)
             partMenu
-            Button("미확인 사이드바 보기") {}
-                .disabled(true)
-            Button("History 사이드바 보기") {}
-                .disabled(true)
-            Button("우선순위 사이드바 보기") {}
-                .disabled(true)
+            Button("미확인 사이드바 보기") { cueGrid?.showUnread() }   // 큐시트에서 항상
+                .disabled(cueGrid == nil)
+            Button("History 사이드바 보기") { cueGrid?.showHistory?() }   // 큐 카드 하나를 골랐을 때
+                .disabled(cueGrid?.showHistory == nil)
+            Button("큐 실행 순서 설정") { cueGrid?.showCueOrder?() }   // 큐 카드나 장면 열을 골랐을 때
+                .disabled(cueGrid?.showCueOrder == nil)
             Divider()
             Button("사이드바 가리기") { app?.toggleSidebar() }
                 .keyboardShortcut("\\", modifiers: [.command, .shift])

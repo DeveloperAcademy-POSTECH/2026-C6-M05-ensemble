@@ -14,6 +14,7 @@ struct CueGrid: View {
     var remoteRevision = 0                        // iCloud에서 받을 때마다 +1 → 표를 다시 그린다
     var onShowHistory: (Cue) -> Void = { _ in }   // 큐 카드 우클릭 → History
     var onEscape: () -> Void = {}                 // Esc → 미확인 사이드바 닫기
+    var onShowUnread: () -> Void = {}             // 보기 > 미확인 사이드바 보기
     @Binding var priorityScene: ShowScene?        // 우선순위 사이드바에 보여줄 씬 (nil = 닫힘)
     var focus: SystemNotifications.CueFocus? = nil   // 큐 수정 알림을 눌렀을 때 → 그 큐로 스크롤 + 선택
     @Environment(\.modelContext) private var modelContext   // 새 큐를 저장할 곳
@@ -312,8 +313,23 @@ extension CueGrid {
             copy: { copySelectedCues() },
             cut: { cutSelectedCues() },
             paste: { pasteCues() },
-            export: { production.exportCueSheet(as: $0) }   // 내보내기 버튼과 같은 함수
+            export: { production.exportCueSheet(as: $0) },   // 내보내기 버튼과 같은 함수
+            showUnread: { onShowUnread() },
+            showHistory: historyMenuAction,
+            showCueOrder: cueOrderMenuAction
         )
+    }
+    
+    // 큐 카드를 하나만 골랐을 때 → 그 카드의 History (여러 장이면 회색)
+    private var historyMenuAction: (() -> Void)? {
+        guard selectedCues.count == 1, let cue = selectedCues.first else { return nil }
+        return { onShowHistory(cue) }
+    }
+
+    // 큐 카드를 골랐으면 그 카드가 있는 장면, 장면 열을 골랐으면 그 장면 → 큐 실행 순서
+    private var cueOrderMenuAction: (() -> Void)? {
+        guard let scene = selectedCues.first?.trigger?.scene ?? selectedScene else { return nil }
+        return { priorityScene = scene }
     }
 
     // 지금 보이는 큐 전부 선택 (편집 > 모두 선택 ⌘A)
