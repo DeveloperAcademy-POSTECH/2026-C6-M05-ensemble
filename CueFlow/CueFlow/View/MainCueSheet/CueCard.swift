@@ -58,7 +58,7 @@ struct CueCardMenuActions {
     var showHistory: (Cue) -> Void = { _ in }
 }
 
-// 우클릭 메뉴: 수정하기 · 잘라내기 · 복사하기 · 붙여넣기 · 삭제 / 우선순위 사이드바 · History
+// 우클릭 메뉴: 수정하기 · 잘라내기 · 복사하기 · 붙여넣기 · 삭제 / 큐 실행 순서 설정 · History
 // 읽기 권한이면 복사하기 · 우선순위 · History만
 
 extension CueCard {
@@ -74,7 +74,7 @@ extension CueCard {
                 PopoverMenuItem("삭제", shortcut: .commandDelete) { menuActions.delete(cue) }
             }
             PopoverMenuDivider()
-            PopoverMenuItem("우선순위 사이드바") { menuActions.showPriority(cue) }
+            PopoverMenuItem("큐 실행 순서 설정") { menuActions.showPriority(cue) }
             PopoverMenuItem("큐 카드 History") { menuActions.showHistory(cue) }
         }
     }

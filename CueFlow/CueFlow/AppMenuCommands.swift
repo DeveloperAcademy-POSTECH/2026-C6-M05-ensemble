@@ -246,7 +246,7 @@ extension AppMenuCommands {
                 .disabled(true)
             Button("History 사이드바 보기") {}
                 .disabled(true)
-            Button("우선순위 사이드바 보기") {}
+            Button("큐 실행 순서 설정") {}
                 .disabled(true)
             Divider()
             Button("사이드바 가리기") { app?.toggleSidebar() }
