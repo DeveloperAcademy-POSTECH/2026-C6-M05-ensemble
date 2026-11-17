@@ -22,6 +22,8 @@ struct StageSetupSheet: View {
 
     private enum Step { case names, grid, placement }
     @State private var step: Step = .names
+    // 배치 화면에서 놓던 자리. 창이 기억해서 "<"로 뒤로 갔다 와도 남는다 (#229). 배치 완료를 눌러야 저장
+    @State private var draftMarks: [StageMark]?
 
     init(production: Production, scene: ShowScene? = nil) {
         self.production = production
@@ -36,7 +38,7 @@ struct StageSetupSheet: View {
             }
         case .grid:
             StageGridSheet(production: production, onBack: { step = .names }) {
-                step = .placement
+                startPlacement()
             }
         case .placement:
             StagePlacementEditor(
@@ -45,7 +47,7 @@ struct StageSetupSheet: View {
                     ? "공연 시작 전, 배역과 소품의 위치를 정해주세요. 이 위치를 기준으로 장면별 이동 동선이 이어집니다.\n배역이나 소품 카드를 선택한 뒤, 놓을 해당 무대 칸을 클릭해주세요."
                     : "이 장면에서 배역과 소품이 있는 자리로 옮겨주세요.\n배역이나 소품 카드를 선택한 뒤, 놓을 해당 무대 칸을 클릭해주세요.",
                 production: production,
-                startMarks: startMarks,
+                marks: Binding(get: { draftMarks ?? [] }, set: { draftMarks = $0 }),
                 onBack: { step = .grid },
                 onDone: save
             )
@@ -63,6 +65,20 @@ struct StageSetupSheet: View {
         production.stagePlacements(for: scene).map(\.mark)
     }
 
+    // 배치 화면으로: 처음이면 저장된 배치로 시작, 뒤로 갔다 온 거면 놓던 자리 그대로
+    // 그 사이 목록에서 지운 이름은 빼고, 칸 수가 바뀌었을 수 있어 다시 정렬한다
+    // (예전에 끌어서 놓은 자리도 여기서 자동 정렬 → 배치 완료를 누르면 그대로 저장된다)
+    private func startPlacement() {
+        let kept = (draftMarks ?? startMarks).filter { mark in
+            switch mark.kind {
+            case .cast: production.castNames.contains(mark.name)
+            case .prop: production.propNames.contains(mark.name)
+            }
+        }
+        draftMarks = StageAutoLayout.arranged(kept, columns: production.stageGridColumns)
+        step = .placement
+    }
+
     private func save(_ marks: [StageMark]) {
         let placements = marks.map { StagePlacement(name: $0.name, kind: $0.kind, area: $0.area, x: $0.x, y: $0.y) }
         if let scene {
@@ -78,6 +94,11 @@ struct StageSetupSheet: View {
 }
 
 extension Production {
+    // 소품 이름 가나다순 (리허설 화면에 보여줄 때, #229). 숫자는 크기대로 ("소품2" < "소품10")
+    var sortedPropNames: [String] {
+        propNames.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+    }
+
     // 이 장면에서 보여줄 무대 배치 (장면을 고친 적 없으면 최초 상태). 목록에서 지운 이름은 뺀다
     func stagePlacements(for scene: ShowScene?) -> [StagePlacement] {
         let placements = scene?.hasOwnPlacements == true ? scene?.placements : initialPlacements
@@ -98,20 +119,19 @@ private struct StagePlacementEditor: View {
     let onBack: () -> Void   // "<" → 무대 칸 설정으로
     let onDone: ([StageMark]) -> Void
 
-    @State private var marks: [StageMark]
+    @Binding var marks: [StageMark]           // 놓은 자리 (창이 들고 있어 뒤로 가도 남는다, #229)
     @State private var selected: StageMark?   // 고른 카드 (다음에 누르는 칸에 놓는다)
 
     init(
         title: String, subtitle: String, production: Production,
-        startMarks: [StageMark], onBack: @escaping () -> Void, onDone: @escaping ([StageMark]) -> Void
+        marks: Binding<[StageMark]>, onBack: @escaping () -> Void, onDone: @escaping ([StageMark]) -> Void
     ) {
         self.title = title
         self.subtitle = subtitle
         self.production = production
+        _marks = marks
         self.onBack = onBack
         self.onDone = onDone
-        // 예전에 끌어서 놓은 자리도 열 때 자동 정렬 → 배치 완료를 누르면 그대로 저장된다
-        _marks = State(initialValue: StageAutoLayout.arranged(startMarks, columns: production.stageGridColumns))
     }
 
     var body: some View {
@@ -126,7 +146,7 @@ private struct StagePlacementEditor: View {
                 VStack(alignment: .leading, spacing: 36) {
                     HStack(alignment: .top, spacing: 50) {
                         cardColumn(title: "배역", systemImage: "person", names: production.castNames, kind: .cast)
-                        cardColumn(title: "소품", systemImage: "gift", names: production.propNames, kind: .prop)
+                        cardColumn(title: "소품", systemImage: "gift", names: production.sortedPropNames, kind: .prop)
                     }
 
                     VStack(alignment: .leading, spacing: 8) {

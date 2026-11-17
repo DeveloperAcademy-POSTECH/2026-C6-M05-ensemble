@@ -120,7 +120,11 @@ struct RehearsalView: View {
             }
         }
         .sheet(isPresented: $isEditingScript) {
-            ScriptInputSheet(production: production, currentScene: currentScene)
+            // 들어 있는 대본을 채워서 연다 → 이어서 고치기 (#229)
+            ScriptInputSheet(
+                production: production, currentScene: currentScene,
+                initialText: ScriptImporter.text(of: production)
+            )
         }
         // 장면을 직접 바꾸면 그 장면의 첫 큐부터
         .onChange(of: sceneIndex) {

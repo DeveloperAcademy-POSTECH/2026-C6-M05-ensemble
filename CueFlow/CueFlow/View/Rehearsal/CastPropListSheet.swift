@@ -35,7 +35,7 @@ struct CastPropListSheet: View {
                 NameListColumn(
                     title: "소품",
                     systemImage: "gift",
-                    names: Binding(get: { production.propNames }, set: { production.propNames = $0 })
+                    names: Binding(get: { production.sortedPropNames }, set: { production.propNames = $0 })   // 가나다순 (#229)
                 )
             }
             .padding(.top, 37)

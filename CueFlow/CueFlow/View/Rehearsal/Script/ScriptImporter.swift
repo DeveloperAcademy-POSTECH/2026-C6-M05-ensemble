@@ -58,6 +58,28 @@ enum ScriptImporter {
         return sameKind.indices.contains(parsed.number - 1) ? sameKind[parsed.number - 1] : nil
     }
 
+    // 공연에 들어 있는 대본을 "대본 입력" 글로 되돌린다 → 이어서 고칠 수 있게 (#229)
+    // 장면 표시는 S#n · N#n · D#n (같은 종류끼리 몇 번째) → 다시 적용하면 existingScene으로 같은 장면에 들어간다
+    // 대본이 없는 장면은 건너뛴다 (번호는 세어서 다음 장면 번호가 밀리지 않게)
+    static func text(of production: Production) -> String {
+        let scenes = (production.scenes ?? []).sorted { $0.order < $1.order }
+        var counts: [SceneKind: Int] = [:]
+        var blocks: [String] = []
+        for scene in scenes {
+            let number = (counts[scene.kind] ?? 0) + 1
+            counts[scene.kind] = number
+            let lines = (scene.scriptLines ?? []).sorted { $0.order < $1.order }
+            guard !lines.isEmpty else { continue }
+
+            let heading = "\(scene.kind.codePrefix)#\(number)" + (scene.title.isEmpty ? "" : " \(scene.title)")
+            let body = lines.map { line in
+                line.speaker.map { "\($0): \(line.text)" } ?? line.text
+            }
+            blocks.append(([heading] + body).joined(separator: "\n"))
+        }
+        return blocks.joined(separator: "\n\n")
+    }
+
     // 나눈 대본을 공연에 넣는다. 그 장면의 원래 대본은 새 대본으로 바뀐다.
     // 앱에 없는 장면(예: 대본엔 S15가 있는데 앱엔 씬이 3개뿐)은 맨 뒤에 새로 만든다.
     // 장면 표시 앞에 있던 글은 currentScene(지금 보고 있는 장면)에 넣는다.
