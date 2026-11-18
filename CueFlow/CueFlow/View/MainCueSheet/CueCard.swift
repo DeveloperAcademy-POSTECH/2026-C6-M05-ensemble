@@ -26,7 +26,18 @@ struct CueCard: View {
     @Environment(\.modelContext) private var modelContext   // 큐를 지울 곳
     @AppStorage("showsCommentButton") private var showsComments = true   // 보기 > 댓글 표시
 
+    @ViewBuilder
     var body: some View {
+        // 지워진 큐는 그리지 않음: 다른 기기에서 지운 게 동기화되거나 잘라내기·삭제 직후 화면이 한 번 더 그려질 때
+        // 지워진 큐의 위치(cue.position)를 읽으면 SwiftData가 앱을 죽인다 (1.0.1 맥 크래시)
+        if cue.isGone {
+            EmptyView()
+        } else {
+            card
+        }
+    }
+
+    private var card: some View {
         VStack(alignment: .leading, spacing: 17) {
             cueHeader
             cueButtons

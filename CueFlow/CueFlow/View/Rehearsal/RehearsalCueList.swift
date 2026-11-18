@@ -209,7 +209,12 @@ struct CueListRow: View {
     @Environment(\.isRehearsalCompact) private var isCompact
     private var columns: CueListColumn { CueListColumn(isCompact: isCompact) }
 
+    @ViewBuilder
     var body: some View {
+        if cue.isGone { EmptyView() } else { liveBody }   // 다른 기기에서 지운 큐를 읽으면 앱이 죽음
+    }
+
+    private var liveBody: some View {
         HStack(alignment: .top, spacing: 0) {
             Text(code)
                 .font(.app(size: 15, weight: isCurrent ? .semibold : .medium))

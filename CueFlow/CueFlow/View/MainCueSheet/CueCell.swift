@@ -79,7 +79,9 @@ extension CueCell {
     
     // 큐 번호(order) 순서대로
     private var sortedCues: [Cue] {
-        cues.sorted { $0.order < $1.order }
+        cues
+            .filter { !$0.isGone }   // 지워진 큐는 빼고 (CueCard 크래시 방지)
+            .sorted { $0.order < $1.order }
     }
 }
 

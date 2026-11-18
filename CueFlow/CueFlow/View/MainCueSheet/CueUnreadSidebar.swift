@@ -135,7 +135,12 @@ extension CueUnreadSidebar {
 private struct UnreadCueCard: View {
     let cue: Cue
 
+    @ViewBuilder
     var body: some View {
+        if cue.isGone { EmptyView() } else { liveBody }   // 다른 기기에서 지운 큐를 읽으면 앱이 죽음
+    }
+
+    private var liveBody: some View {
         HStack(alignment: .top, spacing: 4) {
             numberCircle
             texts
