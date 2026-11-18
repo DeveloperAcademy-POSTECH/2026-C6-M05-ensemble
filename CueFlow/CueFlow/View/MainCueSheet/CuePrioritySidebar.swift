@@ -219,7 +219,12 @@ private struct PriorityCueCard: View {
     let cue: Cue
     let number: Int   // 사이드바 칸 번호 (빈칸이 있어도 칸 그대로. 큐카드 번호와 다를 수 있음)
 
+    @ViewBuilder
     var body: some View {
+        if cue.isGone { EmptyView() } else { liveBody }   // 다른 기기에서 지운 큐를 읽으면 앱이 죽음
+    }
+
+    private var liveBody: some View {
         cardContent
             .padding(.leading, 37)
             .padding(.trailing, 13)

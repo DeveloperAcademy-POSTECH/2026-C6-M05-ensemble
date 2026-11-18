@@ -46,3 +46,9 @@ final class Cue {
         self.order = order
     }
 }
+
+// 지워진 큐인지: 다른 기기에서 지운 게 동기화로 들어오면 화면이 아직 들고 있을 수 있다
+// 이런 큐의 값(위치 등)을 읽으면 SwiftData가 앱을 죽이므로 화면에서 먼저 확인한다
+extension Cue {
+    var isGone: Bool { isDeleted || modelContext == nil }
+}

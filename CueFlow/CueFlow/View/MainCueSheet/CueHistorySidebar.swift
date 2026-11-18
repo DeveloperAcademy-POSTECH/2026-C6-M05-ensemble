@@ -14,7 +14,12 @@ struct CueHistorySidebar: View {
     var onClose: () -> Void = {}     // ← 버튼
     @State private var searchText = ""
 
+    @ViewBuilder
     var body: some View {
+        if cue.isGone { EmptyView() } else { liveBody }   // 다른 기기에서 지운 큐를 읽으면 앱이 죽음
+    }
+
+    private var liveBody: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
             searchField
